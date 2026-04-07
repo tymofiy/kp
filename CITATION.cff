@@ -25,7 +25,7 @@ keywords:
 identifiers:
   - type: doi
     value: "10.5281/zenodo.19445263"
-    description: "Zenodo DOI (reserved, pending publication of v0.7-preview)"
+    description: "Zenodo DOI for the v0.7-preview release"
   - type: other
     value: "USPTO 99747548"
     description: "United States trademark application for KP:1 (Class 9, intent-to-use, filed 2026-04-06)"

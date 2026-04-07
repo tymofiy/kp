@@ -126,9 +126,9 @@ See [`CONTRIBUTING.md`](CONTRIBUTING.md) for the contribution policy and [`GOVER
 
 ## How to Cite
 
-If you reference KP:1 in academic, technical, or evaluative work, please use the metadata in [`CITATION.cff`](CITATION.cff). A Zenodo DOI (`10.5281/zenodo.19445263`) is reserved for the v0.7-preview release; it will resolve once the Zenodo deposit is published. Until then, the recommended short form is:
+If you reference KP:1 in academic, technical, or evaluative work, please use the metadata in [`CITATION.cff`](CITATION.cff). The v0.7-preview release is published on Zenodo with DOI [`10.5281/zenodo.19445263`](https://doi.org/10.5281/zenodo.19445263). The recommended short form is:
 
-> Kompanchenko, T. (2026). *KP:1 — Knowledge Pack Format Specification* (Version 0.7-preview). https://github.com/tymofiy/kp
+> Kompanchenko, T. (2026). *KP:1 — Knowledge Pack Format Specification* (Version 0.7-preview). Zenodo. https://doi.org/10.5281/zenodo.19445263
 
 The editor and an acknowledgment of AI drafting assistance are also recorded in [`ACKNOWLEDGMENTS.md`](ACKNOWLEDGMENTS.md).
 
