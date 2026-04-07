@@ -1,0 +1,66 @@
+name: maximal-fixture
+version: 2026.04.04-rev2
+domain: test/conformance/deep
+kind: claim
+author: KP Conformance Suite
+
+description: >
+  Maximal fixture exercising every optional field in PACK.yaml.
+  Tests the upper bound of KP:1 schema coverage.
+
+confidence:
+  scale: sherman_kent
+  normalize: true
+
+freshness: 2026-04-04
+license: CC-BY-4.0
+sensitivity: internal
+visibility: shared
+channels: [team]
+
+linguistic_epoch: en-US-2026
+ontology: western-empirical
+
+tier: standalone
+
+display:
+  short_title: "Max Fixture"
+  abbreviation: "MAX"
+  tagline: "Full-coverage conformance test pack."
+  hook: "Every optional field populated to test schema boundaries."
+
+provenance:
+  author: KP Conformance Suite
+  role: independent
+  reviewed_by: Grammar Validator
+  review_date: 2026-04-04
+  signed: false
+
+lifecycle:
+  type: seasonal
+  archive_after_days: 90
+  archive_policy: manual
+  reconciled_at: null
+  orphan_claims: []
+
+dependencies:
+  - uri: "local:../typical.kpack"
+    version: ">=2026.04"
+    kind: claim
+
+conflicts:
+  - pack: conflicting-fixture
+    note: "Hypothetical conflict for schema testing"
+    basis: methodology
+    resolution: prefer-this
+
+vocabulary:
+  extends: "kp-standard-v1"
+  custom_predicate: "Tests custom vocabulary entries"
+
+views:
+  - name: overview
+    file: views/overview.md
+    purpose: "Full-coverage conformance summary"
+    display_as: "Overview"
+    hint: "Top-line view for the maximal fixture."

@@ -1,0 +1,410 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://kp.dev/schemas/kp-pack-v1.json",
+  "title": "KP:1 PACK.yaml Schema",
+  "description": "JSON Schema for the PACK.yaml manifest file in a KP:1 knowledge pack. This schema is normative for KP:1 conformance.",
+  "type": "object",
+  "required": ["name", "version", "domain", "author"],
+  "additionalProperties": false,
+  "properties": {
+    "name": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9-]*$",
+      "description": "Pack identifier. Kebab-case, unique within scope."
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^\\d{4}\\.\\d{2}\\.\\d{2}(-rev\\d+)?$",
+      "description": "CalVer snapshot date. Format: YYYY.MM.DD with optional -revN suffix."
+    },
+    "domain": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9-]*(/[a-z0-9][a-z0-9-]*)*$",
+      "description": "Hierarchical domain path. Example: energy/market-analysis"
+    },
+    "author": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Maintainer name."
+    },
+    "kind": {
+      "type": "string",
+      "enum": ["claim", "definition", "policy", "mixed"],
+      "default": "claim",
+      "description": "Primary content type of the pack."
+    },
+    "description": {
+      "type": "string",
+      "description": "Human-readable summary of the pack's contents."
+    },
+    "confidence": {
+      "type": "object",
+      "required": ["scale"],
+      "additionalProperties": false,
+      "properties": {
+        "scale": {
+          "type": "string",
+          "description": "Confidence scale identifier. Built-in: sherman_kent, simple. Custom scales use 'custom'."
+        },
+        "normalize": {
+          "type": "boolean",
+          "description": "Whether claims use 0-1 normalized confidence values."
+        },
+        "labels": {
+          "type": "object",
+          "description": "Custom scale band definitions. Required when scale is 'custom'.",
+          "additionalProperties": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          }
+        }
+      },
+      "description": "Confidence scale configuration."
+    },
+    "freshness": {
+      "type": "string",
+      "format": "date",
+      "description": "ISO date of last substantive review."
+    },
+    "license": {
+      "type": "string",
+      "description": "Reuse terms. Example: CC-BY-4.0"
+    },
+    "sensitivity": {
+      "type": "string",
+      "enum": ["public", "internal", "confidential", "restricted"],
+      "description": "Data handling classification."
+    },
+    "visibility": {
+      "type": "string",
+      "enum": ["private", "shared", "public"],
+      "description": "Discovery scope."
+    },
+    "channels": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^[a-z][a-z0-9]*(/[a-z][a-z0-9]*)?$"
+      },
+      "uniqueItems": true,
+      "description": "Distribution routing. Spec vocabulary: team, org, public. Custom: namespace/name."
+    },
+    "linguistic_epoch": {
+      "type": "string",
+      "pattern": "^[a-z]{2,3}(-[A-Z]{2})?(-\\d{4})?$",
+      "description": "BCP 47 tag with optional year suffix. Example: en-US-2026"
+    },
+    "ontology": {
+      "type": "string",
+      "description": "Knowledge framework declaration (freeform)."
+    },
+    "tier": {
+      "type": "string",
+      "enum": ["hub", "detail", "standalone"],
+      "description": "Pack hierarchy role."
+    },
+    "display": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "short_title": {
+          "type": "string",
+          "maxLength": 30,
+          "description": "2-4 words for constrained display contexts."
+        },
+        "abbreviation": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 5,
+          "description": "Pronounceable or recognized acronym."
+        },
+        "tagline": {
+          "type": "string",
+          "description": "One sentence: what this pack IS."
+        },
+        "hook": {
+          "type": "string",
+          "description": "Most compelling sentence in the pack."
+        }
+      },
+      "description": "Cognitive perception layer for display contexts."
+    },
+    "provenance": {
+      "type": "object",
+      "required": ["author", "role"],
+      "additionalProperties": false,
+      "properties": {
+        "author": {
+          "type": "string",
+          "description": "Provenance author name."
+        },
+        "role": {
+          "type": "string",
+          "enum": ["manufacturer", "independent", "regulator", "academic", "individual"],
+          "description": "Author's relationship to the subject matter."
+        },
+        "reviewed_by": {
+          "type": ["string", "null"],
+          "description": "Reviewer name, or null if unreviewed."
+        },
+        "review_date": {
+          "type": ["string", "null"],
+          "format": "date",
+          "description": "ISO date of review, or null."
+        },
+        "signed": {
+          "type": "boolean",
+          "default": false,
+          "description": "Whether the pack has a cryptographic signature."
+        }
+      },
+      "description": "Trust context and attribution."
+    },
+    "lifecycle": {
+      "type": "object",
+      "required": ["type"],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["permanent", "seasonal", "ephemeral"],
+          "description": "Lifecycle classification."
+        },
+        "archive_after_days": {
+          "type": ["integer", "null"],
+          "minimum": 1,
+          "description": "Auto-archive threshold in days."
+        },
+        "archive_policy": {
+          "type": "string",
+          "enum": ["reconcile", "auto", "manual"],
+          "description": "How archiving is triggered."
+        },
+        "reconciled_at": {
+          "type": ["string", "null"],
+          "format": "date-time",
+          "description": "ISO timestamp of last reconciliation."
+        },
+        "orphan_claims": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Claim IDs not yet assigned to a consolidated pack."
+        }
+      },
+      "description": "Pack lifecycle management."
+    },
+    "dependencies": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["uri"],
+        "additionalProperties": false,
+        "properties": {
+          "uri": {
+            "type": "string",
+            "description": "Pack URI. Formats: github.com/owner/pack.kpack or local:../path.kpack"
+          },
+          "version": {
+            "type": "string",
+            "description": "Version constraint. Example: >=2026.01"
+          },
+          "kind": {
+            "type": "string",
+            "enum": ["claim", "definition", "policy", "mixed"],
+            "description": "Dependency type signal."
+          }
+        }
+      },
+      "description": "Other packs this pack builds on."
+    },
+    "conflicts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["pack", "note", "basis"],
+        "additionalProperties": false,
+        "properties": {
+          "pack": {
+            "type": "string",
+            "description": "Conflicting pack name."
+          },
+          "note": {
+            "type": "string",
+            "description": "Free text explanation of the conflict."
+          },
+          "basis": {
+            "type": "string",
+            "enum": ["methodology", "data_source", "temporal", "interpretation", "scope"],
+            "description": "Nature of the conflict."
+          },
+          "resolution": {
+            "type": "string",
+            "enum": ["prefer-this", "prefer-other", "flag-for-review"],
+            "description": "Recommended resolution strategy."
+          }
+        }
+      },
+      "description": "Known contradictions with other packs."
+    },
+    "vocabulary": {
+      "type": "object",
+      "properties": {
+        "extends": {
+          "type": "string",
+          "description": "Base vocabulary this pack extends."
+        }
+      },
+      "additionalProperties": {
+        "type": "string"
+      },
+      "description": "Predicate conventions."
+    },
+    "composition": {
+      "type": "string",
+      "default": "composition.yaml",
+      "description": "Path to the composition file. Defaults to composition.yaml."
+    },
+    "files": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string"
+      },
+      "description": "Non-standard file name overrides."
+    },
+    "views": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "file", "purpose", "display_as"],
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "View identifier."
+          },
+          "file": {
+            "type": "string",
+            "description": "Path within pack. Example: views/overview.md"
+          },
+          "purpose": {
+            "type": "string",
+            "description": "AI-facing: when to display this view."
+          },
+          "display_as": {
+            "type": "string",
+            "description": "Human-facing: UI tab/section label."
+          },
+          "hint": {
+            "type": "string",
+            "description": "Human-facing: ~15 words, what you'll GET from this section."
+          }
+        }
+      },
+      "description": "Pre-rendered view declarations."
+    },
+    "style": {
+      "type": ["string", "null"],
+      "default": null,
+      "description": "External style system reference."
+    },
+    "sub_packs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "uri"],
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Sub-pack name."
+          },
+          "uri": {
+            "type": "string",
+            "description": "Sub-pack URI."
+          },
+          "summary": {
+            "type": "string",
+            "description": "Brief content description."
+          },
+          "load_when": {
+            "type": "string",
+            "description": "Natural language hint for when to load."
+          }
+        }
+      },
+      "description": "Hub pack: child detail pack declarations."
+    },
+    "consolidation": {
+      "type": "object",
+      "additionalProperties": true,
+      "description": "Knowledge consolidation targets and configuration."
+    },
+    "locales": {
+      "type": "object",
+      "additionalProperties": true,
+      "description": "Multilingual support configuration."
+    },
+    "notes": {
+      "type": "object",
+      "additionalProperties": true,
+      "description": "AI note-taking metadata."
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "required": ["sensitivity"],
+        "properties": { "sensitivity": { "const": "confidential" } }
+      },
+      "then": {
+        "properties": {
+          "channels": {
+            "not": {
+              "contains": { "enum": ["public", "org"] }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "required": ["sensitivity"],
+        "properties": { "sensitivity": { "const": "restricted" } }
+      },
+      "then": {
+        "properties": {
+          "channels": {
+            "not": {
+              "contains": { "enum": ["public", "org"] }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "required": ["sensitivity"],
+        "properties": { "sensitivity": { "const": "internal" } }
+      },
+      "then": {
+        "properties": {
+          "channels": {
+            "not": {
+              "contains": { "const": "public" }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "required": ["tier"],
+        "properties": { "tier": { "const": "hub" } }
+      },
+      "then": {
+        "required": ["sub_packs"]
+      }
+    }
+  ]
+}

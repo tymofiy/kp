@@ -1,0 +1,38 @@
+name: CI
+on:
+  push:
+    branches: [main]
+  pull_request:
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - name: Setup Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: "24"
+      - name: Setup Python
+        uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b # v5
+        with:
+          python-version: "3.12"
+      - name: Install markdownlint
+        run: npm install -g markdownlint-cli
+      - name: Install Python dependencies
+        run: pip install -r requirements.txt
+      - name: Lint Markdown
+        run: markdownlint '**/*.md' --config .markdownlint.yaml
+      - name: Validate YAML
+        run: |
+          find . -name '*.yaml' -o -name '*.yml' | while read -r file; do
+            python3 -c "import yaml; yaml.safe_load(open('$file'))" || exit 1
+          done
+      - name: Run conformance suite
+        run: python3 conformance/run.py
+    timeout-minutes: 5
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+permissions:
+  contents: read

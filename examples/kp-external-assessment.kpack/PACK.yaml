@@ -1,0 +1,65 @@
+name: kp-external-assessment
+version: 2026.04.01
+domain: technical/knowledge-format-assessment
+kind: claim
+author: Timothy Kompanchenko
+tier: standalone
+
+description: >
+  External assessment of KP:1 as a knowledge representation format. Captures a
+  synthesized judgment across four source documents: deep study, academic roots,
+  AI-native landscape, and prior art / competitive analysis.
+
+display:
+  short_title: "KP External Assessment"
+  abbreviation: "KPEA"
+  tagline: "Where KP:1 is novel, grounded, contested, and under-specified."
+  hook: "The assessment says the gap is real, the design is serious, and the strongest next move is empirical validation plus a slimmer core spec."
+
+confidence:
+  scale: sherman_kent
+  normalize: true
+
+freshness: 2026-03-31
+sensitivity: public
+visibility: public
+channels: [public]
+linguistic_epoch: en-US-2026
+ontology: western-empirical
+
+provenance:
+  author: Timothy Kompanchenko
+  role: independent
+  reviewed_by: null
+  review_date: null
+  signed: false
+
+lifecycle:
+  type: permanent
+
+dependencies: []
+
+views:
+  - name: overview
+    file: views/overview.md
+    purpose: "Synthesis of the external assessment bundle"
+    display_as: "Overview"
+    hint: "Start here for the top-line verdict, novelty, gaps, and recommendations."
+
+  - name: academic-roots
+    file: views/academic-roots.md
+    purpose: "Theoretical and philosophical grounding for KP:1"
+    display_as: "Academic Roots"
+    hint: "Where the format is well-founded, where it is underspecified, and the core philosophical question."
+
+  - name: ai-landscape
+    file: views/ai-landscape.md
+    purpose: "How the 2024-2026 AI knowledge landscape frames KP:1"
+    display_as: "AI Landscape"
+    hint: "Infrastructure trends, the emerging memory layer, and the unresolved format question."
+
+  - name: prior-art
+    file: views/prior-art.md
+    purpose: "Prior art, adjacent systems, and competitive positioning"
+    display_as: "Prior Art"
+    hint: "The genealogy, closest comparisons, and where KP:1 is genuinely distinct."

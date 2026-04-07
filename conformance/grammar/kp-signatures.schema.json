@@ -1,0 +1,66 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://kp.dev/schemas/kp-signatures-v1.json",
+  "title": "KP:1 signatures.yaml Schema",
+  "description": "JSON Schema for the signatures.yaml integrity manifest in a KP:1 knowledge pack. Provides cryptographic hashes and optional signing for integrity verification.",
+  "type": "object",
+  "required": ["algorithm", "files"],
+  "additionalProperties": false,
+  "properties": {
+    "algorithm": {
+      "type": "string",
+      "enum": ["sha-256", "sha-384", "sha-512"],
+      "description": "Hash algorithm used for all file digests."
+    },
+    "signed_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp of when the hashes were computed and optionally signed."
+    },
+    "files": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string",
+        "pattern": "^[a-f0-9]+$",
+        "description": "Hex-encoded content hash for the file."
+      },
+      "minProperties": 1,
+      "description": "Map of file paths (relative to pack root) to their hex-encoded content hashes. At minimum should include PACK.yaml and claims.md."
+    },
+    "signing_key": {
+      "type": "object",
+      "required": ["type", "public_key"],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["ed25519", "ecdsa-p256", "rsa-4096"],
+          "description": "Key algorithm."
+        },
+        "public_key": {
+          "type": "string",
+          "description": "Base64-encoded public key."
+        },
+        "key_id": {
+          "type": "string",
+          "description": "Optional key identifier for key management systems."
+        }
+      },
+      "description": "Signing key reference. Required when a signature is present."
+    },
+    "signature": {
+      "type": "string",
+      "description": "Base64-encoded cryptographic signature over the canonical hash manifest."
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "required": ["signature"]
+      },
+      "then": {
+        "required": ["signing_key", "signed_at"]
+      }
+    }
+  ]
+}

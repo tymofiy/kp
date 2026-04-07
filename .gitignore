@@ -1,0 +1,25 @@
+# OS
+.DS_Store
+Thumbs.db
+
+# Editors
+*.swp
+*.swo
+*~
+.idea/
+.vscode/
+
+# Runtime
+node_modules/
+.env*
+__pycache__/
+
+# Secrets
+.secrets*
+*.pem
+*.key
+
+# Work artifacts — kept outside the spec repo
+logs/
+PROMPT-*.md
+drafts/HANDOVER-*.md

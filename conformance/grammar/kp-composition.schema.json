@@ -1,0 +1,308 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://kp.dev/schemas/kp-composition-v1.json",
+  "title": "KP:1 composition.yaml Schema",
+  "description": "JSON Schema for the composition.yaml file in a KP:1 composite knowledge pack. Defines how composite packs reference standing packs rather than duplicating knowledge.",
+  "type": "object",
+  "required": ["type", "pre_load"],
+  "additionalProperties": false,
+  "properties": {
+    "type": {
+      "type": "string",
+      "enum": ["meeting-prep", "briefing", "research", "presentation"],
+      "description": "Composition type. Determines which type-specific fields are required."
+    },
+    "meeting": {
+      "type": "object",
+      "required": ["date", "duration", "participants"],
+      "additionalProperties": false,
+      "properties": {
+        "date": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Meeting start time with timezone. ISO 8601 datetime."
+        },
+        "duration": {
+          "type": "string",
+          "pattern": "^\\d+[mh]$",
+          "description": "Expected duration. Examples: 30m, 60m, 2h."
+        },
+        "participants": {
+          "type": "array",
+          "items": { "type": "string" },
+          "minItems": 1,
+          "description": "People in the meeting."
+        },
+        "location": {
+          "type": "string",
+          "description": "Meeting location: video-call, in-person, phone, or address."
+        },
+        "context": {
+          "type": "string",
+          "description": "Background context for the AI about this meeting."
+        }
+      },
+      "description": "Meeting metadata. Required when type is meeting-prep."
+    },
+    "agenda": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["topic"],
+        "additionalProperties": false,
+        "properties": {
+          "topic": {
+            "type": "string",
+            "description": "Human-readable agenda item title."
+          },
+          "reference": {
+            "type": "string",
+            "description": "Pack name this topic draws from. Uses name from KNOWLEDGE.yaml or PACK.yaml."
+          },
+          "focus_claims": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^C[0-9]+(-v[0-9]+)?$"
+            },
+            "description": "Specific claim IDs from the referenced pack to emphasize."
+          },
+          "talking_points": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "Key points to cover under this topic."
+          }
+        }
+      },
+      "description": "Ordered agenda items. Required when type is meeting-prep."
+    },
+    "briefing": {
+      "type": "object",
+      "required": ["recipient", "purpose", "date"],
+      "additionalProperties": false,
+      "properties": {
+        "recipient": {
+          "type": "string",
+          "description": "Person receiving the briefing."
+        },
+        "purpose": {
+          "type": "string",
+          "description": "Purpose of the briefing."
+        },
+        "date": {
+          "type": "string",
+          "format": "date",
+          "description": "Briefing date. ISO 8601 date."
+        },
+        "format": {
+          "type": "string",
+          "enum": ["voice", "document", "presentation"],
+          "description": "Intended delivery surface."
+        },
+        "duration": {
+          "type": "string",
+          "pattern": "^\\d+[mh]$",
+          "description": "Target delivery time. Examples: 15m, 30m, 1h."
+        }
+      },
+      "description": "Briefing metadata. Required when type is briefing."
+    },
+    "sections": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["heading"],
+        "additionalProperties": false,
+        "properties": {
+          "heading": {
+            "type": "string",
+            "description": "Section heading for the briefing."
+          },
+          "reference": {
+            "type": "string",
+            "description": "Pack name this section draws from."
+          },
+          "focus_claims": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^C[0-9]+(-v[0-9]+)?$"
+            },
+            "description": "Specific claim IDs from the referenced pack to emphasize."
+          },
+          "narrative_hint": {
+            "type": "string",
+            "description": "Guidance for the voice or document renderer on framing."
+          }
+        }
+      },
+      "description": "Ordered briefing sections. Required when type is briefing."
+    },
+    "research": {
+      "type": "object",
+      "required": ["question", "date"],
+      "additionalProperties": false,
+      "properties": {
+        "question": {
+          "type": "string",
+          "description": "The research question being investigated."
+        },
+        "hypothesis": {
+          "type": "string",
+          "description": "Working hypothesis to test against sources."
+        },
+        "date": {
+          "type": "string",
+          "format": "date",
+          "description": "Research composition date. ISO 8601 date."
+        },
+        "depth": {
+          "type": "string",
+          "enum": ["quick", "thorough", "exhaustive"],
+          "description": "Level of analysis expected."
+        }
+      },
+      "description": "Research metadata. Required when type is research."
+    },
+    "sources": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["pack"],
+        "additionalProperties": false,
+        "properties": {
+          "pack": {
+            "type": "string",
+            "description": "Pack name used as a research source."
+          },
+          "relevance": {
+            "type": "string",
+            "description": "Why this pack matters to the research question."
+          },
+          "focus_claims": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^C[0-9]+(-v[0-9]+)?$"
+            },
+            "description": "Specific claim IDs from the source pack to emphasize."
+          }
+        }
+      },
+      "description": "Research source packs with relevance annotations. Required when type is research."
+    },
+    "presentation": {
+      "type": "object",
+      "required": ["title", "date"],
+      "additionalProperties": false,
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "Presentation title."
+        },
+        "audience": {
+          "type": "string",
+          "description": "Intended audience description."
+        },
+        "date": {
+          "type": "string",
+          "format": "date",
+          "description": "Presentation date. ISO 8601 date."
+        },
+        "slide_count": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Target number of slides."
+        },
+        "style": {
+          "type": "string",
+          "description": "Visual style reference for consistency."
+        }
+      },
+      "description": "Presentation metadata. Required when type is presentation."
+    },
+    "slides": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["title"],
+        "additionalProperties": false,
+        "properties": {
+          "title": {
+            "type": "string",
+            "description": "Slide title."
+          },
+          "reference": {
+            "type": "string",
+            "description": "Pack name this slide draws from."
+          },
+          "focus_claims": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^C[0-9]+(-v[0-9]+)?$"
+            },
+            "description": "Specific claim IDs to feature on this slide."
+          },
+          "visual_hint": {
+            "type": "string",
+            "description": "Guidance for the presentation renderer on visuals."
+          }
+        }
+      },
+      "description": "Ordered slide definitions. Required when type is presentation."
+    },
+    "pre_load": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Pack names to load into context before the session begins."
+    },
+    "on_demand": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Pack names available for loading when topics arise during the session."
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "required": ["type"],
+        "properties": { "type": { "const": "meeting-prep" } }
+      },
+      "then": {
+        "required": ["meeting", "agenda"]
+      }
+    },
+    {
+      "if": {
+        "required": ["type"],
+        "properties": { "type": { "const": "briefing" } }
+      },
+      "then": {
+        "required": ["briefing", "sections"]
+      }
+    },
+    {
+      "if": {
+        "required": ["type"],
+        "properties": { "type": { "const": "research" } }
+      },
+      "then": {
+        "required": ["research", "sources"]
+      }
+    },
+    {
+      "if": {
+        "required": ["type"],
+        "properties": { "type": { "const": "presentation" } }
+      },
+      "then": {
+        "required": ["presentation", "slides"]
+      }
+    }
+  ]
+}

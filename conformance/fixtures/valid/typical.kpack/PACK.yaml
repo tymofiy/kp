@@ -1,0 +1,44 @@
+name: typical-fixture
+version: 2026.04.04
+domain: test/conformance
+kind: claim
+author: KP Conformance Suite
+
+description: >
+  A typical knowledge pack with common optional fields populated.
+  Tests the realistic mid-range of KP:1 usage.
+
+confidence:
+  scale: sherman_kent
+  normalize: true
+
+freshness: 2026-04-04
+license: CC-BY-4.0
+sensitivity: public
+visibility: public
+
+linguistic_epoch: en-US-2026
+tier: standalone
+
+display:
+  short_title: "Typical Fixture"
+  abbreviation: "TYP"
+  tagline: "A realistic mid-range conformance test pack."
+  hook: "Tests the features most packs will actually use."
+
+provenance:
+  author: KP Conformance Suite
+  role: independent
+  reviewed_by: null
+  review_date: null
+  signed: false
+
+lifecycle:
+  type: permanent
+
+views:
+  - name: overview
+    file: views/overview.md
+    purpose: "Conformance test summary"
+    display_as: "Overview"
+    hint: "Top-line view for the typical fixture."

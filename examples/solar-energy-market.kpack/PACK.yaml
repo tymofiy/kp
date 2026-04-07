@@ -1,0 +1,50 @@
+name: solar-energy-market
+version: 2026.03.18
+domain: energy/market-analysis
+kind: claim
+author: Jane Chen
+
+description: >
+  Solar energy market analysis — technology trends, cost trajectories,
+  and regional adoption patterns for utility-scale photovoltaic systems.
+
+confidence:
+  scale: sherman_kent
+  normalize: true
+
+freshness: 2026-03-18
+license: CC-BY-4.0
+sensitivity: public
+visibility: public
+
+linguistic_epoch: en-US-2026
+ontology: western-empirical
+
+tier: standalone
+
+display:
+  short_title: "Solar Market"
+  abbreviation: "SEM"
+  tagline: >
+    Utility-scale solar market trends and cost analysis
+  hook: >
+    Cost decline is structural — a 22% learning curve held for 40 years — but
+    supply chain concentration in one country is the systemic risk the industry
+    has not solved.
+
+provenance:
+  author: Jane Chen
+  role: independent
+  reviewed_by: null
+  review_date: null
+  signed: false
+
+lifecycle:
+  type: permanent
+
+views:
+  - name: overview
+    file: views/overview.md
+    purpose: "Executive summary — thesis, technology, market, risks"
+    display_as: "Overview"
+    hint: "Start here for the top-line cost thesis, key technologies, and systemic risks."

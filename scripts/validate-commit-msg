@@ -1,0 +1,85 @@
+#!/usr/bin/env bash
+# SPDX-License-Identifier: Apache-2.0
+# SPDX-FileCopyrightText: 2026 Timothy Kompanchenko
+# scripts/validate-commit-msg - Validate commit messages against Conventional Commits
+# Usage: scripts/validate-commit-msg <commit-msg-file>
+#
+# Format: <type>(<scope>): <subject>
+#
+# Types: feat, fix, docs, style, refactor, perf, test, build, ci, chore,
+#        revert, config, scripts, security
+#
+# Exit codes:
+#   0 - Valid commit message
+#   1 - Invalid commit message
+
+set -euo pipefail
+
+# Colors (inline — no external dependencies)
+BOLD='\033[1m'
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[0;33m'
+CYAN='\033[0;36m'
+NC='\033[0m'
+
+COMMIT_MSG_FILE="${1:-}"
+
+if [[ -z "$COMMIT_MSG_FILE" ]]; then
+    echo -e "${RED}Usage: validate-commit-msg <commit-msg-file>${NC}"
+    exit 1
+fi
+
+if [[ ! -f "$COMMIT_MSG_FILE" ]]; then
+    echo -e "${RED}File not found: $COMMIT_MSG_FILE${NC}"
+    exit 1
+fi
+
+COMMIT_MSG="$(cat "$COMMIT_MSG_FILE")"
+
+# Skip merge commits and fixup/squash commits
+if echo "$COMMIT_MSG" | grep -qE "^(Merge|fixup!|squash!|amend!)"; then
+    exit 0
+fi
+
+# Skip empty messages (git handles this)
+if [[ -z "$COMMIT_MSG" ]]; then
+    exit 0
+fi
+
+# Pattern: type(scope): subject OR type: subject
+PATTERN="^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert|config|scripts|security)(\([a-z0-9_-]+\))?!?: .{1,100}$"
+
+FIRST_LINE="$(echo "$COMMIT_MSG" | head -n 1)"
+
+if ! echo "$FIRST_LINE" | grep -qE "$PATTERN"; then
+    echo ""
+    echo -e "${BOLD}${RED}Invalid Commit Message${NC}"
+    echo ""
+    echo -e "${YELLOW}Your message:${NC}"
+    echo -e "  ${CYAN}${FIRST_LINE}${NC}"
+    echo ""
+    echo -e "${YELLOW}Expected format:${NC}"
+    echo -e "  ${GREEN}<type>(<scope>): <subject>${NC}"
+    echo -e "  ${GREEN}<type>: <subject>${NC}"
+    echo ""
+    echo -e "${YELLOW}Valid types:${NC}"
+    echo -e "  feat, fix, docs, style, refactor, perf, test,"
+    echo -e "  build, ci, chore, revert, config, scripts, security"
+    echo ""
+    echo -e "${YELLOW}Examples:${NC}"
+    echo -e "  ${GREEN}feat(api): add model pricing endpoint${NC}"
+    echo -e "  ${GREEN}fix: handle missing config gracefully${NC}"
+    echo -e "  ${GREEN}docs: update contributing guidelines${NC}"
+    echo ""
+    exit 1
+fi
+
+# Check subject length (warning only, non-blocking)
+SUBJECT_LENGTH=${#FIRST_LINE}
+if [[ "$SUBJECT_LENGTH" -gt 100 ]]; then
+    echo -e "${YELLOW}Warning: commit message is long (${SUBJECT_LENGTH} chars) — consider keeping under 72${NC}"
+fi
+
+echo -e "${GREEN}✓${NC} Commit message format valid"
+exit 0

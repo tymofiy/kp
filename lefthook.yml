@@ -1,0 +1,47 @@
+# Git Hooks (via Lefthook)
+# Install: lefthook install
+
+rc: .lefthookrc
+
+pre-commit:
+  parallel: true
+  commands:
+    secrets:
+      run: |
+        for file in {staged_files}; do
+          if grep -Ei 'password\s*[:=]\s*["'"'"'][^"'"'"']+["'"'"']|api[_-]?key\s*[:=]\s*["'"'"'][^"'"'"']+["'"'"']|secret\s*[:=]\s*["'"'"'][^"'"'"']+["'"'"']|BEGIN (RSA|DSA|EC|OPENSSH) PRIVATE KEY|ghp_[a-zA-Z0-9]{36}|sk-[a-zA-Z0-9]{48}' "$file" 2>/dev/null; then
+            echo "Potential secret in: $file"
+            exit 1
+          fi
+        done
+
+    markdownlint:
+      glob: "*.md"
+      run: markdownlint {staged_files}
+
+    yaml-validate:
+      glob: "*.{yml,yaml}"
+      run: |
+        for file in {staged_files}; do
+          ruby -e "require 'yaml'; YAML.load_file('$file')" 2>/dev/null || {
+            echo "Invalid YAML: $file"
+            exit 1
+          }
+        done
+
+    large-files:
+      run: |
+        for file in {staged_files}; do
+          if [ -f "$file" ]; then
+            size=$(wc -c < "$file" 2>/dev/null || echo 0)
+            if [ "$size" -gt 1048576 ]; then
+              echo "Large file (>1MB): $file ($(( size / 1048576 ))MB)"
+              exit 1
+            fi
+          fi
+        done
+
+commit-msg:
+  commands:
+    validate:
+      run: scripts/validate-commit-msg {1}

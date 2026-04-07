@@ -1,0 +1,314 @@
+// SPDX-License-Identifier: Apache-2.0
+// SPDX-FileCopyrightText: 2026 Timothy Kompanchenko
+
+// KP:1 Claims Document Grammar — Parsing Expression Grammar (PEG)
+//
+// Scope:    claims.md within a .kpack directory
+// Version:  KP:1 (spec version 1)
+// Notation: Bryan Ford PEG (implementation-neutral)
+//
+// This grammar is normative for KP:1 conformance. Implementations MUST accept
+// all documents that match this grammar. Implementations MUST reject documents
+// that fail to match, subject to the conformance levels defined in the README.
+//
+// Conventions:
+//   <- : rule definition
+//   /  : ordered choice (try left first)
+//   *  : zero or more
+//   +  : one or more
+//   ?  : optional
+//   !  : not-predicate (lookahead, does not consume)
+//   &  : and-predicate (lookahead, does not consume)
+//   .  : any character (Unicode codepoint)
+//   '…': literal string
+//   […]: character class
+//
+// Unicode symbols used in KP claim syntax:
+//   U+2192 →  RIGHTWARDS ARROW          (supports)
+//   U+2297 ⊗  CIRCLED TIMES             (contradicts)
+//   U+2190 ←  LEFTWARDS ARROW           (requires)
+//   U+2298 ⊘  CIRCLED DIVISION SLASH    (supersedes)
+//   U+2194 ↔  LEFT RIGHT ARROW          (see_also)
+//   U+007E ~   TILDE                     (refines)
+//   U+2014 —   EM DASH                   (separator in Rosetta header)
+
+
+// ============================================================================
+// TOP LEVEL
+// ============================================================================
+
+ClaimsDocument  <- RosettaHeader NL Frontmatter NL DocumentHeading NL
+                   Section+ EOF
+
+
+// ============================================================================
+// ROSETTA HEADER (mandatory, frozen across spec versions)
+// ============================================================================
+// Self-describing legend as an HTML comment. Identifies spec version.
+// Content between "KP:N" and "-->" is informational — parsers MUST check
+// the spec version but MAY ignore the legend text.
+
+RosettaHeader   <- '<!-- KP:' SpecVersion SP RosettaBody '-->'
+SpecVersion     <- DIGIT+
+RosettaBody     <- (!('-->') .)*
+
+
+// ============================================================================
+// FRONTMATTER (mandatory, pipe-delimited compact format)
+// ============================================================================
+// YAML fences with KP-specific compact syntax inside.
+// This is NOT arbitrary YAML — it is a fixed two-line format.
+
+Frontmatter     <- '---' NL FrontmatterPack NL FrontmatterConf NL '---'
+
+FrontmatterPack <- 'pack:' SP PackName SP '|' SP 'v:' SP CalVer SP '|'
+                   SP 'domain:' SP Domain
+
+FrontmatterConf <- 'confidence:' SP ScaleName SP '|' SP 'normalized'
+
+PackName        <- LOWER_ALNUM IDENT_CHAR*
+CalVer          <- DIGIT DIGIT DIGIT DIGIT '.' DIGIT DIGIT '.' DIGIT DIGIT
+                   ('-rev' DIGIT+)?
+Domain          <- DOMAIN_SEG ('/' DOMAIN_SEG)*
+DOMAIN_SEG      <- LOWER_ALNUM IDENT_CHAR*
+ScaleName       <- LOWER_ALPHA ('_' / LOWER_ALPHA / DIGIT)*
+
+
+// ============================================================================
+// DOCUMENT HEADING (mandatory)
+// ============================================================================
+// H1 with optional entity annotation in brackets, followed by blockquote
+// description.
+//
+// Format: # Title [entity_type|alias1,alias2]
+//         > One-line description (may span multiple > lines)
+
+DocumentHeading <- '# ' HeadingText EntityAnnotation? NL
+                   Description?
+
+HeadingText     <- (!('[' / NL) .)+
+
+EntityAnnotation <- '[' EntityType ('|' AliasList)? ']'
+EntityType      <- IDENT_CHAR+
+AliasList       <- AliasEntry (',' AliasEntry)*
+AliasEntry      <- [A-Za-z0-9_-]+
+
+Description     <- BlockquoteLine (BlockquoteLine)*
+BlockquoteLine  <- '>' SP? (!NL .)+ NL
+
+
+// ============================================================================
+// SECTIONS
+// ============================================================================
+// Claims are grouped under ## headings. Heading text is freeform.
+
+Section         <- SectionHeading NL? Claim+
+SectionHeading  <- '##' SP (!NL .)+ NL
+
+
+// ============================================================================
+// CLAIMS (core grammar — dense and verbose forms)
+// ============================================================================
+// A claim is a markdown list item with structured metadata.
+// Both forms begin identically: list marker, optional bold, claim ID, headline.
+// They diverge at the metadata block.
+//
+// Rule: A single claim uses EITHER dense OR verbose metadata (not a mix).
+//       Relations may independently use either form.
+
+Claim           <- DenseClaim / VerboseClaim
+
+// --- Dense Claim ---
+// Metadata in curly braces, positional pipe-delimited fields.
+// Positions 1-4 required, 5-6 optional. Empty interior slots valid.
+//
+// Example:
+//   - [C001] Cost decline is structural
+//     {0.95|i|E001,E002|2026-03-01|exhaustive|judgment} Context prose.
+//     →C002, ⊗~C003
+
+DenseClaim      <- ListMarker ClaimID SP Headline NL
+                   ContinuationLines_Dense
+
+ListMarker      <- '- '
+
+ClaimID         <- BoldWrap_Open? '[' ClaimIDInner ']' BoldWrap_Close?
+BoldWrap_Open   <- '**'
+BoldWrap_Close  <- '**'
+ClaimIDInner    <- 'C' DIGIT+ VersionSuffix?
+VersionSuffix   <- '-v' DIGIT+
+
+Headline        <- (!NL .)+
+
+ContinuationLines_Dense
+                <- INDENT DenseMetadata MetadataTrailingProse? NL
+                   (INDENT ContextOrRelation_Dense NL)*
+
+DenseMetadata   <- '{' Confidence '|' ClaimType '|' EvidenceRefList '|'
+                   ISODate OptDepth? OptNature? '}'
+
+Confidence      <- DIGIT '.' DIGIT+
+ClaimType       <- [orci]
+EvidenceRefList <- EvidenceRef (',' EvidenceRef)*
+EvidenceRef     <- 'E' DIGIT+
+ISODate         <- DIGIT DIGIT DIGIT DIGIT '-' DIGIT DIGIT '-' DIGIT DIGIT
+OptDepth        <- '|' Depth?
+Depth           <- 'assumed' / 'investigated' / 'exhaustive'
+OptNature       <- '|' Nature?
+Nature          <- 'judgment' / 'prediction' / 'meta'
+
+MetadataTrailingProse <- SP ContextProse
+
+// Continuation lines after the metadata line. Three cases:
+// 1. Line starts with relation symbols:  →C002, ⊗~C003
+// 2. Line has prose then relations:      ...40 years. →C002, ⊗~C003
+// 3. Line is pure prose:                 ...no relations here.
+//
+// Key insight: ContextProse must NOT greedily consume relation symbols.
+// ProseSegment uses a not-predicate to stop before RelationSymbol + ClaimIDRef,
+// which avoids the PEG greedy-match problem.
+
+ContextOrRelation_Dense
+                <- &RelationSymbol DenseRelations         // case 1
+                 / ProseSegment (SP? DenseRelations)?     // case 2 or 3
+
+// Prose that stops before a relation symbol followed by a claim ID ref.
+// This is the critical fix: tilde (~) is only a relation symbol when
+// immediately followed by C + digits (per AR-10). The not-predicate
+// handles this naturally: !(RelationSymbol ClaimIDRef) only matches
+// ~C### but not ~5% or ~approximate.
+ProseSegment    <- ProseChar+
+ProseChar       <- !NL !(RelationSymbol ClaimIDRef) .
+
+DenseRelations  <- DenseRelExpr (',' SP? DenseRelExpr)*
+DenseRelExpr    <- RelationSymbol ClaimIDRef
+
+// Relation symbols — ordered choice matters: multi-char before single-char
+RelationSymbol  <- '⊗~' / '⊗!' / '⊗' / '→' / '←' / '⊘' / '↔' / '~'
+
+ClaimIDRef      <- 'C' DIGIT+ VersionSuffix?
+                 / PackRef '#' SectionRef             // cross-pack reference
+
+PackRef         <- IDENT_CHAR+
+SectionRef      <- (!(',' / NL / SP) .)+
+
+ContextProseLine <- ContextProse
+ContextProse    <- (!NL .)+
+
+
+// --- Verbose Claim ---
+// Metadata in backtick-delimited named fields.
+//
+// Example:
+//   - **[C030]** Supply chain concentration
+//     `confidence: 0.90 | type: inferred | evidence: E001 | since: 2026-03-01`
+//     Context prose lines.
+//     `relations: requires C020`
+
+VerboseClaim    <- ListMarker ClaimID SP Headline NL
+                   ContinuationLines_Verbose
+
+ContinuationLines_Verbose
+                <- INDENT VerboseMetadata NL
+                   (INDENT VerboseContentLine NL)*
+
+VerboseMetadata <- '`' VerboseFieldList '`'
+
+VerboseFieldList <- VerboseField (SP? '|' SP? VerboseField)*
+
+VerboseField    <- VF_Confidence / VF_Type / VF_Evidence / VF_Since
+                 / VF_Depth / VF_Nature
+
+VF_Confidence   <- 'confidence:' SP Confidence
+VF_Type         <- 'type:' SP VerboseTypeName
+VF_Evidence     <- 'evidence:' SP VerboseEvidenceList
+VF_Since        <- 'since:' SP ISODate
+VF_Depth        <- 'depth:' SP Depth
+VF_Nature       <- 'nature:' SP Nature
+
+VerboseTypeName <- 'observed' / 'reported' / 'computed' / 'inferred'
+
+VerboseEvidenceList <- EvidenceRef (',' SP? EvidenceRef)*
+
+VerboseContentLine <- VerboseRelations / ContextProseLine
+
+VerboseRelations <- '`' 'relations:' SP VerboseRelList '`'
+VerboseRelList  <- VerboseRelExpr (',' SP? VerboseRelExpr)*
+VerboseRelExpr  <- VerboseRelName SP ClaimIDRef
+
+VerboseRelName  <- 'supports' / 'contradicts:error' / 'contradicts:tension'
+                 / 'contradicts' / 'requires' / 'refines' / 'supersedes'
+                 / 'see_also'
+
+
+// ============================================================================
+// EVIDENCE REFERENCES (for evidence.md structure)
+// ============================================================================
+// Not part of claims.md parsing, but included for completeness.
+// evidence.md entries are validated as a separate pass.
+
+EvidenceEntry   <- '## ' EvidenceRef (SP? ('—' / '--') SP? EvidenceTitle)? NL
+                   EvidenceBody
+
+EvidenceTitle   <- (!NL .)+
+
+EvidenceBody    <- EvidenceBlockquote / EvidenceList
+
+// Blockquote format (pipe-delimited bold fields)
+EvidenceBlockquote
+                <- ('>' SP? EvidenceBQLine NL)+
+                   EvidenceProse?
+
+EvidenceBQLine  <- ('**' EvidenceFieldName ':**' SP EvidenceFieldValue
+                    (SP '|' SP)?)+
+
+// List format (dash-prefixed key-value)
+EvidenceList    <- (NL? '- ' EvidenceListField NL)+
+                   EvidenceProse?
+
+EvidenceListField <- EvidenceFieldName ':' SP EvidenceFieldValue
+
+EvidenceFieldName  <- 'type' / 'Type' / 'source' / 'Source'
+                    / 'captured' / 'Captured' / 'Prepared' / 'prepared'
+                    / 'SHA-256' / 'sha-256' / 'Notes' / 'notes'
+
+EvidenceFieldValue <- (!('|' / NL) .)+
+
+EvidenceProse   <- NL (!(NL '## ') (!NL .)+ NL)*
+
+
+// ============================================================================
+// PRIMITIVES
+// ============================================================================
+
+INDENT          <- '  ' SP*               // 2+ spaces
+SP              <- ' '                     // single space
+NL              <- '\r\n' / '\n'           // newline (CRLF or LF)
+EOF             <- !.
+
+DIGIT           <- [0-9]
+LOWER_ALPHA     <- [a-z]
+LOWER_ALNUM     <- [a-z0-9]
+IDENT_CHAR      <- [a-z0-9-]
+
+
+// ============================================================================
+// SEMANTIC CONSTRAINTS (not expressible in PEG — checked post-parse)
+// ============================================================================
+//
+// These constraints MUST be validated after parsing succeeds:
+//
+// SC-01: Confidence MUST be in range [0.0, 1.0]
+// SC-02: All ClaimIDInner values MUST be unique within the document
+// SC-03: All EvidenceRef values in claims MUST have corresponding entries
+//        in evidence.md
+// SC-04: Supersession chains (⊘) MUST be acyclic
+// SC-05: All ClaimIDRef targets in relations MUST exist (within pack or
+//        as valid cross-pack references)
+// SC-06: SpecVersion in RosettaHeader MUST equal 1 for KP:1 conformance
+// SC-07: FrontmatterPack.PackName MUST match PACK.yaml name field
+// SC-08: FrontmatterPack.CalVer MUST match PACK.yaml version field
+// SC-09: FrontmatterPack.Domain MUST match PACK.yaml domain field
+// SC-10: FrontmatterConf.ScaleName MUST match PACK.yaml confidence.scale
+// SC-11: Verbose type names MUST map to their single-letter equivalents:
+//        observed=o, reported=r, computed=c, inferred=i

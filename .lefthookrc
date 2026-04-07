@@ -1,0 +1,3 @@
+# Lefthook shell config — sourced before hook commands run
+# Adds mise shims to PATH so biome, markdownlint, etc. are available
+export PATH="${HOME}/.local/share/mise/shims:${PATH}"

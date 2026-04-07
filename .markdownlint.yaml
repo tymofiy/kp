@@ -1,0 +1,27 @@
+# Markdownlint configuration
+# https://github.com/DavidAnson/markdownlint
+#
+# Philosophy: Semantic checks only. Style/formatting rules disabled.
+
+# Start with all rules disabled
+default: false
+
+# =============================================================================
+# ENABLED: Semantic rules that catch real issues
+# =============================================================================
+
+# Heading hierarchy - don't skip levels (H1 -> H3)
+MD001: true
+
+# No duplicate headings (confuses navigation)
+MD024:
+  siblings_only: true
+
+# Images should have alt text (accessibility)
+MD045: true
+
+# No empty links
+MD042: true
+
+# Code blocks should specify language (syntax highlighting)
+MD040: true
