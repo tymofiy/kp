@@ -15,8 +15,9 @@
 
 # KP:1 -- Knowledge Pack Format
 
-> A plain-text format for packaging epistemic state -- claims with confidence,
-> evidence, relationships, and contradictions.
+> KP:1 is a format that doesn't flatten knowledge. Uncertainties stay uncertain,
+> contradictions stay in tension, and the trace of how beliefs evolved is kept
+> as structure. AI-first, human-accessible.
 
 **Editor:** Timothy Kompanchenko
 **Status:** Editor's Draft — `KP:1 Public Draft — 2026-04` (`v0.7-preview`)
@@ -24,19 +25,35 @@
 
 ## What is KP:1?
 
-Knowledge Packs represent what someone believes, how strongly they believe it,
-based on what evidence, in tension with what other beliefs, as understood at a
-particular moment in time. KP:1 encodes these properties in Markdown files that
-are readable by humans and parseable by machines.
+Think about what anyone actually knows about a real artwork: contradictory
+accounts of provenance, overlapping stories that reinforce each other, uncertain
+events, details that mattered ten years ago and matter less now. A lot of it
+is unfinished, probabilistic information. The value of the knowledge comes from
+that texture — the uncertainty, the tension, the trace of how beliefs evolved.
+Flatten it — average it out into a list of settled facts — and you've destroyed
+what made it knowledge.
 
-**For humans and AI alike.** Both benefit from the same thing — structured
-epistemic state instead of epistemic state inferred from prose. Claims are
-pre-chunked and ID'd. Evidence is explicit. Confidence is typed. Contradictions
-are flagged. Humans get an auditable format; AI gets a context-engineered one —
-the model doesn't have to re-derive on every pass what the document is actually
-claiming. This is the same insight that motivates `llms.txt`, `AGENTS.md`, and
-the current wave of "context docs" formats, pushed further into how knowledge
-is represented rather than just how it's indexed.
+That's the difference between knowledge and data. Data answers yes or no.
+Knowledge has the shape of belief — its uncertainties, its tensions, its
+history. **KP:1 is a format that keeps the shape.**
+
+**Built AI-first.** Every AI reading knowledge from prose today hits the
+same problem: amnesia. Between sessions, between context windows, between tools,
+the model loses the thread and has to reconstruct from prose what's being
+asserted, how certain each point is, where the contradictions are, which
+beliefs superseded which. That reconstruction is lossy, expensive in context
+window, and unreliable. KP:1 is designed to fix that. It's a structured
+format for AI to read, reason over, and carry forward between sessions —
+handing the model what's believed, how strongly, on what evidence, in tension
+with what, and how those beliefs evolved. No guessing. No re-derivation.
+No reconstruction from prose.
+
+**Human-accessible.** A knowledge pack is a directory of Markdown and YAML
+files. Humans read it, print it, edit it, and work with it using ordinary text
+tools. But the primary consumer is AI — the structure exists to let AI reason
+without reconstructing from scratch. This is the same wave as
+`llms.txt` and `AGENTS.md` — formats built for AI to read directly —
+applied to knowledge itself.
 
 ## Quick Start
 
@@ -82,7 +99,8 @@ Two complete Knowledge Packs demonstrate the format:
 
 - **[KP External Assessment](examples/kp-external-assessment.kpack/)** -- A
   self-assessment of the KP format itself. Demonstrates meta-level claims and
-  the format's ability to represent epistemic state about its own design.
+  the format's ability to describe its own uncertainties, tensions, and open
+  questions about its own design.
 
 ## Conformance
 
@@ -101,11 +119,11 @@ through SC-11. See [conformance/README.md](conformance/README.md) for details.
 
 ## Interoperability
 
-KP:1 has its own syntax and semantics, but it can interoperate with RDF/JSON-LD,
-PROV-O, and Nanopublications. **[spec/MAPPING.md](spec/MAPPING.md)** provides a
-field-by-field translation analysis grading each mapping as clean, lossy, or
-impossible -- so practitioners using existing semantic web toolchains can assess
-what they gain and what they lose.
+KP:1 has its own syntax and semantics. **[spec/MAPPING.md](spec/MAPPING.md)**
+provides a field-by-field translation to RDF/JSON-LD, PROV-O, and
+Nanopublications — grading each mapping as clean, lossy, or impossible, so
+practitioners using existing semantic web toolchains can assess what they
+gain and what they lose.
 
 ## Status
 
