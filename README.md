@@ -112,10 +112,15 @@ The [conformance suite](conformance/) provides formal validation tools:
   schema for PACK.yaml manifests
 - **10 test fixtures** -- 5 valid packs that must be accepted, 5 invalid packs
   that must be rejected with specific errors
+- **2 complete example packs** -- the kpacks in `examples/` are validated by
+  the runner as part of the suite, so the live examples are themselves
+  conformance tests
 
-A conformant implementation parses all valid fixtures, rejects all invalid ones,
-validates PACK.yaml against the schema, and enforces semantic constraints SC-01
-through SC-11. See [conformance/README.md](conformance/README.md) for details.
+The runner (`conformance/run.py`) reports **12/12 passed** on a conformant
+implementation: 10 fixture tests + 2 example validations. A conformant
+implementation parses all valid fixtures, rejects all invalid ones, validates
+PACK.yaml against the schema, and enforces semantic constraints SC-01 through
+SC-11. See [conformance/README.md](conformance/README.md) for details.
 
 ## Interoperability
 
