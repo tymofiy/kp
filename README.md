@@ -128,7 +128,10 @@ KP:1 has its own syntax and semantics. **[spec/MAPPING.md](spec/MAPPING.md)**
 provides a field-by-field translation to RDF/JSON-LD, PROV-O, and
 Nanopublications — grading each mapping as clean, lossy, or impossible, so
 practitioners using existing semantic web toolchains can assess what they
-gain and what they lose.
+gain and what they lose. Notably, KP:1's distinction between unqualified
+contradiction (⊗), error-contradiction (⊗!), and informative tension (⊗~)
+has no direct equivalent in any of these standards — it is one of the
+format's genuinely novel contributions.
 
 ## Status
 
