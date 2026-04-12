@@ -54,7 +54,7 @@ A Knowledge Pack is a directory. The `.kpack/` suffix is RECOMMENDED but not req
 ├── history.md         # OPTIONAL — superseded/retracted claims
 ├── entities.md        # OPTIONAL — entity definitions
 ├── validation.yaml    # OPTIONAL — test questions
-├── signatures.yaml    # OPTIONAL — cryptographic integrity
+├── signatures.yaml    # OPTIONAL — cryptographic integrity (see ARCHIVE.md)
 └── views/             # OPTIONAL — pre-rendered display content
     └── overview.md
 ```
@@ -552,7 +552,7 @@ The following normative decisions resolve ambiguities identified during grammar 
 | AR-11 | Continuation lines use 2+ spaces of indentation. |
 | AR-12 | Claim ID gaps are permitted. Uniqueness is the only constraint (SC-02). |
 | AR-13 | A claim uses EITHER dense OR verbose metadata. No mixing within a single claim. |
-| AR-14 | `signatures.yaml` and `composition.yaml` schemas deferred to Phase C2. |
+| AR-14 | `signatures.yaml` schema defined in ARCHIVE.md. `composition.yaml` schema deferred to Phase C2. |
 | AR-15 | `tier` is optional. When `hub`, `sub_packs` is required. |
 | AR-16 | Cross-pack references: `pack_name#section_ref`. `#` is the separator. |
 
@@ -571,5 +571,6 @@ The following normative decisions resolve ambiguities identified during grammar 
 | CONVENTIONS.md | Linguistic conventions, naming style | Standardizing prose style |
 | STORAGE.md | Pack-as-master, serialization, index contract | Storing packs in databases/caches |
 | BUNDLE.md | Export formats, clipboard format, sharing | Exporting and sharing packs |
+| ARCHIVE.md | ZIP archive, content hashing, integrity chain, signatures.yaml | Transporting packs between systems |
 | DEFINITIONS.md | Definition/policy YAML schemas, codegen | Building ontology layers |
 | NOTES.md | AI note-taking metadata, disclosure, consent | Recording meetings with AI |

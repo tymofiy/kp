@@ -5,6 +5,24 @@
 
 ---
 
+## v0.7.3 — 2026-04-12
+
+**Archive format — sealed, hashed, versioned single-file transport for Knowledge Packs.**
+
+### Added
+- **Archive companion spec** (`ARCHIVE.md`) — Defines the ZIP-based archive format for pack transport between systems. Covers content hashing (SHA-256, deterministic, container-independent), `signatures.yaml` schema, version chains with parent hash references, sealing protocol, and verification. Resolves AR-14 (`signatures.yaml` schema deferred to Phase C2).
+- **`signatures.yaml` schema** — Formalized in ARCHIVE.md §4. Fields: `algorithm`, `pack_hash`, `files` (per-file hashes), `sealed_at`, `sealed_by`, `parent` (version chain), optional `signature` (digital signing). Required in archives participating in an integrity chain.
+- **Version chain model** — Each sealed pack version references its parent's `pack_hash`, forming a verifiable integrity chain. Branching and merge-parent support defined for concurrent edits.
+- **Seal & transport CLI commands** — `kpack seal`, `kpack verify`, `kpack verify --chain`, `kpack extract`. (`kpack archive` remains reserved for lifecycle archival per LIFECYCLE.md.)
+
+### Changed
+- **CORE.md** AR-14 updated — `signatures.yaml` schema now resolved by ARCHIVE.md. `composition.yaml` remains deferred.
+- **CORE.md** Appendix C updated — ARCHIVE.md added to companion specifications table.
+- **README.md** — ARCHIVE.md added to companion documents table.
+- **SPEC.md** — `signatures.yaml` file role updated to reference ARCHIVE.md.
+
+---
+
 ## v0.7.2 — 2026-04-12
 
 **Schema tightening and new metadata fields — informed by cross-model open-standards review.**

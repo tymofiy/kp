@@ -31,6 +31,7 @@ CORE.md and contains additional discussion and rationale.
 | [CONVENTIONS.md](CONVENTIONS.md) | Naming conventions |
 | [STORAGE.md](STORAGE.md) | Storage formats and serialization |
 | [BUNDLE.md](BUNDLE.md) | Bundling and distribution |
+| [ARCHIVE.md](ARCHIVE.md) | ZIP archive, integrity chain, signatures |
 | [DEFINITIONS.md](DEFINITIONS.md) | Definition and policy document kinds |
 | [NOTES.md](NOTES.md) | AI note-taking integration |
 
