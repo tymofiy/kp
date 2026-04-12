@@ -331,16 +331,21 @@ Output: { status: "sealed" | "export" | "invalid", errors: string[] }
 
 Steps:
 1. Validate all ZIP entries against §2 safety requirements (path traversal, symlinks, duplicates)
-2. Check for signatures.yaml in the archive:
-   - If absent: return status "export" (valid pack, not sealed — cannot verify integrity)
-   - If present: continue to step 3
-3. Verify signatures.yaml.algorithm is a supported algorithm (currently: SHA-256)
-4. Compute file hashes for all other files in the archive (excluding OS metadata)
-5. Compute pack hash per §3
-6. Compare computed pack_hash to signatures.yaml.pack_hash
-7. Compare per-file hashes against signatures.yaml.files
-8. Optionally verify digital signature if present (using signing payload from §4.2)
-9. Optionally verify parent chain if previous version is available
+2. Validate archive structure (§2 requirements):
+   - PACK.yaml and claims.md MUST be present at the pack root
+   - Entries MUST be pack-rooted (no wrapper subdirectory)
+   - No two entry paths may collide after NFC normalization
+   - If any structural check fails: return status "invalid"
+3. Check for signatures.yaml in the archive:
+   - If absent: return status "export" (valid pack structure, not sealed)
+   - If present: continue to step 4
+4. Verify signatures.yaml.algorithm is a supported algorithm (currently: SHA-256)
+5. Compute file hashes for all other files in the archive (excluding OS metadata)
+6. Compute pack hash per §3
+7. Compare computed pack_hash to signatures.yaml.pack_hash
+8. Compare per-file hashes against signatures.yaml.files
+9. Optionally verify digital signature if present (using signing payload from §4.2)
+10. Optionally verify parent chain if previous version is available
 ```
 
 Note: Empty directories in ZIP entries are ignored — only regular files participate in hash computation, consistent with §3.
