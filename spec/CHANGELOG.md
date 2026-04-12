@@ -5,7 +5,7 @@
 
 ---
 
-## v0.7.1 — 2026-04-12
+## v0.7.2 — 2026-04-12
 
 **Schema tightening and new metadata fields — informed by cross-model open-standards review.**
 
