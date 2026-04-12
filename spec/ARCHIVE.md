@@ -45,6 +45,8 @@ The `.kpack` extension is used for both directory and archive forms:
 
 Tools distinguish the two forms by checking whether the path is a file or directory. This mirrors macOS bundle conventions (`.app/` is a directory that behaves as a unit).
 
+**Filesystem coexistence.** A file and a directory cannot share the same path. When sealing a pack, the archive MUST be written to a different location than the source directory — either a specified output path (`-o`) or the current working directory. The naming convention describes how the artifact is *identified*, not that both forms coexist at the same path. See §7 for CLI examples.
+
 ### Archive contents
 
 The ZIP file contains the pack directory's contents at the root level — not nested inside a subdirectory:
@@ -75,10 +77,29 @@ marquet-le-passeur.kpack (ZIP)
 1. The archive MUST be a valid ZIP file (PKZIP format, per APPNOTE.TXT).
 2. Files MUST be stored at the root of the archive, not inside a subdirectory.
 3. `PACK.yaml` and `claims.md` MUST be present (per SPEC.md §2).
-4. `signatures.yaml` MUST be present in any archive that participates in an integrity chain (§4). It MAY be absent in archives created for convenience (e.g., manual export).
+4. `signatures.yaml` MUST be present in any archive that participates in an integrity chain (§4). It MAY be absent in archives created for convenience (e.g., manual export). See "Conformance levels" below.
 5. Compression method SHOULD be DEFLATE. Store (no compression) is acceptable for small packs or when speed is preferred.
-6. ZIP64 extensions SHOULD be used for archives exceeding 4 GB.
+6. ZIP64 extensions MUST be used for archives exceeding 4 GB (archives without ZIP64 at this size are invalid, not merely suboptimal).
 7. ZIP encryption MUST NOT be used. Access control is handled at the transport and storage layers, not the container layer. If confidentiality is required, encrypt the archive file itself (e.g., age, GPG) rather than using ZIP encryption.
+
+### Safety requirements
+
+Archives are ZIP files and carry the same security risks as any ZIP container. Implementations MUST enforce:
+
+8. **No path traversal.** ZIP entries containing `..` path segments, absolute paths (leading `/` or drive letters like `C:\`), or backslash separators MUST be rejected during extraction and verification.
+9. **No symlinks.** ZIP entries marked as symbolic links MUST be rejected. Symlinks enable arbitrary file reads and are not portable across platforms.
+10. **No duplicate entries.** ZIP entries with identical paths MUST be rejected (some ZIP implementations silently overwrite; the behavior is undefined and exploitable).
+11. **No special files.** Device files, FIFOs, and other non-regular-file entries MUST be rejected.
+12. **OS metadata exclusion.** Entries matching `.DS_Store`, `Thumbs.db`, `__MACOSX/*`, and `desktop.ini` SHOULD be stripped on archive creation and MUST be ignored during hash computation.
+
+### Conformance levels
+
+| Level | `signatures.yaml` | Integrity chain | Use case |
+|-------|-------------------|-----------------|----------|
+| **Sealed archive** | REQUIRED | Participates | Client-server transfer, versioned storage, regulated contexts |
+| **Export archive** | ABSENT | Does not participate | Manual sharing, convenience export, one-off backup |
+
+An export archive is a valid ZIP containing a valid pack. It is not sealed and does not participate in the integrity chain. Tools that expect sealed archives MUST reject export archives with a clear error rather than silently skipping verification.
 
 ---
 
@@ -88,11 +109,16 @@ The integrity of an archive is verified by its **content hash** — a determinis
 
 ### Computation
 
-1. Enumerate all files in the pack directory, excluding `signatures.yaml` itself.
-2. For each file, compute SHA-256 over its raw bytes.
-3. Sort the file list by path (UTF-8 byte order, `/` as separator, case-sensitive).
-4. Concatenate entries as `{path}\0{hex-digest}\n` (null byte separating path from digest, newline separating entries).
-5. Compute SHA-256 over the concatenation. This is the **pack hash**.
+1. Enumerate all files in the pack directory, excluding `signatures.yaml` **at the root level**. (A file at `attachments/signatures.yaml` is included normally.)
+2. For each file, compute SHA-256 over its **raw bytes**. (Empty files hash as the SHA-256 of the empty string: `e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855`.)
+3. Normalize each file path:
+   - Use `/` as the path separator (no `\`).
+   - Use bare relative paths: no leading `./`, `../`, or `/`.
+   - Apply **Unicode NFC normalization** to the path string. (macOS decomposes filenames to NFD; other systems use NFC. Without normalization, the same filename produces different path bytes on different operating systems.)
+4. Express each file's SHA-256 digest as **lowercase hexadecimal**.
+5. Sort the file list by normalized path (UTF-8 byte order, case-sensitive).
+6. Concatenate entries as `{normalized-path}\0{lowercase-hex-digest}\n` (null byte separating path from digest, newline terminating each entry).
+7. Compute SHA-256 over the concatenation. This is the **pack hash**.
 
 ### Example
 
@@ -114,11 +140,16 @@ views/overview.md\0789abc...\n
 
 SHA-256 of this concatenation → pack hash.
 
+### Canonicalization notes
+
+- **Line endings.** Hashing operates on raw bytes, so `\r\n` and `\n` produce different hashes. Implementations that use git SHOULD set `* text=auto eol=lf` in `.gitattributes` within the pack directory to prevent `core.autocrlf` from altering line endings across platforms.
+- **OS metadata files.** Files such as `.DS_Store` (macOS), `Thumbs.db` (Windows), and `__MACOSX/` entries are not part of the Knowledge Pack. Implementations MUST exclude them from hash computation and SHOULD exclude them from archives. See §10 (Security Considerations).
+
 ### Properties
 
-- **Deterministic.** Same file contents always produce the same pack hash, regardless of filesystem ordering, ZIP implementation, or creation timestamp.
+- **Deterministic.** Same file contents and file paths always produce the same pack hash, regardless of filesystem ordering, ZIP implementation, creation timestamp, or operating system.
 - **Content-addressed.** Changing any file's contents changes the pack hash. Adding or removing a file changes the pack hash.
-- **Self-excluding.** `signatures.yaml` is excluded from the hash computation because it contains the hash. This avoids the circular dependency.
+- **Self-excluding.** Root-level `signatures.yaml` is excluded from the hash computation because it contains the hash. This avoids the circular dependency.
 
 ---
 
@@ -137,7 +168,7 @@ algorithm: SHA-256
 # Pack hash — computed per §3
 pack_hash: "a1b2c3d4e5f6..."
 
-# Per-file hashes (for selective verification and debugging)
+# Per-file hashes — lowercase hex, must not include signatures.yaml itself
 files:
   PACK.yaml: "d4e5f6..."
   claims.md: "a1b2c3..."
@@ -145,8 +176,8 @@ files:
   views/overview.md: "def012..."
 
 # Sealing metadata
-sealed_at: "2026-04-12T14:30:00Z"    # ISO 8601 timestamp
-sealed_by: "bernard-cloud"             # Identity of the sealing system
+sealed_at: "2026-04-12T14:30:00Z"    # ISO 8601 UTC timestamp
+sealed_by: "capture-client"            # Identity of the sealing system
 
 # Version chain (§5) — absent for v1 (first version)
 parent:
@@ -155,10 +186,25 @@ parent:
 
 # Optional digital signature (§4.2)
 signature:
-  method: "hmac-sha256"               # or "ed25519", "rsa-sha256"
-  value: "..."                         # Signature over pack_hash
-  key_id: "bernard-cloud-2026"        # Key identifier for verification
+  method: "ed25519"                    # or "hmac-sha256", "rsa-pss-sha256"
+  value: "base64-encoded-signature..." # Signature over the signing payload (§4.2)
+  key_id: "my-signing-key-2026"        # Key identifier for verification
 ```
+
+### Field types
+
+| Field | Type | Format |
+|-------|------|--------|
+| `algorithm` | string | Algorithm identifier. Currently `SHA-256`. |
+| `pack_hash` | string | Lowercase hex-encoded SHA-256 digest (64 characters). |
+| `files` | map\<string, string\> | Keys: NFC-normalized relative paths with `/` separator. Values: lowercase hex SHA-256 digests. MUST NOT include `signatures.yaml`. |
+| `sealed_at` | string | ISO 8601 UTC timestamp (e.g., `2026-04-12T14:30:00Z`). |
+| `sealed_by` | string | Identifier of the sealing system (e.g., `capture-client`, `analysis-service`). |
+| `parent.version` | string | Parent pack's version string from its PACK.yaml. |
+| `parent.pack_hash` | string | Parent pack's `pack_hash` (lowercase hex). |
+| `signature.method` | string | Signing method identifier: `ed25519`, `hmac-sha256`, or `rsa-pss-sha256`. |
+| `signature.value` | string | Base64-encoded (standard, padded) signature over the signing payload. |
+| `signature.key_id` | string | Opaque key identifier for locating the verification key. |
 
 ### Required fields
 
@@ -180,26 +226,45 @@ Sealing happens at every version transition in the pack lifecycle:
 
 | Transition | Sealer | Example |
 |------------|--------|---------|
-| Capture → v1 | Bernard App (on-device) | User photographs a document |
-| Analysis → v2 | Bernard Cloud | Cloud extracts claims and evidence |
-| Research → v3 | Bernard Cloud | Research loop completes |
-| Edit → v(n+1) | Bernard Cloud | User edits are merged |
+| Capture → v1 | Capture client (on-device) | User photographs a document |
+| Analysis → v2 | Analysis service | Service extracts claims and evidence |
+| Research → v3 | Research service | Research loop completes |
+| Edit → v(n+1) | Analysis service | User edits are merged |
 
 ### 4.2 Signing (optional)
 
-Signing provides non-repudiation — proof that a specific system sealed the pack. It is OPTIONAL because:
+Signing provides **tamper evidence** for the sealing metadata — proof that `pack_hash`, `sealed_at`, `sealed_by`, and `parent` have not been modified since sealing. It is OPTIONAL because:
 
-- Single-user deployments (a collector using Bernard alone) gain little from signing.
+- Single-user deployments gain little from signing.
 - Multi-tenant deployments (auction houses, galleries) benefit from knowing *which system* sealed a version.
 - Regulatory contexts (provenance disputes, legal discovery) may require it.
 
-When signing is used:
+**Signing payload.** The signature is computed over a canonical byte string that binds the metadata, not just the pack hash. This prevents an attacker from rewriting sealing metadata while preserving a valid signature.
+
+The signing payload is the UTF-8 encoding of the following concatenation:
+
+```text
+{algorithm}\n{pack_hash}\n{sealed_at}\n{sealed_by}\n{parent.pack_hash or empty}\n
+```
+
+Where `parent.pack_hash` is the parent's pack hash if present, or the empty string for a v1 pack. All fields use their exact string values from `signatures.yaml`.
+
+**Signing procedure:**
 
 1. Compute the pack hash per §3.
-2. Sign the pack hash (not the ZIP file, not individual files) using the configured method.
-3. Record the signature, method, and key identifier in `signatures.yaml`.
+2. Assemble the signing payload as defined above.
+3. Sign the payload using the configured method.
+4. Record the signature (base64-encoded), method, and key identifier in `signatures.yaml`.
 
-Supported methods are not prescribed by this spec. Implementations SHOULD support at minimum HMAC-SHA256 (symmetric, simple) and Ed25519 (asymmetric, compact). RSA-SHA256 MAY be supported for compatibility with existing PKI infrastructure.
+**Supported methods:**
+
+| Method | Type | Properties |
+|--------|------|------------|
+| `ed25519` | Asymmetric | Non-repudiation. Compact signatures. Recommended for multi-party contexts. |
+| `hmac-sha256` | Symmetric (shared secret) | Tamper detection only — does **not** provide non-repudiation (both parties hold the key). Suitable for single-tenant or internal deployments. |
+| `rsa-pss-sha256` | Asymmetric | Non-repudiation. Compatible with existing PKI. Uses PSS padding (PKCS#1 v2.1). |
+
+Implementations SHOULD support at minimum Ed25519. HMAC-SHA256 MAY be supported for simpler deployments where non-repudiation is not needed.
 
 ---
 
@@ -230,18 +295,7 @@ A broken chain (parent hash mismatch) indicates tampering, data loss, or a versi
 
 ### Branching
 
-Version chains may branch when multiple systems modify the same pack concurrently (e.g., two users editing simultaneously). Branch resolution is an implementation concern, not a spec concern. This spec defines the chain; conflict resolution policies belong to the systems that manage chains.
-
-When a branch is resolved (merged), the resulting version SHOULD reference both parents:
-
-```yaml
-parent:
-  version: "2026.04.12"
-  pack_hash: "aaa..."
-  merge_parents:
-    - version: "2026.04.12-rev1"
-      pack_hash: "bbb..."
-```
+Version chains may branch when multiple systems modify the same pack concurrently (e.g., two users editing simultaneously). Branch resolution is an implementation concern, not a spec concern. This spec defines the linear chain; conflict resolution policies and merge-parent semantics are deferred to a future version of this spec.
 
 ---
 
@@ -251,13 +305,15 @@ parent:
 
 ```text
 Input:  name.kpack/  (directory)
-Output: name.kpack   (ZIP file with signatures.yaml)
+Output: name.kpack   (ZIP file with signatures.yaml, written to -o path or cwd)
 
 Steps:
-1. Compute file hashes for all files in the directory
-2. Compute pack hash per §3
-3. Write signatures.yaml (with parent reference if this is not v1)
-4. ZIP the directory contents (including signatures.yaml) → archive
+1. Exclude OS metadata files (.DS_Store, Thumbs.db, __MACOSX/) from the file set
+2. Compute file hashes for all remaining files in the directory
+3. Compute pack hash per §3 (NFC normalization, lowercase hex, sorted paths)
+4. Write signatures.yaml (with parent reference if this is not v1)
+5. ZIP the directory contents (including signatures.yaml) → archive
+6. Write the archive to the output path (MUST NOT overwrite the source directory)
 ```
 
 ### 6.2 Verify (archive → boolean)
@@ -267,24 +323,31 @@ Input:  name.kpack   (ZIP file)
 Output: { valid: boolean, errors: string[] }
 
 Steps:
-1. Extract signatures.yaml from the archive
-2. Compute file hashes for all other files in the archive
-3. Compute pack hash per §3
-4. Compare computed pack_hash to signatures.yaml.pack_hash
-5. Optionally verify digital signature if present
-6. Optionally verify parent chain if previous version is available
+1. Validate all ZIP entries against §2 safety requirements (path traversal, symlinks, duplicates)
+2. Extract signatures.yaml from the archive
+3. Compute file hashes for all other files in the archive (excluding OS metadata)
+4. Compute pack hash per §3
+5. Compare computed pack_hash to signatures.yaml.pack_hash
+6. Compare per-file hashes against signatures.yaml.files
+7. Optionally verify digital signature if present (using signing payload from §4.2)
+8. Optionally verify parent chain if previous version is available
 ```
 
 ### 6.3 Extract (archive → pack)
 
 ```text
 Input:  name.kpack   (ZIP file)
-Output: name.kpack/  (directory)
+Output: name.kpack/  (directory, at -o path or cwd)
 
 Steps:
-1. Verify the archive (§6.2) — warn but do not block on failure
-2. Extract ZIP contents to directory
-3. signatures.yaml is preserved in the directory (it is part of the pack)
+1. Validate all ZIP entries against §2 safety requirements:
+   - Reject entries with path traversal (../ segments)
+   - Reject entries with absolute paths or backslash separators
+   - Reject symlinks, device files, and duplicate entries
+   - Strip OS metadata entries (.DS_Store, Thumbs.db, __MACOSX/)
+2. Verify the archive (§6.2) — warn but do not block on failure
+3. Extract ZIP contents to directory
+4. signatures.yaml is preserved in the directory (it is part of the pack)
 ```
 
 ### 6.4 Transfer
@@ -304,16 +367,20 @@ Note: `kpack archive` is reserved for lifecycle archival (see LIFECYCLE.md). The
 
 ```bash
 # Seal a pack directory → ZIP with signatures.yaml
+kpack seal solar-energy-market.kpack/ -o ./archives/
+# → creates ./archives/solar-energy-market.kpack (ZIP)
+
+# Seal to current working directory (default when -o is omitted and no collision)
 kpack seal solar-energy-market.kpack/
-# → creates solar-energy-market.kpack (ZIP)
+# → creates ./solar-energy-market.kpack (ZIP) — fails if file already exists
 
 # Seal with parent reference (integrity chain)
-kpack seal solar-energy-market.kpack/ --parent solar-energy-market-v2.kpack
+kpack seal solar-energy-market.kpack/ -o ./archives/ --parent ./archives/solar-energy-market-v2.kpack
 # → creates archive with parent hash from the v2 archive
 
 # Verify an archive's integrity
 kpack verify solar-energy-market.kpack
-# → checks pack hash, file hashes, optional signature
+# → checks pack hash, file hashes, optional signature, ZIP safety
 
 # Verify a chain of archives
 kpack verify --chain v1.kpack v2.kpack v3.kpack
@@ -324,7 +391,7 @@ kpack extract solar-energy-market.kpack -o ./packs/
 # → creates ./packs/solar-energy-market.kpack/
 
 # Show archive metadata without extracting
-kpack seal --info solar-energy-market.kpack
+kpack info solar-energy-market.kpack
 # → prints: version, pack_hash, sealed_at, sealed_by, parent, file count
 ```
 
@@ -346,10 +413,10 @@ Archive creation is a lifecycle event, not a lifecycle state. A pack's lifecycle
 
 ### Visibility
 
-Archive creation respects the pack's `visibility` field, following the same rules as BUNDLE.md §5:
+Sealing respects the pack's `visibility` field, following the same rules as BUNDLE.md §5:
 
-| Visibility | `kpack archive` behavior |
-|------------|--------------------------|
+| Visibility | `kpack seal` behavior |
+|------------|----------------------|
 | `private` | Warning. Requires `--force` flag. |
 | `shared` | Allowed. |
 | `public` | Allowed. |
@@ -375,4 +442,45 @@ Two independent ZIP implementations archiving the same files may produce differe
 
 ### Why is signing optional?
 
-The integrity chain (hash verification) is valuable without signing. Signing adds non-repudiation (proving *who* sealed the pack), which matters in multi-party contexts but adds key management complexity. Making signing optional keeps the spec useful for simple single-user deployments while supporting enterprise requirements when needed.
+The integrity chain (hash verification) is valuable without signing. Signing adds tamper evidence for metadata and, with asymmetric methods, non-repudiation (proving *who* sealed the pack). This matters in multi-party contexts but adds key management complexity. Making signing optional keeps the spec useful for simple single-user deployments while supporting enterprise requirements when needed.
+
+### Why does the signature bind metadata, not just the pack hash?
+
+`signatures.yaml` is excluded from the content hash to avoid circular dependency. But without binding, the metadata fields (`sealed_at`, `sealed_by`, `parent`) could be rewritten without breaking verification — defeating the purpose of the integrity chain. The signing payload (§4.2) binds these fields so that any modification invalidates the signature.
+
+---
+
+## 10. Security Considerations
+
+### ZIP extraction attacks (ZipSlip)
+
+ZIP archives can contain entries with path traversal sequences (`../`) that, when extracted naively, write files outside the intended directory. This is a well-documented class of vulnerability (CVE-2018-1002200 and variants). The safety requirements in §2 mandate rejection of such entries.
+
+Implementations MUST validate every ZIP entry path **before** extraction. Validation MUST reject:
+
+- Paths containing `..` segments (e.g., `../../etc/passwd`)
+- Absolute paths (e.g., `/etc/passwd`, `C:\Windows\system32\...`)
+- Paths using backslash separators (may be interpreted as directory separators on Windows)
+- Symbolic link entries
+- Duplicate entry paths (undefined behavior in most ZIP libraries)
+- Device files and other non-regular entries
+
+### OS metadata contamination
+
+Operating systems create hidden metadata files (`.DS_Store` on macOS, `Thumbs.db` on Windows, `__MACOSX/` resource fork directories in macOS ZIP tools). These files:
+
+- Are not part of the Knowledge Pack.
+- Vary by platform — including them in the hash makes seals non-portable.
+- May leak filesystem metadata (directory structure, timestamps, thumbnail images).
+
+Implementations MUST exclude these files from hash computation and SHOULD strip them when creating archives.
+
+### Line ending normalization
+
+The content hash operates on raw bytes. If the same text file is checked out with `\n` on one system and `\r\n` on another (common with git's `core.autocrlf` on Windows), the hashes will differ. This is by design — the hash reflects the actual bytes — but it creates a practical portability problem.
+
+Packs that use version control SHOULD include a `.gitattributes` file with `* text=auto eol=lf` to ensure consistent line endings across platforms. This is a recommendation for pack authors, not a requirement for implementations.
+
+### Unicode normalization in filenames
+
+macOS HFS+/APFS normalizes filenames to NFD (decomposed). Linux and Windows preserve the original form, typically NFC (composed). The content hash algorithm (§3) mandates NFC normalization of paths to ensure cross-platform determinism. Implementations that create archives on macOS MUST normalize paths to NFC before computing hashes.

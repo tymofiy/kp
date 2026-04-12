@@ -25,7 +25,7 @@ This document covers:
 - Validation rules and semantic constraints
 - Conformance levels
 
-This document does **not** cover: voice surfaces (VOICE.md), composition/meetings (COMPOSITION.md), lifecycle management (LIFECYCLE.md), multilingual support (MULTILINGUAL.md), pack organization patterns (ORGANIZATION.md), consistency patrol (CONSISTENCY.md), naming conventions (CONVENTIONS.md), storage formats (STORAGE.md), bundling (BUNDLE.md), definition/policy document kinds (DEFINITIONS.md), or AI note-taking (NOTES.md). These are specified in companion documents within `spec/`.
+This document does **not** cover: voice surfaces (VOICE.md), composition/meetings (COMPOSITION.md), lifecycle management (LIFECYCLE.md), multilingual support (MULTILINGUAL.md), pack organization patterns (ORGANIZATION.md), consistency patrol (CONSISTENCY.md), naming conventions (CONVENTIONS.md), storage formats (STORAGE.md), bundling (BUNDLE.md), archive format and integrity (ARCHIVE.md), definition/policy document kinds (DEFINITIONS.md), or AI note-taking (NOTES.md). These are specified in companion documents within `spec/`.
 
 ### Terminology
 

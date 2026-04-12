@@ -1271,10 +1271,11 @@ kpack archive                          # Archive ephemeral packs past retention
 kpack reconcile [path]                 # Check claims against standing packs
 
 # Seal & transport (see spec/ARCHIVE.md)
-kpack seal [path]                      # Seal pack directory → .kpack ZIP with signatures.yaml
-kpack verify [path]                    # Verify archive integrity (hash + optional signature)
+kpack seal [path] -o [dir]             # Seal pack directory → .kpack ZIP with signatures.yaml
+kpack verify [path]                    # Verify archive integrity (hash + signature + ZIP safety)
 kpack verify --chain v1 v2 v3          # Verify version chain integrity
 kpack extract [archive] -o [dir]       # Extract archive → pack directory
+kpack info [archive]                   # Show archive metadata without extracting
 
 # Multilingual (see spec/MULTILINGUAL.md)
 kpack translate [path] --locale uk-UA  # Generate translated views
