@@ -219,7 +219,7 @@ confidence:                            # Confidence model declaration
   scale: sherman_kent                  #   Native scale identifier
   normalize: true                      #   Claims use 0-1 normalized values
 
-freshness: 2026-03-18                  # Last substantive review date
+freshness: "2026-03-18"                # Last substantive review date
 license: CC-BY-4.0                     # Reuse terms
 sensitivity: public                    # public | internal | confidential | restricted
 visibility: private                    # private | shared | public (see spec/LIFECYCLE.md)
@@ -254,7 +254,6 @@ provenance:                            # Trust context (S-C1: Poisoned Pack)
   signed: false                        #   Cryptographic signature present?
 
 vocabulary:                            # Predicate conventions
-  extends: null                        #   Optional vocabulary overlay URI
   custom:                              #   Domain-specific predicates
     - cost_trajectory
     - adoption_rate

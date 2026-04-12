@@ -90,10 +90,12 @@ PACK.yaml is a YAML file declaring pack identity and configuration. The normativ
 | `channels` | array | Distribution routing strings |
 | `display` | object | `short_title`, `abbreviation`, `tagline`, `hook` |
 | `provenance` | object | `author` (required), `role` (required), `reviewed_by`, `review_date`, `signed` |
-| `views` | array | View declarations with `name`, `file`, `purpose`, `display_as` (all required), `hint` (optional) |
+| `evidence_basis` | string | Narrative description of the evidence foundation underpinning this pack |
+| `tags` | array | Topical tags for discovery and classification. Strict kebab-case (`^[a-z0-9]+(-[a-z0-9]+)*$`), unique |
+| `views` | array | View declarations with `name`, `file`, `purpose`, `display_as` (all required), `hint` (optional). Voice views add `voice` (boolean), `duration` (string, e.g. `~90 seconds`), `pace` (enum: `brisk`, `measured`, `deliberate`). When `voice` is `true`, `duration` and `pace` are REQUIRED. |
 | `tier` | enum | `hub`, `detail`, `standalone` |
 
-The full set of optional fields and conditional constraints is defined in the JSON Schema. Key conditionals: when `tier` is `hub`, `sub_packs` is REQUIRED; when `sensitivity` is `confidential` or `restricted`, `channels` MUST NOT contain `public` or `org`; when `sensitivity` is `internal`, `channels` MUST NOT contain `public`.
+The full set of optional fields and conditional constraints is defined in the JSON Schema. Key conditionals: when `tier` is `hub`, `sub_packs` is REQUIRED; when `sensitivity` is `confidential` or `restricted`, `channels` MUST NOT contain `public` or `org`; when `sensitivity` is `internal`, `channels` MUST NOT contain `public`; when a view declares `voice: true`, `duration` and `pace` are REQUIRED on that view entry.
 
 ### Example
 

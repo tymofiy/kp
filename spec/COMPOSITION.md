@@ -6,7 +6,7 @@
 > **Status:** Draft
 > **Date:** 2026-03-22
 > **Editor:** Timothy Kompanchenko
-> **Parent:** [SPEC.md](../SPEC.md) v0.4, Design Principle 18
+> **Parent:** [SPEC.md](SPEC.md) v0.4, Design Principle 18
 > **Implements:** Decision D14 (Meeting pack composition, agenda overlay, pre_load/on_demand)
 
 ---
@@ -301,7 +301,7 @@ confidence:
   scale: simple
   normalize: true
 
-freshness: 2026-03-24
+freshness: "2026-03-24"
 sensitivity: internal
 
 lifecycle:

@@ -247,6 +247,19 @@
       },
       "description": "Known contradictions with other packs."
     },
+    "evidence_basis": {
+      "type": "string",
+      "description": "Narrative description of the evidence foundation underpinning this pack."
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$"
+      },
+      "uniqueItems": true,
+      "description": "Topical tags for discovery and classification. Kebab-case."
+    },
     "vocabulary": {
       "type": "object",
       "properties": {
@@ -256,9 +269,12 @@
         }
       },
       "additionalProperties": {
-        "type": "string"
+        "oneOf": [
+          { "type": "string" },
+          { "type": "array", "items": { "type": "string" }, "minItems": 1, "uniqueItems": true }
+        ]
       },
-      "description": "Predicate conventions."
+      "description": "Predicate conventions. Values may be a single string or an array of term identifiers."
     },
     "composition": {
       "type": "string",
@@ -298,7 +314,28 @@
           "hint": {
             "type": "string",
             "description": "Human-facing: ~15 words, what you'll GET from this section."
+          },
+          "voice": {
+            "type": "boolean",
+            "description": "Whether this view is designed for spoken delivery."
+          },
+          "duration": {
+            "type": "string",
+            "pattern": "^~\\d+\\s+(seconds?|minutes?)$",
+            "description": "Approximate spoken duration. Example: ~90 seconds"
+          },
+          "pace": {
+            "type": "string",
+            "enum": ["brisk", "measured", "deliberate"],
+            "description": "Delivery pace hint for spoken delivery."
           }
+        },
+        "if": {
+          "properties": { "voice": { "const": true } },
+          "required": ["voice"]
+        },
+        "then": {
+          "required": ["duration", "pace"]
         }
       },
       "description": "Pre-rendered view declarations."
