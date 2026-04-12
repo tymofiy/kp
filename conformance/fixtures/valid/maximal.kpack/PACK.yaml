@@ -12,7 +12,7 @@ confidence:
   scale: sherman_kent
   normalize: true
 
-freshness: 2026-04-04
+freshness: "2026-04-04"
 license: CC-BY-4.0
 sensitivity: internal
 visibility: shared
@@ -33,7 +33,7 @@ provenance:
   author: KP Conformance Suite
   role: independent
   reviewed_by: Grammar Validator
-  review_date: 2026-04-04
+  review_date: "2026-04-04"
   signed: false
 
 lifecycle:
@@ -54,9 +54,20 @@ conflicts:
     basis: methodology
     resolution: prefer-this
 
+evidence_basis: >
+  Synthesized from the KP conformance test corpus and three independent
+  grammar validation runs. All evidence entries are synthetic fixtures
+  designed to exercise parser edge cases.
+
+tags:
+  - conformance
+  - schema-testing
+  - maximal-coverage
+
 vocabulary:
   extends: "kp-standard-v1"
   custom_predicate: "Tests custom vocabulary entries"
+  multi_term: ["term-a", "term-b"]
 
 views:
   - name: overview
@@ -64,3 +75,12 @@ views:
     purpose: "Full-coverage conformance summary"
     display_as: "Overview"
     hint: "Top-line view for the maximal fixture."
+
+  - name: briefing
+    file: views/voice/briefing.md
+    purpose: "Spoken conformance summary for voice delivery testing"
+    display_as: "Voice Briefing"
+    hint: "Spoken-format summary of the maximal fixture."
+    voice: true
+    duration: "~45 seconds"
+    pace: measured

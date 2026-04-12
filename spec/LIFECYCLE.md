@@ -6,7 +6,7 @@
 > **Status:** Draft
 > **Date:** 2026-03-22
 > **Editor:** Timothy Kompanchenko
-> **Parent:** [SPEC.md](../SPEC.md) v0.4
+> **Parent:** [SPEC.md](SPEC.md) v0.4
 > **Decisions:** D4 (meeting pack lifecycle), D15 (archive-never-delete), D19 (reconcile-before-archive)
 
 ---

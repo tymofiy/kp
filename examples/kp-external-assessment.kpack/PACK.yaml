@@ -20,7 +20,7 @@ confidence:
   scale: sherman_kent
   normalize: true
 
-freshness: 2026-03-31
+freshness: "2026-03-31"
 sensitivity: public
 visibility: public
 channels: [public]

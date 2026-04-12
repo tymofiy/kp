@@ -3,8 +3,8 @@
 
 # Voice Views — Knowledge Pack Companion Spec
 
-> **Parent:** SPEC.md v0.4
-> **Date:** 2026-03-22
+> **Parent:** SPEC.md v0.8
+> **Date:** 2026-04-12
 > **Status:** Draft
 > **Decisions:** D13 (voice view format), D22 (locale-before-surface ordering)
 
@@ -188,6 +188,7 @@ views:
   - name: briefing
     file: views/voice/briefing.md
     purpose: "Spoken executive briefing — key facts, status, top risk"
+    display_as: "Voice Briefing"   # Required on all views
     voice: true                    # Marks this as a voice view
     duration: "~75 seconds"        # Expected spoken duration
     pace: measured                 # brisk | measured | deliberate
@@ -195,6 +196,7 @@ views:
   - name: elevator
     file: views/voice/elevator.md
     purpose: "30-second spoken pitch for casual conversation"
+    display_as: "Elevator Pitch"   # Required on all views
     voice: true
     duration: "~30 seconds"
     pace: brisk

@@ -12,7 +12,7 @@ confidence:
   scale: sherman_kent
   normalize: true
 
-freshness: 2026-04-04
+freshness: "2026-04-04"
 license: CC-BY-4.0
 sensitivity: public
 visibility: public
