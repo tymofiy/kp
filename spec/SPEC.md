@@ -149,7 +149,7 @@ A Knowledge Pack is a directory with a conventional name ending in `.kpack/` (re
 ├── entities.md            # OPTIONAL — Entity definitions and relationships
 ├── composition.yaml       # OPTIONAL — Meeting/composite pack references (see spec/COMPOSITION.md)
 ├── validation.yaml        # OPTIONAL — Test questions for verification
-├── signatures.yaml        # OPTIONAL — Cryptographic integrity proof
+├── signatures.yaml        # OPTIONAL — Cryptographic integrity proof (see spec/ARCHIVE.md)
 ├── definitions/           # OPTIONAL — Deterministic domain definitions (kind: definition)
 │   └── {topic}.yaml       #   Entity types, attributes, relation types
 ├── policies/              # OPTIONAL — Domain rules and prioritization (kind: policy)
@@ -176,7 +176,7 @@ A Knowledge Pack is a directory with a conventional name ending in `.kpack/` (re
 | `entities.md` | On demand | Entity definitions with types, aliases, URIs, relationship graph |
 | `views/*.md` | On display | Pre-rendered markdown for human visual consumption. Derived from claims. See §16 |
 | `validation.yaml` | Tooling only | Test questions to verify an LLM can reason from the pack |
-| `signatures.yaml` | Tooling only | Cryptographic hashes + signing key for integrity verification |
+| `signatures.yaml` | Tooling only | Cryptographic hashes + signing key for integrity verification (see spec/ARCHIVE.md) |
 | `definitions/*.yaml` | On demand | Deterministic domain definitions: entity types, attributes, relations. See §5 |
 | `policies/*.yaml` | On demand | Domain rules and prioritization logic. See §5 |
 
@@ -1269,6 +1269,13 @@ kpack bundle [path] --url              # Shareable URL (if published)
 kpack archive --dry-run                # Preview what would be archived
 kpack archive                          # Archive ephemeral packs past retention
 kpack reconcile [path]                 # Check claims against standing packs
+
+# Seal & transport (see spec/ARCHIVE.md)
+kpack seal [path] -o [dir]             # Seal pack directory → .kpack ZIP with signatures.yaml
+kpack verify [path]                    # Verify archive integrity (hash + signature + ZIP safety)
+kpack verify --chain v1 v2 v3          # Verify version chain integrity
+kpack extract [archive] -o [dir]       # Extract archive → pack directory
+kpack info [archive]                   # Show archive metadata without extracting
 
 # Multilingual (see spec/MULTILINGUAL.md)
 kpack translate [path] --locale uk-UA  # Generate translated views

@@ -5,7 +5,35 @@
 
 ---
 
-## v0.7.1 — 2026-04-12
+## v0.7.3 — 2026-04-12
+
+**Archive format — sealed, hashed, versioned single-file transport for Knowledge Packs.**
+
+### Added
+- **Archive companion spec** (`ARCHIVE.md`) — Defines the ZIP-based archive format for pack transport between systems. Covers content hashing (SHA-256, deterministic, container-independent), `signatures.yaml` schema, version chains with parent hash references, sealing protocol, and verification. Resolves AR-14 (`signatures.yaml` schema deferred to Phase C2).
+- **`signatures.yaml` schema** — Formalized in ARCHIVE.md §4 with normative field types. Fields: `algorithm`, `pack_hash`, `files` (per-file hashes, lowercase hex), `sealed_at`, `sealed_by`, `parent` (version chain), optional `signature` (digital signing). Required in sealed archives.
+- **Version chain model** — Each sealed pack version references its parent's `pack_hash`, forming a verifiable integrity chain. Branching acknowledged; merge-parent semantics deferred to a future version.
+- **Seal & transport CLI commands** — `kpack seal`, `kpack verify`, `kpack verify --chain`, `kpack extract`, `kpack info`. (`kpack archive` remains reserved for lifecycle archival per LIFECYCLE.md.)
+- **Security considerations** (§10) — ZipSlip/path traversal protection, symlink rejection, duplicate entry rejection, OS metadata exclusion, line ending advisory, Unicode NFC normalization.
+- **Conformance levels** — Sealed archive (with `signatures.yaml`, integrity chain) vs. export archive (without, convenience only).
+- **Signing payload** — Signature binds `algorithm` + `pack_hash` + `sealed_at` + `sealed_by` + `parent.version` + `parent.pack_hash`, preventing metadata tampering.
+
+### Changed
+- **CORE.md** AR-14 updated — `signatures.yaml` schema now resolved by ARCHIVE.md. `composition.yaml` remains deferred.
+- **CORE.md** scope paragraph updated — ARCHIVE.md added to the list of companion documents.
+- **CORE.md** Appendix C updated — ARCHIVE.md added to companion specifications table.
+- **README.md** — ARCHIVE.md added to companion documents table.
+- **SPEC.md** — `signatures.yaml` file role updated to reference ARCHIVE.md.
+- **Hash computation** (§3) — Mandates NFC Unicode normalization for paths, lowercase hex digests, bare relative paths (no `./` prefix), and root-only `signatures.yaml` exclusion. Adds canonicalization notes for line endings and OS metadata.
+- **Signing methods** — Clarified that HMAC-SHA256 provides tamper detection only, not non-repudiation. Ed25519 recommended as default. RSA uses PSS padding.
+- **ZIP safety** — Added mandatory safety requirements (§2): path traversal rejection, symlink rejection, duplicate entry rejection, OS metadata stripping.
+- **ZIP64** — Changed from SHOULD to MUST for archives exceeding 4 GB.
+- **CLI examples** — Updated to show `-o` output paths, avoiding the `.kpack` file-vs-directory coexistence issue.
+- **Visibility table** — Corrected from `kpack archive` to `kpack seal`.
+
+---
+
+## v0.7.2 — 2026-04-12
 
 **Schema tightening and new metadata fields — informed by cross-model open-standards review.**
 
