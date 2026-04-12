@@ -56,7 +56,7 @@ marquet-le-passeur.kpack (ZIP)
 ├── PACK.yaml
 ├── claims.md
 ├── evidence.md
-├── signatures.yaml        # REQUIRED in archives — integrity metadata
+├── signatures.yaml        # REQUIRED in sealed archives — integrity metadata (absent in export archives)
 ├── entities.md             # if present in pack
 ├── history.md              # if present in pack
 ├── composition.yaml        # if present in pack
@@ -75,7 +75,7 @@ marquet-le-passeur.kpack (ZIP)
 ### Requirements
 
 1. The archive MUST be a valid ZIP file (PKZIP format, per APPNOTE.TXT).
-2. Files MUST be stored at the root of the archive, not inside a subdirectory.
+2. Entries MUST be rooted at the pack directory level — no extra wrapper subdirectory. (Nested paths like `views/overview.md` and `attachments/photo.jpg` are expected; the rule prohibits wrapping the entire pack in a subdirectory like `marquet-le-passeur/PACK.yaml`.)
 3. `PACK.yaml` and `claims.md` MUST be present (per SPEC.md §2).
 4. `signatures.yaml` MUST be present in any archive that participates in an integrity chain (§4). It MAY be absent in archives created for convenience (e.g., manual export). See "Conformance levels" below.
 5. Compression method SHOULD be DEFLATE. Store (no compression) is acceptable for small packs or when speed is preferred.
@@ -216,7 +216,12 @@ signature:
 | `sealed_at` | Always | |
 | `sealed_by` | Always | |
 | `parent` | When version > 1 | Absent for the first version of a pack |
+| `parent.version` | When `parent` is present | Both sub-fields are REQUIRED when the `parent` block exists |
+| `parent.pack_hash` | When `parent` is present | |
 | `signature` | When signing is configured | Optional; depends on deployment |
+| `signature.method` | When `signature` is present | All three sub-fields are REQUIRED when the `signature` block exists |
+| `signature.value` | When `signature` is present | |
+| `signature.key_id` | When `signature` is present | |
 
 ### 4.1 Sealing
 
@@ -244,10 +249,10 @@ Signing provides **tamper evidence** for the sealing metadata — proof that `pa
 The signing payload is the UTF-8 encoding of the following concatenation:
 
 ```text
-{algorithm}\n{pack_hash}\n{sealed_at}\n{sealed_by}\n{parent.pack_hash or empty}\n
+{algorithm}\n{pack_hash}\n{sealed_at}\n{sealed_by}\n{parent.version or empty}\n{parent.pack_hash or empty}\n
 ```
 
-Where `parent.pack_hash` is the parent's pack hash if present, or the empty string for a v1 pack. All fields use their exact string values from `signatures.yaml`.
+Where `parent.version` and `parent.pack_hash` use their exact string values from `signatures.yaml` if present, or the empty string for a v1 pack (no parent). All fields use their literal `signatures.yaml` values — no normalization or transformation.
 
 **Signing procedure:**
 
@@ -265,6 +270,8 @@ Where `parent.pack_hash` is the parent's pack hash if present, or the empty stri
 | `rsa-pss-sha256` | Asymmetric | Non-repudiation. Compatible with existing PKI. Uses PSS padding (PKCS#1 v2.1). |
 
 Implementations SHOULD support at minimum Ed25519. HMAC-SHA256 MAY be supported for simpler deployments where non-repudiation is not needed.
+
+**Key distribution** is out of scope for this spec. The `key_id` field identifies the key; how verification keys are discovered, distributed, and trusted is an implementation and deployment concern. Implementations MAY use well-known endpoints, key registries, or out-of-band exchange.
 
 ---
 
@@ -308,7 +315,7 @@ Input:  name.kpack/  (directory)
 Output: name.kpack   (ZIP file with signatures.yaml, written to -o path or cwd)
 
 Steps:
-1. Exclude OS metadata files (.DS_Store, Thumbs.db, __MACOSX/) from the file set
+1. Exclude OS metadata files (.DS_Store, Thumbs.db, desktop.ini, __MACOSX/) from the file set
 2. Compute file hashes for all remaining files in the directory
 3. Compute pack hash per §3 (NFC normalization, lowercase hex, sorted paths)
 4. Write signatures.yaml (with parent reference if this is not v1)
@@ -316,22 +323,27 @@ Steps:
 6. Write the archive to the output path (MUST NOT overwrite the source directory)
 ```
 
-### 6.2 Verify (archive → boolean)
+### 6.2 Verify (archive → result)
 
 ```text
 Input:  name.kpack   (ZIP file)
-Output: { valid: boolean, errors: string[] }
+Output: { status: "sealed" | "export" | "invalid", errors: string[] }
 
 Steps:
 1. Validate all ZIP entries against §2 safety requirements (path traversal, symlinks, duplicates)
-2. Extract signatures.yaml from the archive
-3. Compute file hashes for all other files in the archive (excluding OS metadata)
-4. Compute pack hash per §3
-5. Compare computed pack_hash to signatures.yaml.pack_hash
-6. Compare per-file hashes against signatures.yaml.files
-7. Optionally verify digital signature if present (using signing payload from §4.2)
-8. Optionally verify parent chain if previous version is available
+2. Check for signatures.yaml in the archive:
+   - If absent: return status "export" (valid pack, not sealed — cannot verify integrity)
+   - If present: continue to step 3
+3. Verify signatures.yaml.algorithm is a supported algorithm (currently: SHA-256)
+4. Compute file hashes for all other files in the archive (excluding OS metadata)
+5. Compute pack hash per §3
+6. Compare computed pack_hash to signatures.yaml.pack_hash
+7. Compare per-file hashes against signatures.yaml.files
+8. Optionally verify digital signature if present (using signing payload from §4.2)
+9. Optionally verify parent chain if previous version is available
 ```
+
+Note: Empty directories in ZIP entries are ignored — only regular files participate in hash computation, consistent with §3.
 
 ### 6.3 Extract (archive → pack)
 
@@ -370,9 +382,9 @@ Note: `kpack archive` is reserved for lifecycle archival (see LIFECYCLE.md). The
 kpack seal solar-energy-market.kpack/ -o ./archives/
 # → creates ./archives/solar-energy-market.kpack (ZIP)
 
-# Seal to current working directory (default when -o is omitted and no collision)
-kpack seal solar-energy-market.kpack/
-# → creates ./solar-energy-market.kpack (ZIP) — fails if file already exists
+# Seal without -o (writes to cwd; fails if name collides with source directory)
+kpack seal ../other-location/solar-energy-market.kpack/
+# → creates ./solar-energy-market.kpack (ZIP) in the current directory
 
 # Seal with parent reference (integrity chain)
 kpack seal solar-energy-market.kpack/ -o ./archives/ --parent ./archives/solar-energy-market-v2.kpack
