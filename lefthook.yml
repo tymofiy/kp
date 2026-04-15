@@ -41,7 +41,71 @@ pre-commit:
           fi
         done
 
+    # Public repo: scan staged content for process language and workspace leaks.
+    # This is a backstop — the primary defense is agent awareness.
+    # Patterns are the highest-signal items from the workspace deny list.
+    deny-list:
+      glob: "*.{md,txt,yml,yaml,json,cff,toml}"
+      exclude: "lefthook.yml"
+      run: |
+        found=0
+        for file in {staged_files}; do
+          if [ ! -f "$file" ]; then continue; fi
+
+          # Process language (the patterns that actually leaked)
+          if grep -inE 'cross-model (review|consultation|spec review)|multi-model (synthesis|analysis|consultation|spec review)|three-model consultation|two-model consultation|round [0-9]+ (review|verify|cross-model|findings)|consulted (codex|gemini|claude)|adversarial review|(codex|gemini|claude) feedback|reviewer [A-Z0-9]|session handover|model attributions' "$file" 2>/dev/null; then
+            echo "Process language in: $file"
+            found=1
+          fi
+
+          # Workspace paths
+          if grep -nE '/Users/tim/|Developer/nova|\bnova/sessions/|nova workspace|\.codex-home/' "$file" 2>/dev/null; then
+            echo "Workspace path leak in: $file"
+            found=1
+          fi
+
+          # Internal codenames (word-boundary)
+          if grep -nwE 'Boris|Engram|joukowsky|mempalace|sanctioned-art|midnight-highway|untitled-novel' "$file" 2>/dev/null; then
+            echo "Internal codename in: $file"
+            found=1
+          fi
+        done
+        if [ "$found" -eq 1 ]; then
+          echo ""
+          echo "Deny-list violation detected. This is a PUBLIC repo."
+          echo "See: nova/prompts/playbook/public-repo-deny-list.md"
+          exit 1
+        fi
+
 commit-msg:
   commands:
     validate:
       run: scripts/validate-commit-msg {1}
+
+    # Public repo: scan commit message for process language and workspace leaks.
+    deny-list:
+      run: |
+        msg=$(cat "{1}")
+
+        # Strip allowed Co-Authored-By trailers before scanning
+        clean=$(echo "$msg" | sed -E '/^Co-Authored-By: (Claude|Codex|Gemini|Antigravity|Cursor) <noreply@[^>]+>$/d')
+
+        if echo "$clean" | grep -iE 'cross-model|multi-model (synthesis|analysis|consultation|review)|round [0-9]+ (review|verify|findings)|consulted (codex|gemini|claude)|(codex|gemini|claude) (feedback|suggested|reviewed)|adversarial review|reviewer [A-Z0-9]|session handover|model attributions' >/dev/null 2>&1; then
+          echo ""
+          echo "Process language in commit message. This is a PUBLIC repo."
+          echo "Describe what changed, not which models reviewed it."
+          echo "See: nova/prompts/playbook/public-repo-deny-list.md"
+          exit 1
+        fi
+
+        if echo "$clean" | grep -E '/Users/tim/|Developer/nova|\bnova/sessions/|nova workspace|\.codex-home/' >/dev/null 2>&1; then
+          echo ""
+          echo "Workspace path in commit message. This is a PUBLIC repo."
+          exit 1
+        fi
+
+        if echo "$clean" | grep -wE 'Boris|Engram|joukowsky|mempalace|sanctioned-art|midnight-highway|untitled-novel' >/dev/null 2>&1; then
+          echo ""
+          echo "Internal codename in commit message. This is a PUBLIC repo."
+          exit 1
+        fi
