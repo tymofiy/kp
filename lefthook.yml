@@ -41,9 +41,11 @@ pre-commit:
           fi
         done
 
-    # Public repo: scan staged content for process language and workspace leaks.
-    # This is a backstop — the primary defense is agent awareness.
-    # Patterns are the highest-signal items from the workspace deny list.
+    # Public repo: scan staged content for AI-consultation process language.
+    # This is a backstop — the primary defense is agent awareness in the
+    # containing workspace. Workspace-specific codename and path patterns
+    # live in that workspace's hooks; this file only carries generic
+    # process-language patterns that are safe to expose publicly.
     deny-list:
       glob: "*.{md,txt,yml,yaml,json,cff,toml}"
       exclude: "lefthook.yml"
@@ -52,28 +54,15 @@ pre-commit:
         for file in {staged_files}; do
           if [ ! -f "$file" ]; then continue; fi
 
-          # Process language (the patterns that actually leaked)
           if grep -inE 'cross-model (review|consultation|spec review)|multi-model (synthesis|analysis|consultation|spec review)|three-model consultation|two-model consultation|round [0-9]+ (review|verify|cross-model|findings)|consulted (codex|gemini|claude)|adversarial review|(codex|gemini|claude) feedback|reviewer [0-9]+\b|session handover|model attributions' "$file" 2>/dev/null; then
-            echo "Process language in: $file"
-            found=1
-          fi
-
-          # Workspace paths
-          if grep -nE '/Users/tim/|Developer/nova|\bnova/sessions/|nova workspace|\.codex-home/' "$file" 2>/dev/null; then
-            echo "Workspace path leak in: $file"
-            found=1
-          fi
-
-          # Internal codenames (word-boundary)
-          if grep -nwE 'Boris|Engram|joukowsky|mempalace|sanctioned-art|midnight-highway|untitled-novel' "$file" 2>/dev/null; then
-            echo "Internal codename in: $file"
+            echo "Process-language match in: $file"
             found=1
           fi
         done
         if [ "$found" -eq 1 ]; then
           echo ""
-          echo "Deny-list violation detected. This is a PUBLIC repo."
-          echo "See: nova/prompts/playbook/public-repo-deny-list.md"
+          echo "Process-language match detected. This is a PUBLIC repo."
+          echo "Describe what changed, not which models reviewed it."
           exit 1
         fi
 
@@ -82,7 +71,10 @@ commit-msg:
     validate:
       run: scripts/validate-commit-msg {1}
 
-    # Public repo: scan commit message for process language and workspace leaks.
+    # Public repo: scan commit message for AI-consultation process language.
+    # Workspace-specific codename and path patterns live in the containing
+    # workspace's hooks; this file only carries generic patterns that are
+    # safe to expose publicly.
     deny-list:
       run: |
         msg=$(cat "{1}")
@@ -94,18 +86,5 @@ commit-msg:
           echo ""
           echo "Process language in commit message. This is a PUBLIC repo."
           echo "Describe what changed, not which models reviewed it."
-          echo "See: nova/prompts/playbook/public-repo-deny-list.md"
-          exit 1
-        fi
-
-        if echo "$clean" | grep -E '/Users/tim/|Developer/nova|\bnova/sessions/|nova workspace|\.codex-home/' >/dev/null 2>&1; then
-          echo ""
-          echo "Workspace path in commit message. This is a PUBLIC repo."
-          exit 1
-        fi
-
-        if echo "$clean" | grep -wE 'Boris|Engram|joukowsky|mempalace|sanctioned-art|midnight-highway|untitled-novel' >/dev/null 2>&1; then
-          echo ""
-          echo "Internal codename in commit message. This is a PUBLIC repo."
           exit 1
         fi
