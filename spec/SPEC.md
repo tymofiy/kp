@@ -192,6 +192,20 @@ A Knowledge Pack is a directory with a conventional name ending in `.kpack/` (re
 
 The primary file is a **complete reasoning surface** AND a **navigation map** to everything else.
 
+### Composition-pack File Requirements
+
+A pack whose `composition.yaml` is present is a **composition pack** (also called a *composite pack* — see `spec/COMPOSITION.md` for the full semantics). Composition packs reference claims in other packs via `↔` see_also relations rather than carrying their own evidence. The file requirements adjust as follows:
+
+| File | Standard pack | Composition pack |
+|------|---------------|------------------|
+| `PACK.yaml` | REQUIRED | REQUIRED |
+| `composition.yaml` | ABSENT | REQUIRED (defines the composition) |
+| `claims.md` | REQUIRED | REQUIRED — contents are intentionally minimal: claims describe the composition context itself (who, when, why, what changed), not the topics being composed (see COMPOSITION.md §3) |
+| `evidence.md` | RECOMMENDED — required in practice whenever any claim cites an evidence ID | OPTIONAL — may be omitted entirely; claims may leave the evidence position empty and use `↔` relations instead |
+| Everything else (`history.md`, `entities.md`, `views/`, `definitions/`, `policies/`, `signatures.yaml`, `validation.yaml`) | unchanged | unchanged |
+
+A composition pack MUST NOT redefine the claims or evidence of a pack it references. Its `claims.md` contains only claims about the composition itself; the referenced packs remain the canonical source for their own content.
+
 ---
 
 ## 3. PACK.yaml — Manifest

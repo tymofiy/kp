@@ -165,6 +165,14 @@ This section defines the schema for `signatures.yaml`, resolving SPEC.md §2's "
 # Hash algorithm (currently only SHA-256; future-proofed for upgrades)
 algorithm: SHA-256
 
+# Stable pack identity across versions (OPTIONAL for legacy archives;
+# SHOULD be present in new archives — see "Required fields" below)
+pack_id: "0b3c1f9a-4d7e-4a1c-9f2b-3e4a5b6c7d8e"
+
+# Self-describing receipts (OPTIONAL; mirrors PACK.yaml name/version)
+pack_name: "solar-energy-market"
+pack_version: "2026.03.18"
+
 # Pack hash — computed per §3
 pack_hash: "a1b2c3d4e5f6..."
 
@@ -196,6 +204,9 @@ signature:
 | Field | Type | Format |
 |-------|------|--------|
 | `algorithm` | string | Algorithm identifier. Currently `SHA-256`. |
+| `pack_id` | string | Stable identity of the pack across versions. A UUID is RECOMMENDED. Two sealed archives MUST share the same `pack_id` if and only if they represent versions of the same logical pack. |
+| `pack_name` | string | Self-describing copy of `PACK.yaml.name`. Enables receipts and indexing without loading the manifest. |
+| `pack_version` | string | Self-describing copy of `PACK.yaml.version`. Same rationale as `pack_name`. |
 | `pack_hash` | string | Lowercase hex-encoded SHA-256 digest (64 characters). |
 | `files` | map\<string, string\> | Keys: NFC-normalized relative paths with `/` separator. Values: lowercase hex SHA-256 digests. MUST NOT include `signatures.yaml`. |
 | `sealed_at` | string | ISO 8601 UTC timestamp (e.g., `2026-04-12T14:30:00Z`). |
@@ -215,6 +226,9 @@ signature:
 | `files` | Always | |
 | `sealed_at` | Always | |
 | `sealed_by` | Always | |
+| `pack_id` | New archives | SHOULD be present in archives sealed against v0.7.5 or later. Schema accepts absence for backwards compatibility with archives sealed before `pack_id` was documented. Readers MUST tolerate its absence. |
+| `pack_name` | Never | OPTIONAL; aids self-describing receipts. |
+| `pack_version` | Never | OPTIONAL; aids self-describing receipts. |
 | `parent` | When version > 1 | Absent for the first version of a pack |
 | `parent.version` | When `parent` is present | Both sub-fields are REQUIRED when the `parent` block exists |
 | `parent.pack_hash` | When `parent` is present | |

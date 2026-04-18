@@ -1,0 +1,25 @@
+type: meeting-prep
+
+meeting:
+  date: 2026-04-18T10:00:00-04:00
+  duration: 30m
+  participants:
+    - Alice
+    - Bob
+  context: >
+    Conformance test fixture — demonstrates a valid composition pack
+    structure with no evidence.md. All knowledge lives in referenced
+    packs; this pack only declares the composition.
+
+agenda:
+  - topic: Minimal pack coverage
+    reference: minimal-fixture
+    talking_points:
+      - Confirm frontmatter parsing
+      - Walk through a single-claim pack
+
+pre_load:
+  - minimal-fixture
+
+on_demand:
+  - typical-fixture

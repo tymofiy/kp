@@ -39,6 +39,7 @@ RESET = "\033[0m"
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 SCHEMA_PATH = SCRIPT_DIR / "grammar" / "kp-pack.schema.json"
+SIGNATURES_SCHEMA_PATH = SCRIPT_DIR / "grammar" / "kp-signatures.schema.json"
 FIXTURES_DIR = SCRIPT_DIR / "fixtures"
 EXAMPLES_DIR = SCRIPT_DIR.parent / "examples"
 
@@ -48,6 +49,7 @@ VALID_ORDER = [
     "verbose-claims.kpack",
     "mixed-syntax.kpack",
     "maximal.kpack",
+    "composition.kpack",
 ]
 INVALID_ORDER = [
     "no-rosetta.kpack",
@@ -79,6 +81,7 @@ VERBOSE_TYPE_MAP = {
 }
 
 _schema_cache = None
+_signatures_schema_cache = None
 
 
 def schema():
@@ -87,6 +90,14 @@ def schema():
         with open(SCHEMA_PATH) as f:
             _schema_cache = json.load(f)
     return _schema_cache
+
+
+def signatures_schema():
+    global _signatures_schema_cache
+    if _signatures_schema_cache is None:
+        with open(SIGNATURES_SCHEMA_PATH) as f:
+            _signatures_schema_cache = json.load(f)
+    return _signatures_schema_cache
 
 
 def _stringify_dates(obj):
@@ -135,7 +146,17 @@ def validate_pack(pack_dir: Path) -> list[Err]:
     pack_yaml_path = pack_dir / "PACK.yaml"
     claims_path = pack_dir / "claims.md"
     evidence_path = pack_dir / "evidence.md"
-    for p in (pack_yaml_path, claims_path, evidence_path):
+    composition_path = pack_dir / "composition.yaml"
+    signatures_path = pack_dir / "signatures.yaml"
+
+    # Composition packs MAY omit evidence.md (SPEC.md §2,
+    # "Composition-pack File Requirements"). claims.md remains required.
+    is_composition = composition_path.exists()
+    required_files = [pack_yaml_path, claims_path]
+    if not is_composition:
+        required_files.append(evidence_path)
+
+    for p in required_files:
         if not p.exists():
             errs.append(Err("parse", f"missing {p.name}"))
     if errs:
@@ -151,6 +172,18 @@ def validate_pack(pack_dir: Path) -> list[Err]:
         jsonschema.validate(pack, schema())
     except jsonschema.ValidationError as e:
         errs.append(Err("schema", e.message))
+
+    # ── signatures.yaml: validate against its schema (if present) ──
+    if signatures_path.exists():
+        try:
+            sigs = _stringify_dates(yaml.safe_load(signatures_path.read_text()))
+        except yaml.YAMLError as e:
+            errs.append(Err("signatures", f"signatures.yaml parse error: {e}"))
+        else:
+            try:
+                jsonschema.validate(sigs, signatures_schema())
+            except jsonschema.ValidationError as e:
+                errs.append(Err("signatures", f"signatures.yaml: {e.message}"))
 
     # ── claims.md: Rosetta header ──
     text = claims_path.read_text()
@@ -187,8 +220,10 @@ def validate_pack(pack_dir: Path) -> list[Err]:
     if isinstance(pc, dict) and "scale" in pc and pc["scale"] != fm_scale:
         errs.append(Err("SC-10", f"scale '{fm_scale}' != PACK.yaml '{pc['scale']}'"))
 
-    # ── evidence.md: extract defined evidence IDs ──
-    ev_ids = set(re.findall(r"^## (E\d+)", evidence_path.read_text(), re.MULTILINE))
+    # ── evidence.md: extract defined evidence IDs (empty set if absent) ──
+    ev_ids: set[str] = set()
+    if evidence_path.exists():
+        ev_ids = set(re.findall(r"^## (E\d+)", evidence_path.read_text(), re.MULTILINE))
 
     # ── claims.md: parse claim blocks ──
     # A claim block starts with `- [C###]` or `- **[C###]**` and includes

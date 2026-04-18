@@ -5,6 +5,27 @@
 
 ---
 
+## v0.7.5 — 2026-04-18
+
+**Signatures schema alignment + composition-pack file requirements.**
+
+### Added
+- **`pack_id` in `signatures.yaml`** — Stable pack identity across versions, emitted by current sealers and used by relays. Documented in ARCHIVE.md §4 with a prose MAY/SHOULD policy for backwards compatibility (schema accepts absence; new archives SHOULD include it). `pack_name` and `pack_version` also documented as optional self-describing receipts.
+- **Composition-pack file requirements** — New subsection in SPEC.md §2 listing the file-presence rules for composition packs: `composition.yaml` REQUIRED, `claims.md` REQUIRED (intentionally minimal, about the composition context only), `evidence.md` OPTIONAL (claims may use `↔` see_also relations in place of evidence citations). Cross-references `spec/COMPOSITION.md` for semantics.
+- **Signatures schema validation in the conformance runner** — `conformance/run.py` now validates any `signatures.yaml` it finds against `kp-signatures.schema.json`. Previously the runner was silent on signatures.
+- **Fixture: `composition.kpack`** — Valid-pack fixture demonstrating the composition-pack minimum shape (composition.yaml present, no evidence.md, prose-only claims.md).
+- **Fixture: `signatures.yaml` on `maximal.kpack`** — Exercises the signatures schema with a populated `parent` block and the optional `pack_name`/`pack_version` fields.
+
+### Changed
+- **`kp-signatures.schema.json`** — Regenerated to match ARCHIVE.md §4 (v0.7.3+ shape). Required fields are now `algorithm`, `pack_hash`, `files`, `sealed_at`, `sealed_by`. Optional: `pack_id`, `pack_name`, `pack_version`, `parent` (with `version` + `pack_hash`), `signature` (with `method` + `value` + `key_id`). Previous pre-v0.7.3 fields (`signed_at`, `signing_key`, `signature` as a flat string) removed. Schema root closed with `additionalProperties: false`, mirroring the manifest-schema pattern.
+- **`conformance/run.py`** — `validate_pack()` detects composition packs (those with `composition.yaml`) and skips the `evidence.md` presence check for them. Evidence-ID extraction now tolerates a missing `evidence.md` (empty set rather than exception). `signatures.yaml` is validated against the new schema when present.
+
+### Fixed
+- **Schema-vs-impl drift** — The prior `kp-signatures.schema.json` required fields (`signed_at`, `signing_key`, `signature` as a flat string) that neither the sealer (kp-forge) nor the relay (kp-packs) have produced or consumed since v0.7.3. Any current sealed archive would have failed schema validation. Aligned.
+- **Composition-pack validation hole** — Packs with `composition.yaml` and no `evidence.md` (valid per `COMPOSITION.md` design) were being rejected by the conformance runner for the missing-file reason. No longer.
+
+---
+
 ## v0.7.4 — 2026-04-16
 
 **Manifest extension lane — standardizes where experiments belong without widening the core schema.**
