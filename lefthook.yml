@@ -53,7 +53,7 @@ pre-commit:
           if [ ! -f "$file" ]; then continue; fi
 
           # Process language (the patterns that actually leaked)
-          if grep -inE 'cross-model (review|consultation|spec review)|multi-model (synthesis|analysis|consultation|spec review)|three-model consultation|two-model consultation|round [0-9]+ (review|verify|cross-model|findings)|consulted (codex|gemini|claude)|adversarial review|(codex|gemini|claude) feedback|reviewer [A-Z0-9]|session handover|model attributions' "$file" 2>/dev/null; then
+          if grep -inE 'cross-model (review|consultation|spec review)|multi-model (synthesis|analysis|consultation|spec review)|three-model consultation|two-model consultation|round [0-9]+ (review|verify|cross-model|findings)|consulted (codex|gemini|claude)|adversarial review|(codex|gemini|claude) feedback|reviewer [0-9]+\b|session handover|model attributions' "$file" 2>/dev/null; then
             echo "Process language in: $file"
             found=1
           fi
@@ -90,7 +90,7 @@ commit-msg:
         # Strip allowed Co-Authored-By trailers before scanning
         clean=$(echo "$msg" | sed -E '/^Co-Authored-By: (Claude|Codex|Gemini|Antigravity|Cursor) <noreply@[^>]+>$/d')
 
-        if echo "$clean" | grep -iE 'cross-model|multi-model (synthesis|analysis|consultation|review)|round [0-9]+ (review|verify|findings)|consulted (codex|gemini|claude)|(codex|gemini|claude) (feedback|suggested|reviewed)|adversarial review|reviewer [A-Z0-9]|session handover|model attributions' >/dev/null 2>&1; then
+        if echo "$clean" | grep -iE 'cross-model|multi-model (synthesis|analysis|consultation|review)|round [0-9]+ (review|verify|findings)|consulted (codex|gemini|claude)|(codex|gemini|claude) (feedback|suggested|reviewed)|adversarial review|reviewer [0-9]+\b|session handover|model attributions' >/dev/null 2>&1; then
           echo ""
           echo "Process language in commit message. This is a PUBLIC repo."
           echo "Describe what changed, not which models reviewed it."
