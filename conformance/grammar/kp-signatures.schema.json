@@ -35,8 +35,11 @@
         "type": "string",
         "pattern": "^[a-f0-9]{64}$"
       },
+      "propertyNames": {
+        "not": { "const": "signatures.yaml" }
+      },
       "minProperties": 1,
-      "description": "Map of NFC-normalized relative file paths (with / separator) to their lowercase hex SHA-256 digests. MUST NOT include signatures.yaml itself."
+      "description": "Map of NFC-normalized relative file paths (with / separator) to their lowercase hex SHA-256 digests. MUST NOT include the root-level signatures.yaml itself (enforced via propertyNames)."
     },
     "sealed_at": {
       "type": "string",
@@ -60,6 +63,26 @@
           "type": "string",
           "pattern": "^[a-f0-9]{64}$",
           "description": "Parent pack's pack_hash (lowercase hex)."
+        },
+        "merge_parents": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["version", "pack_hash"],
+            "additionalProperties": false,
+            "properties": {
+              "version": {
+                "type": "string",
+                "description": "Additional parent's version string."
+              },
+              "pack_hash": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$",
+                "description": "Additional parent's pack_hash (lowercase hex)."
+              }
+            }
+          },
+          "description": "Additional parent references for branch-merge lineage. OPTIONAL; absent in single-parent archives."
         }
       },
       "description": "Parent version reference. Absent for v1 of a pack; present for v2 and later."

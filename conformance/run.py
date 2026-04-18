@@ -180,10 +180,17 @@ def validate_pack(pack_dir: Path) -> list[Err]:
         except yaml.YAMLError as e:
             errs.append(Err("signatures", f"signatures.yaml parse error: {e}"))
         else:
-            try:
-                jsonschema.validate(sigs, signatures_schema())
-            except jsonschema.ValidationError as e:
-                errs.append(Err("signatures", f"signatures.yaml: {e.message}"))
+            if sigs is None:
+                errs.append(Err("signatures", "signatures.yaml is empty"))
+            else:
+                try:
+                    jsonschema.validate(
+                        sigs,
+                        signatures_schema(),
+                        format_checker=jsonschema.FormatChecker(),
+                    )
+                except jsonschema.ValidationError as e:
+                    errs.append(Err("signatures", f"signatures.yaml: {e.message}"))
 
     # ── claims.md: Rosetta header ──
     text = claims_path.read_text()

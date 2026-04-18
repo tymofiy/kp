@@ -213,6 +213,7 @@ signature:
 | `sealed_by` | string | Identifier of the sealing system (e.g., `capture-client`, `analysis-service`). |
 | `parent.version` | string | Parent pack's version string from its PACK.yaml. |
 | `parent.pack_hash` | string | Parent pack's `pack_hash` (lowercase hex). |
+| `parent.merge_parents` | array\<object\> | OPTIONAL. Additional parent references for branch-merge lineage. Each entry has the same shape as `parent` itself (`version` + `pack_hash`). Absent in single-parent archives. |
 | `signature.method` | string | Signing method identifier: `ed25519`, `hmac-sha256`, or `rsa-pss-sha256`. |
 | `signature.value` | string | Base64-encoded (standard, padded) signature over the signing payload. |
 | `signature.key_id` | string | Opaque key identifier for locating the verification key. |
@@ -232,6 +233,7 @@ signature:
 | `parent` | When version > 1 | Absent for the first version of a pack |
 | `parent.version` | When `parent` is present | Both sub-fields are REQUIRED when the `parent` block exists |
 | `parent.pack_hash` | When `parent` is present | |
+| `parent.merge_parents` | Never | OPTIONAL; populated only when a version results from merging two or more lineages |
 | `signature` | When signing is configured | Optional; depends on deployment |
 | `signature.method` | When `signature` is present | All three sub-fields are REQUIRED when the `signature` block exists |
 | `signature.value` | When `signature` is present | |

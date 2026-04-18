@@ -201,7 +201,7 @@ A pack whose `composition.yaml` is present is a **composition pack** (also calle
 | `PACK.yaml` | REQUIRED | REQUIRED |
 | `composition.yaml` | ABSENT | REQUIRED (defines the composition) |
 | `claims.md` | REQUIRED | REQUIRED — contents are intentionally minimal: claims describe the composition context itself (who, when, why, what changed), not the topics being composed (see COMPOSITION.md §3) |
-| `evidence.md` | RECOMMENDED — required in practice whenever any claim cites an evidence ID | OPTIONAL — may be omitted entirely; claims may leave the evidence position empty and use `↔` relations instead |
+| `evidence.md` | RECOMMENDED — required in practice whenever any claim cites an evidence ID | OPTIONAL — may be omitted entirely |
 | Everything else (`history.md`, `entities.md`, `views/`, `definitions/`, `policies/`, `signatures.yaml`, `validation.yaml`) | unchanged | unchanged |
 
 A composition pack MUST NOT redefine the claims or evidence of a pack it references. Its `claims.md` contains only claims about the composition itself; the referenced packs remain the canonical source for their own content.
