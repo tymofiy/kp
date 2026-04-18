@@ -94,8 +94,27 @@ PACK.yaml is a YAML file declaring pack identity and configuration. The normativ
 | `tags` | array | Topical tags for discovery and classification. Strict kebab-case (`^[a-z0-9]+(-[a-z0-9]+)*$`), unique |
 | `views` | array | View declarations with `name`, `file`, `purpose`, `display_as` (all required), `hint` (optional). Voice views add `voice` (boolean), `duration` (string, e.g. `~90 seconds`), `pace` (enum: `brisk`, `measured`, `deliberate`). When `voice` is `true`, `duration` and `pace` are REQUIRED. |
 | `tier` | enum | `hub`, `detail`, `standalone` |
+| `extensions` | object | Extension lane for experimental or implementation-specific manifest metadata. Consumers ignore unknown extension content. |
 
 The full set of optional fields and conditional constraints is defined in the JSON Schema. Key conditionals: when `tier` is `hub`, `sub_packs` is REQUIRED; when `sensitivity` is `confidential` or `restricted`, `channels` MUST NOT contain `public` or `org`; when `sensitivity` is `internal`, `channels` MUST NOT contain `public`; when a view declares `voice: true`, `duration` and `pace` are REQUIRED on that view entry.
+
+### Manifest Extensions
+
+KP:1 keeps the manifest root closed: fields not defined by the schema are invalid. Experimental or implementation-specific metadata MUST live under the optional `extensions` object instead of appearing as new top-level keys.
+
+Consumers MUST ignore extension content they do not understand. Extension content MUST NOT redefine the semantics of core KP fields or relax core validation rules.
+
+Extension names and shapes are defined by their producers, not by KP:1. The `ai_brief` payload below is one such producer-defined example.
+
+Example:
+
+```yaml
+extensions:
+  ai_brief:
+    version: 1
+    verdict: acceptable
+    headline: "Strong base attribution, but provenance gap remains"
+```
 
 ### Example
 
@@ -107,6 +126,11 @@ author: Jane Chen
 confidence:
   scale: sherman_kent
   normalize: true
+extensions:
+  ai_brief:
+    version: 1
+    verdict: acceptable
+    headline: "Strong base attribution, but provenance gap remains"
 ```
 
 ---
