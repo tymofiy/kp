@@ -78,7 +78,7 @@ optional context with relations to other claims.
 | Directory | Purpose |
 |-----------|---------|
 | `spec/` | Normative specification -- [CORE.md](spec/CORE.md), [SPEC.md](spec/SPEC.md), and companion documents |
-| `conformance/` | PEG grammar, JSON Schema, and 10 test fixtures |
+| `conformance/` | PEG grammar, JSON Schema, and 11 test fixtures |
 | `examples/` | Two complete `.kpack` examples |
 | `positioning/` | Public-facing positioning and design rationale |
 | `research/` | Benchmark design and prior art analysis |
@@ -110,17 +110,18 @@ The [conformance suite](conformance/) provides formal validation tools:
   definition of claims.md syntax
 - **JSON Schema** (`conformance/grammar/kp-pack.schema.json`) -- validation
   schema for PACK.yaml manifests
-- **10 test fixtures** -- 5 valid packs that must be accepted, 5 invalid packs
+- **11 test fixtures** -- 6 valid packs that must be accepted, 5 invalid packs
   that must be rejected with specific errors
 - **2 complete example packs** -- the kpacks in `examples/` are validated by
   the runner as part of the suite, so the live examples are themselves
   conformance tests
 
-The runner (`conformance/run.py`) reports **12/12 passed** on a conformant
-implementation: 10 fixture tests + 2 example validations. A conformant
+The runner (`conformance/run.py`) reports **13/13 passed** on a conformant
+implementation: 11 fixture tests + 2 example validations. A conformant
 implementation parses all valid fixtures, rejects all invalid ones, validates
-PACK.yaml against the schema, and enforces semantic constraints SC-01 through
-SC-11. See [conformance/README.md](conformance/README.md) for details.
+PACK.yaml against the schema, validates `signatures.yaml` against its schema
+when present, and enforces semantic constraints SC-01 through SC-11. See
+[conformance/README.md](conformance/README.md) for details.
 
 ## Interoperability
 
@@ -135,11 +136,11 @@ format's genuinely novel contributions.
 
 ## Status
 
-This is an **editor's draft** maintained by a single editor in a public repository. It is published as `KP:1 Public Draft — 2026-04` (git tag `v0.7-preview`). It has a formal grammar, a JSON Schema, a conformance suite with 10 test fixtures, and two reference examples.
+This is an **editor's draft** maintained by a single editor in a public repository. It is published as `KP:1 Public Draft — 2026-04` (git tag `v0.7-preview`, with subsequent preview revisions through v0.7.5 documented in [`spec/CHANGELOG.md`](spec/CHANGELOG.md)). It has a formal grammar, a JSON Schema, a conformance suite with 11 test fixtures, and two reference examples.
 
 The specification is **not final** and may change in any way at any time, including breaking changes. It is **not yet ratified** by any standards body. Compatibility commitments will arrive only with a non-draft version. See [`GOVERNANCE.md`](GOVERNANCE.md) for the full governance picture, including how decisions are made during the preview phase and what changes when the Knowledge Pack Foundation is incorporated.
 
-The current phase is **feedback-only**: the editor welcomes issues, comparisons, ambiguity reports, and adversarial review through GitHub issues, but does not accept external pull requests modifying normative spec text. See [`CONTRIBUTING.md`](CONTRIBUTING.md) for details.
+The current phase is **feedback-only**: the editor welcomes issues, comparisons, ambiguity reports, and critical review through GitHub issues, but does not accept external pull requests modifying normative spec text. See [`CONTRIBUTING.md`](CONTRIBUTING.md) for details.
 
 ## License
 

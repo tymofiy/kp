@@ -14,9 +14,9 @@ The normative contract for Knowledge Pack version 1.
 -- everything required to build a conformant KP:1 parser and validator. If you
 are implementing KP:1, CORE.md is sufficient.
 
-**[SPEC.md](SPEC.md)** is the full specification (~107KB). It covers the same
-ground as CORE.md plus all companion topics in a single document. It predates
-CORE.md and contains additional discussion and rationale.
+**[SPEC.md](SPEC.md)** is the full specification (~110 KB). It covers the
+same ground as CORE.md plus all companion topics in a single document. It
+predates CORE.md and contains additional discussion and rationale.
 
 **Companion documents** extend the Core with optional features:
 
