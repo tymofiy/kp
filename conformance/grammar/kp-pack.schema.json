@@ -146,7 +146,7 @@
         },
         "reviewed_by": {
           "type": ["string", "null"],
-          "description": "Reviewer name, or null if unreviewed."
+          "description": "Name of the independent reviewer, or null if unreviewed."
         },
         "review_date": {
           "type": ["string", "null"],
