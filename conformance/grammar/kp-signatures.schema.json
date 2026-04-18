@@ -2,65 +2,111 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://kp.dev/schemas/kp-signatures-v1.json",
   "title": "KP:1 signatures.yaml Schema",
-  "description": "JSON Schema for the signatures.yaml integrity manifest in a KP:1 knowledge pack. Provides cryptographic hashes and optional signing for integrity verification.",
+  "description": "JSON Schema for the signatures.yaml integrity manifest in a KP:1 knowledge pack. Aligned with ARCHIVE.md §4 (v0.7.3+).",
   "type": "object",
-  "required": ["algorithm", "files"],
+  "required": ["algorithm", "pack_hash", "files", "sealed_at", "sealed_by"],
   "additionalProperties": false,
   "properties": {
     "algorithm": {
       "type": "string",
-      "enum": ["sha-256", "sha-384", "sha-512"],
-      "description": "Hash algorithm used for all file digests."
+      "enum": ["SHA-256"],
+      "description": "Hash algorithm. Currently only SHA-256 (future-proofed for upgrades)."
     },
-    "signed_at": {
+    "pack_id": {
       "type": "string",
-      "format": "date-time",
-      "description": "ISO 8601 timestamp of when the hashes were computed and optionally signed."
+      "description": "Stable pack identity across versions. OPTIONAL in the schema for backward compatibility with pre-documentation archives; new archives SHOULD include it."
+    },
+    "pack_name": {
+      "type": "string",
+      "description": "Optional self-describing pack name (equal to PACK.yaml name). Enables receipts and relay indexing without a second file read."
+    },
+    "pack_version": {
+      "type": "string",
+      "description": "Optional self-describing pack version (equal to PACK.yaml version). Enables receipts without a second file read."
+    },
+    "pack_hash": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$",
+      "description": "Pack content hash computed per ARCHIVE.md §3 (lowercase hex SHA-256 digest, 64 characters)."
     },
     "files": {
       "type": "object",
       "additionalProperties": {
         "type": "string",
-        "pattern": "^[a-f0-9]+$",
-        "description": "Hex-encoded content hash for the file."
+        "pattern": "^[a-f0-9]{64}$"
+      },
+      "propertyNames": {
+        "not": { "const": "signatures.yaml" }
       },
       "minProperties": 1,
-      "description": "Map of file paths (relative to pack root) to their hex-encoded content hashes. At minimum should include PACK.yaml and claims.md."
+      "description": "Map of NFC-normalized relative file paths (with / separator) to their lowercase hex SHA-256 digests. MUST NOT include the root-level signatures.yaml itself (enforced via propertyNames)."
     },
-    "signing_key": {
+    "sealed_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 UTC timestamp of sealing (e.g., 2026-04-12T14:30:00Z)."
+    },
+    "sealed_by": {
+      "type": "string",
+      "description": "Identifier of the sealing system (e.g., capture-client, analysis-service)."
+    },
+    "parent": {
       "type": "object",
-      "required": ["type", "public_key"],
+      "required": ["version", "pack_hash"],
       "additionalProperties": false,
       "properties": {
-        "type": {
+        "version": {
           "type": "string",
-          "enum": ["ed25519", "ecdsa-p256", "rsa-4096"],
-          "description": "Key algorithm."
+          "description": "Parent pack's version string from its PACK.yaml."
         },
-        "public_key": {
+        "pack_hash": {
           "type": "string",
-          "description": "Base64-encoded public key."
+          "pattern": "^[a-f0-9]{64}$",
+          "description": "Parent pack's pack_hash (lowercase hex)."
+        },
+        "merge_parents": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["version", "pack_hash"],
+            "additionalProperties": false,
+            "properties": {
+              "version": {
+                "type": "string",
+                "description": "Additional parent's version string."
+              },
+              "pack_hash": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$",
+                "description": "Additional parent's pack_hash (lowercase hex)."
+              }
+            }
+          },
+          "description": "Additional parent references for branch-merge lineage. OPTIONAL; absent in single-parent archives."
+        }
+      },
+      "description": "Parent version reference. Absent for v1 of a pack; present for v2 and later."
+    },
+    "signature": {
+      "type": "object",
+      "required": ["method", "value", "key_id"],
+      "additionalProperties": false,
+      "properties": {
+        "method": {
+          "type": "string",
+          "enum": ["ed25519", "hmac-sha256", "rsa-pss-sha256"],
+          "description": "Signing method identifier."
+        },
+        "value": {
+          "type": "string",
+          "description": "Base64-encoded (standard, padded) signature over the signing payload defined in ARCHIVE.md §4.2."
         },
         "key_id": {
           "type": "string",
-          "description": "Optional key identifier for key management systems."
+          "description": "Opaque key identifier for locating the verification key."
         }
       },
-      "description": "Signing key reference. Required when a signature is present."
-    },
-    "signature": {
-      "type": "string",
-      "description": "Base64-encoded cryptographic signature over the canonical hash manifest."
+      "description": "Optional digital signature. When present, all three sub-fields are REQUIRED."
     }
-  },
-  "allOf": [
-    {
-      "if": {
-        "required": ["signature"]
-      },
-      "then": {
-        "required": ["signing_key", "signed_at"]
-      }
-    }
-  ]
+  }
 }
