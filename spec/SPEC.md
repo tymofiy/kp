@@ -249,7 +249,7 @@ conflicts:                             # Known contradictions with other packs
 provenance:                            # Trust context (S-C1: Poisoned Pack)
   author: Jane Chen                    #   Who created/maintains this
   role: independent                    #   manufacturer | independent | regulator | academic | individual
-  reviewed_by: null                    #   Independent reviewer if any
+  reviewed_by: null                    #   Independent reviewer's name, if any
   review_date: null                    #   When independently reviewed
   signed: false                        #   Cryptographic signature present?
 
@@ -774,7 +774,7 @@ Definition and policy YAML are designed for domain expert review and AI consumpt
 > **type:** multi_source_synthesis | **captured:** 2026-03-01
 > **source:** Internal analysis — 10 independent assessments across multiple AI models
 
-Multi-model synthesis across 10 analyses and 8 distinct models. All converged
+Aggregate synthesis across 10 analyses and 8 distinct models. All converged
 on cost decline being structural (manufacturing learning curve) rather than
 cyclical (subsidy-driven).
 
