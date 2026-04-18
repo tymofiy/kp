@@ -20,12 +20,13 @@ conformance/
     kp-signatures.schema.json  JSON Schema for signatures.yaml
   fixtures/
     README.md                  Fixture catalog & coverage matrix
-    valid/                     5 packs that MUST be accepted
+    valid/                     6 packs that MUST be accepted
       minimal.kpack/
       typical.kpack/
       verbose-claims.kpack/
       mixed-syntax.kpack/
       maximal.kpack/
+      composition.kpack/
     invalid/                   5 packs that MUST be rejected
       no-rosetta.kpack/
       orphan-evidence-ref.kpack/
@@ -52,13 +53,13 @@ pip install -r requirements.txt
 python3 conformance/run.py
 ```
 
-Expected result: `12/12 passed`. The runner has two Python dependencies (`pyyaml`, `jsonschema`) declared in `requirements.txt`.
+Expected result: `13/13 passed`. The runner has two Python dependencies (`pyyaml`, `jsonschema`) declared in `requirements.txt`.
 
 ## Grammar vs Runner
 
 The PEG grammar in `grammar/kp-claims.peg` is the **normative** reference for KP:1 claim syntax. It is what implementations should target.
 
-The `run.py` runner in this preview release validates fixtures against **equivalent regular-expression patterns** rather than parsing through the PEG grammar directly. The two paths are kept in sync by hand. A future phase will replace the regex layer with a PEG-driven parser using a library such as `parsimonious` or `lark`. The fixture suite is the contract: any future runner that passes 12/12 against these fixtures is acceptable.
+The `run.py` runner in this preview release validates fixtures against **equivalent regular-expression patterns** rather than parsing through the PEG grammar directly. The two paths are kept in sync by hand. A future phase will replace the regex layer with a PEG-driven parser using a library such as `parsimonious` or `lark`. The fixture suite is the contract: any future runner that passes 13/13 against these fixtures is acceptable.
 
 If you want to implement a conforming parser today, target the PEG grammar, not the runner's regexes.
 
@@ -66,9 +67,9 @@ If you want to implement a conforming parser today, target the PEG grammar, not 
 
 | Phase | Description | Status |
 |-------|-------------|--------|
-| C1 | Formal grammar (PEG), JSON Schema, 10 fixtures | **Done** |
+| C1 | Formal grammar (PEG), JSON Schema, 11 fixtures | **Done** |
 | C2 | YAML schemas for signatures.yaml, composition.yaml | **Done** |
-| C3 | Automated test runner (`run.py`, 12/12 pass) | **Done** |
+| C3 | Automated test runner (`run.py`, 13/13 pass) | **Done** |
 | C4 | Round-trip consistency tests | Not started |
 
 ## Key Design Decisions

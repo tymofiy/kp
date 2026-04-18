@@ -1,10 +1,12 @@
 # KP:1 Conformance Fixtures
 
-> **Status:** Complete — Phase C3 (automated runner passes 12/12)
+> **Status:** Complete — Phase C3 (automated runner passes 13/13)
 > **Spec version:** KP:1
 
 Test fixtures for KP:1 conformance validation. Each fixture is a complete
-`.kpack` directory with `PACK.yaml`, `claims.md`, and `evidence.md`.
+`.kpack` directory. Standard packs include `PACK.yaml`, `claims.md`, and
+`evidence.md`; composition packs (per SPEC.md §2) include `composition.yaml`
+and MAY omit `evidence.md`.
 
 ## Valid Fixtures
 
@@ -16,7 +18,8 @@ Implementations MUST accept all valid fixtures without errors.
 | `typical.kpack` | Realistic pack with common optional fields, relations, sections | 4 | Dense (4+6 pos) |
 | `verbose-claims.kpack` | All claims use verbose named-field syntax | 3 | Verbose only |
 | `mixed-syntax.kpack` | Dense and verbose claims coexist in one document | 5 | Both |
-| `maximal.kpack` | Every optional field, all relation types, versioned IDs, cross-pack refs | 14 | Both |
+| `maximal.kpack` | Every optional field, all relation types, versioned IDs, cross-pack refs; also includes a populated `signatures.yaml` exercising the v0.7.5 integrity schema | 14 | Both |
+| `composition.kpack` | Structural fixture for composition packs: `composition.yaml` present, `evidence.md` omitted, prose-only `claims.md` (per SPEC.md §2) | 0 | N/A (structural) |
 
 ### Feature Coverage Matrix
 
@@ -44,6 +47,12 @@ Implementations MUST accept all valid fixtures without errors.
 | CalVer with -rev suffix | | | | | x |
 | Evidence: blockquote format | x | x | x | x | x |
 | Evidence: list format | | | | | x |
+
+The matrix covers claim-syntax features; `composition.kpack` is a structural
+fixture (it has no claim bullets) and exercises the composition-pack
+file-requirement rules from SPEC.md §2 instead. `maximal.kpack`'s
+`signatures.yaml` exercises the v0.7.5 integrity schema
+(`kp-signatures.schema.json`).
 
 ## Invalid Fixtures
 
@@ -87,6 +96,8 @@ python conformance/run.py
 ```
 
 This parses each `claims.md` against `grammar/kp-claims.peg`, validates each
-`PACK.yaml` against `grammar/kp-pack.schema.json`, runs semantic constraint
-checks (SC-01 through SC-11), and verifies that all valid fixtures pass and all
-invalid fixtures fail with expected errors. Current result: 12/12 tests pass.
+`PACK.yaml` against `grammar/kp-pack.schema.json`, validates each
+`signatures.yaml` against `grammar/kp-signatures.schema.json` when present,
+runs semantic constraint checks (SC-01 through SC-11), and verifies that all
+valid fixtures pass and all invalid fixtures fail with expected errors.
+Current result: 13/13 tests pass.
