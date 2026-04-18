@@ -317,6 +317,12 @@ notes:                                 # AI note-taking metadata (see spec/NOTES
   participants: []                     #   Meeting participants
   disclosed: false                     #   Was AI note-taking disclosed to participants?
   consent: null                        #   Required for mode: passive — obtained | declined | pending
+
+extensions:                            # Experimental / implementation-specific manifest metadata
+  ai_brief:                            #   Example extension payload (not core KP:1)
+    version: 1
+    verdict: acceptable
+    headline: "Strong base attribution, but provenance gap remains"
 ```
 
 ### Version Semantics
@@ -397,6 +403,14 @@ channels: [org, public]
 
 The spec defines the `channels` field and its vocabulary. How channels map to
 infrastructure is a deployment concern.
+
+### 3.2 Manifest Extensions
+
+The PACK.yaml root is intentionally closed. New or experimental manifest keys MUST NOT be added at the top level unless and until they are standardized by a future KP revision.
+
+Implementation-specific or experimental metadata MUST live under the optional `extensions` object. Consumers MUST ignore extension content they do not understand. Extension content MUST NOT override or redefine the meaning of core KP fields.
+
+The example payload shown earlier (`ai_brief`) is illustrative — extension names and shapes are defined by their producers, not by KP:1. This creates a narrow compatibility lane: tools can ship experiments without forcing a schema break or prematurely promoting the payload into the core standard.
 
 ---
 

@@ -5,6 +5,20 @@
 
 ---
 
+## v0.7.4 — 2026-04-16
+
+**Manifest extension lane — standardizes where experiments belong without widening the core schema.**
+
+### Added
+- **`extensions`** (PACK.yaml, optional object) — Explicit lane for experimental or implementation-specific manifest metadata. Root-level unknown fields remain invalid; experiments now belong under `extensions`.
+
+### Changed
+- **CORE.md** — Documents the manifest root as closed and defines the `extensions` object as the sanctioned compatibility lane.
+- **SPEC.md** — Adds example manifest usage and guidance that experimental fields such as `ai_brief` belong under `extensions`, not at the manifest root.
+- **Schema** — Adds `extensions` as an allowed top-level object while preserving `additionalProperties: false` at the manifest root.
+
+---
+
 ## v0.7.3 — 2026-04-12
 
 **Archive format — sealed, hashed, versioned single-file transport for Knowledge Packs.**

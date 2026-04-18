@@ -386,6 +386,11 @@
       "type": "object",
       "additionalProperties": true,
       "description": "AI note-taking metadata."
+    },
+    "extensions": {
+      "type": "object",
+      "additionalProperties": true,
+      "description": "Extension lane for experimental or implementation-specific manifest metadata. Consumers MUST ignore unrecognized extension content."
     }
   },
   "allOf": [
