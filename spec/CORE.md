@@ -417,7 +417,13 @@ Description prose.
 | `captured` | Yes | ISO date when evidence was obtained |
 | `source` | Yes | URI, file path, or description of the source |
 
-Optional fields: `SHA-256` / `sha-256`, `Notes` / `notes`, `Prepared` / `prepared`. Field names are case-insensitive in validation (AR-07).
+Optional fields:
+
+- `reliability` — NATO Admiralty source reliability tier. Single uppercase letter `A`–`F`. `A` = completely reliable, `F` = reliability cannot be judged.
+- `credibility` — NATO Admiralty information credibility for this specific fact. Single digit `1`–`6`. `1` = confirmed by other independent sources, `6` = credibility cannot be judged. Orthogonal to `reliability`: an `A`-tier source can carry a `6`-credibility statement when uncorroborated.
+- `SHA-256` / `sha-256`, `Notes` / `notes`, `Prepared` / `prepared`.
+
+Field names are case-insensitive in validation (AR-07). The combined `reliability` + `credibility` pair (e.g. `A1`, `B2`, `F6`) is the standard intelligence-tradecraft Admiralty grade and renderers MAY surface it as such.
 
 Evidence IDs use the pattern `E` + one or more digits (AR-02). IDs are stable — once assigned, an ID always refers to the same source material.
 

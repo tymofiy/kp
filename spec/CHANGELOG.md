@@ -5,6 +5,20 @@
 
 ---
 
+## v0.7.6 — 2026-04-19
+
+**Documented optional Admiralty grading fields on evidence.**
+
+### Added
+
+- **`reliability` and `credibility` evidence fields** — Documented in CORE.md §10 as optional evidence fields with normative values from the NATO Admiralty Code. `reliability` is the source-tier letter (`A`–`F`); `credibility` is the per-fact information credibility digit (`1`–`6`). Together they form the standard intelligence-tradecraft `A1`–`F6` grade. Both were previously accepted as open-vocabulary AR-07 fields and ignored by validators; this change makes the values normative without breaking any existing pack (both remain optional, parsers MUST tolerate absence).
+
+### Notes
+
+No breaking changes. Packs produced before this entry remain valid. Packs that already used `reliability` informally (e.g. `**reliability:** moderate`) MAY continue to do so but SHOULD migrate to the single-letter `A`–`F` form for renderer interoperability.
+
+---
+
 ## v0.7.5 — 2026-04-18
 
 **Signatures schema alignment + composition-pack file requirements.**
