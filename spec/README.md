@@ -33,6 +33,7 @@ predates CORE.md and contains additional discussion and rationale.
 | [BUNDLE.md](BUNDLE.md) | Bundling and distribution |
 | [ARCHIVE.md](ARCHIVE.md) | ZIP archive, integrity chain, signatures |
 | [DEFINITIONS.md](DEFINITIONS.md) | Definition and policy document kinds |
+| [EXTENSIONS.md](EXTENSIONS.md) | Producer-defined `extensions.*` blocks catalogue |
 | [NOTES.md](NOTES.md) | AI note-taking integration |
 
 ## Interoperability
