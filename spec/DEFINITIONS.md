@@ -211,6 +211,41 @@ Edge attributes are particularly important for:
 
 **Graph modeling note:** A `provenance_chain` with edge attributes is equivalent to an event-based model where each ownership transition is a discrete event. The relation-with-attributes model is more compact for simple chains; for complex provenance with multiple parties per event, consider modeling `OwnershipEvent` as a separate entity type with dedicated relations. The right choice depends on domain complexity — start with edge attributes, promote to event entities when the edges become too heavy.
 
+### Consumer Pattern — `extensions.relations` in PACK.yaml
+
+The `relation_types` schema above defines the *vocabulary*. Producers in
+the Nova ecosystem write *instances* of relations under
+[`extensions.relations`](EXTENSIONS.md#23-extensionsrelations--typed-edges)
+in PACK.yaml, where each instance references entities declared under
+[`extensions.entities`](EXTENSIONS.md#22-extensionsentities--typed-entity-graph):
+
+```yaml
+# In PACK.yaml — instance of `provenance_chain` with edge_attributes
+extensions:
+  entities:
+    - id: ent_a_artwork_xyz
+      type: asset
+      canonical: "Untitled (1962)"
+    - id: ent_p_collector_a
+      type: person
+      canonical: "Sarah Whitfield"
+  relations:
+    - id: rel_001
+      from: ent_a_artwork_xyz
+      to: ent_p_collector_a
+      type: provenance_chain               # vocabulary above
+      since: "1989-04-12"                  # maps to start_date edge_attribute
+      until: "2003-11-08"                  # maps to end_date edge_attribute
+      attributes:
+        acquisition_method: auction        # enum from edge_attributes
+        sale_price: 425000                 # sensitive — audit-only surface
+        evidence_ids: [E007]
+```
+
+Edge attributes carrying `sensitive: true` (e.g. `sale_price`) MUST NOT
+appear in user-facing dossier prose; they surface in audit views only. See
+EXTENSIONS.md §3 for the cross-cutting discipline.
+
 ---
 
 ## 4. Policy Schema
