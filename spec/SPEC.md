@@ -845,7 +845,19 @@ by Fraunhofer ISE CalLab. Commercial module target: 2028.
 
 ---
 
-## 7. entities.md — Entity Definitions (Optional)
+## 7. Deprecated: entities.md — Entity Definitions
+
+> **Deprecated as of v0.7.6 (2026-04-28).** New packs MUST NOT emit
+> `entities.md`. Use [`extensions.entities`](EXTENSIONS.md#22-extensionsentities--typed-entity-graph)
+> for the typed entity graph and [`extensions.relations`](EXTENSIONS.md#23-extensionsrelations--typed-edges)
+> for typed edges. The successor surfaces carry stable Nova IDs, an external-ID
+> vocabulary suitable for cross-pack resolution, per-claim `entity_refs`, and
+> the `relation_types` schema from [DEFINITIONS.md §3](DEFINITIONS.md). A
+> one-shot migration script in kp-forge rewrites legacy packs into the new
+> shape. Legacy `entities.md` packs continue to validate; the change is
+> producer-side guidance, not a validation removal.
+
+The following sections are preserved for legacy reference.
 
 ### Structure
 
