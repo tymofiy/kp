@@ -71,6 +71,7 @@ INVALID_EXPECTED = {
 EXAMPLE_ORDER = [
     "solar-energy-market.kpack",
     "kp-external-assessment.kpack",
+    "art-acquisition-decision.kpack",
 ]
 
 VERBOSE_TYPE_MAP = {
