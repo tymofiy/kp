@@ -33,7 +33,7 @@ Pick your task. Read the **Required** column. The **Secondary** column is useful
 | **B. Author a new pack** | [`spec/CORE.md`](spec/CORE.md), [`spec/AUTHORING.md`](spec/AUTHORING.md), [`conformance/fixtures/valid/maximal.kpack/`](conformance/fixtures/valid/maximal.kpack/), [`examples/art-acquisition-decision.kpack/`](examples/art-acquisition-decision.kpack/) (walks the rubrics end-to-end) | [`spec/EXTENSIONS.md`](spec/EXTENSIONS.md) for `extensions.*` payloads; [`spec/RATIONALE.md`](spec/RATIONALE.md) §3 specifically for the **Stranger Test** and the Why-it-exists rationale on `display.short_title` / `tagline` / `hook` / `hint` (the rest of RATIONALE.md is positioning and can be skipped for authoring) | `spec/SPEC.md` (full normative — useful only for hard cases CORE.md doesn't cover), `conformance/run.py` (validator internals) |
 | **C. Reconcile two packs with contradictory claims** | [`spec/RECONCILIATION.md`](spec/RECONCILIATION.md) (it is a stub by design — read it to understand the deferral), [`spec/CONSISTENCY.md`](spec/CONSISTENCY.md), [`spec/CORE.md`](spec/CORE.md) (relation symbols including cross-pack `↔`) | [`spec/AUTHORING.md`](spec/AUTHORING.md) §4 "Contradiction Qualifiers" — note: §4 covers single-pack contradictions; cross-pack composition syntax is not specified in v0.8.0-preview | **For v0.8.0-preview, do NOT produce a "reconciled" canonical pack.** Cross-pack reconciliation is deliberately deferred (see RECONCILIATION.md). Instead: produce an annotated comparison/consistency report that surfaces the disagreement to a human reviewer, using `↔packB#claim-id` cross-pack references and the single-pack `⊗!` / `⊗~` rubric where applicable. The canonical "compose two packs into one reconciled pack" protocol does not exist yet. |
 | **D. Translate a pack into a second locale** | [`spec/MULTILINGUAL.md`](spec/MULTILINGUAL.md), [`spec/CORE.md`](spec/CORE.md) §10 (Views) | [`spec/VOICE.md`](spec/VOICE.md) if voice views are involved | `spec/SPEC.md`, `conformance/`, all companions except MULTILINGUAL/VOICE |
-| **E. Compose a meeting / briefing pack from existing packs** | [`spec/COMPOSITION.md`](spec/COMPOSITION.md), [`spec/CORE.md`](spec/CORE.md) | [`conformance/fixtures/valid/composition.kpack/`](conformance/fixtures/valid/composition.kpack/) | `spec/SPEC.md`, the rest |
+| **E. Compose a meeting / briefing pack from existing packs** | [`spec/COMPOSITION.md`](spec/COMPOSITION.md), [`spec/CORE.md`](spec/CORE.md) | [`conformance/fixtures/valid/composition.kpack/`](conformance/fixtures/valid/composition.kpack/); [`spec/LIFECYCLE.md`](spec/LIFECYCLE.md) §6 (supersession cascade — relevant when a composed standing pack supersedes a claim the meeting pack referenced) | `spec/SPEC.md`, the rest |
 | **F. Self-driving voice playback of a pack** | [`spec/PLAYBACK.md`](spec/PLAYBACK.md), [`spec/VOICE.md`](spec/VOICE.md) | [`spec/CORE.md`](spec/CORE.md) §10 | All other companions |
 
 If your task is none of A–F, default to **Task B** reading set and judge from there.
@@ -62,13 +62,13 @@ else:
     print("PASS")
 ```
 
-To run the full conformance suite (15 fixture + example tests):
+To run the full conformance suite (19 fixture + example tests):
 
 ```bash
 python3 conformance/run.py
 ```
 
-If validation fails, the runner names the **semantic constraint** (`SC-01` … `SC-11`) or **ambiguity resolution** (`AR-01` … `AR-16`) you violated. Look those up in [`spec/CORE.md`](spec/CORE.md) §12 and Appendix B.
+If validation fails, the runner names the **semantic constraint** (`SC-01` … `SC-12`) or **ambiguity resolution** (`AR-01` … `AR-16`) you violated. Look those up in [`spec/CORE.md`](spec/CORE.md) §12 and Appendix B.
 
 ---
 

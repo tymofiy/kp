@@ -283,6 +283,7 @@ KP:1 sits in a small ecosystem of AI-facing content formats. The table below rec
 | MCP Resources | Knowledge Packs can be served as MCP resources at runtime |
 | llms.txt | Discovery — llms.txt could point to available Knowledge Packs |
 | Entity-Claim-Evidence (ECS) systems | Implementation pattern — ECS is an operational index; Knowledge Packs are the canonical source. See [STORAGE.md](STORAGE.md) |
+| schema.org / JSON-LD knowledge graphs | Adjacent — schema.org/JSON-LD is the dominant production approach for structured knowledge on the web. KP:1 differs in three ways: (1) plain-text density (`{0.95\|i\|E001\|2026-03-01}` is materially more token-efficient than the equivalent JSON-LD object); (2) first-class uncertainty and contradiction primitives that JSON-LD vocabularies do not standardize; (3) the three-surface architecture (claims / display / voice) is intrinsic, not a rendering layer over a single semantic graph. Both approaches can compose: a KP:1 pack can map to JSON-LD via [MAPPING.md](MAPPING.md). |
 | JSON-LD / RDF | Inspiration — semantic structure, but optimized for neural nets, not symbol processors |
 | Nanopublications | Spiritual ancestor — assertion + provenance, but in markdown, not RDF |
 

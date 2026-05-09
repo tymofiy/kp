@@ -20,7 +20,7 @@ This directory contains the normative grammar and schema for KP:1.
 The grammar is split into two layers:
 
 1. **Syntactic** (PEG) — can the document be parsed?
-2. **Semantic** (post-parse constraints SC-01 through SC-11) — is the parsed document valid?
+2. **Semantic** (post-parse constraints SC-01 through SC-12) — is the parsed document valid?
 
 This split is intentional. PEG grammars cannot express cross-reference checks,
 range constraints on parsed values, or acyclicity. Those are listed as semantic
@@ -196,12 +196,12 @@ text until the next delimiter (comma, newline, or end of line).
 
 **Strict** (MUST pass all):
 - Syntactic: document matches PEG grammar
-- Semantic: all SC-01 through SC-11 constraints pass
+- Semantic: all SC-01 through SC-12 constraints pass
 - Schema: PACK.yaml validates against JSON Schema
 
 **Permissive** (MUST pass syntactic, MAY warn on semantic):
 - Syntactic: document matches PEG grammar
-- Semantic: SC-01 through SC-06 are errors; SC-07 through SC-11 are warnings
+- Semantic: SC-01 through SC-06 are errors; SC-07 through SC-12 are warnings
 - Schema: PACK.yaml required fields validate; optional field types warn
 
 The distinction matters for tooling: an editor can operate in permissive mode

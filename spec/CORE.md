@@ -9,6 +9,8 @@
 > **Derived from:** SPEC.md, `conformance/grammar/kp-claims.peg`, `conformance/grammar/kp-pack.schema.json`
 > **Lane:** Implementer surface — see [README.md](README.md) for the three-lane structure (CORE = implementer, SPEC = full normative + rationale, companions = topic-authoritative for their domains).
 
+> **If you are authoring a pack** (rather than implementing a parser/validator), read [`AUTHORING.md`](AUTHORING.md) first. CORE.md tells you what a syntactically valid pack looks like; AUTHORING.md tells you how to make epistemically sound choices when authoring one.
+
 ## 1. Introduction
 
 KP:1 is a plain-text format for packaging epistemic state — claims with confidence, evidence, relationships, and contradictions. This document specifies everything required to **implement a conformant KP:1 parser and validator**. It is the normative core of the specification.
@@ -100,8 +102,12 @@ PACK.yaml is a YAML file declaring pack identity and configuration. The normativ
 | `views` | array | View declarations with `name`, `file`, `purpose`, `display_as` (all required), `hint` (optional). Voice views add `voice` (boolean), `duration` (string, e.g. `~90 seconds`), `pace` (enum: `brisk`, `measured`, `deliberate`). When `voice` is `true`, `duration` and `pace` are REQUIRED. |
 | `tier` | enum | `hub`, `detail`, `standalone` |
 | `extensions` | object | Extension lane for experimental or implementation-specific manifest metadata. Consumers ignore unknown extension content. |
+| `composition` | string | Path to the composition file for composition packs (default `composition.yaml`). See [COMPOSITION.md](COMPOSITION.md). |
+| `files` | object | Non-standard file name overrides (free-form; rarely used). |
 
 The full set of optional fields and conditional constraints is defined in the JSON Schema. Key conditionals: when `tier` is `hub`, `sub_packs` is REQUIRED; when `sensitivity` is `confidential` or `restricted`, `channels` MUST NOT contain `public` or `org`; when `sensitivity` is `internal`, `channels` MUST NOT contain `public`; when a view declares `voice: true`, `duration` and `pace` are REQUIRED on that view entry.
+
+**Decoration fields** (`linguistic_epoch`, `ontology`) are accepted by the schema but carry no consumer behavior in v0.8.0-preview. They are retained for backward compatibility with v0.7-era packs; new producers SHOULD place equivalent metadata under `extensions.*` until consumer semantics are defined in a future revision.
 
 ### Spec Onboarding Pointer
 
@@ -465,7 +471,7 @@ Views are pre-rendered GFM (GitHub-Flavored Markdown) documents for human consum
 
 ### Rules
 
-1. Views contain **no knowledge that is not in claims.md**. If a view states a fact, a corresponding claim MUST exist.
+1. Views contain **no knowledge that is not in claims.md**. If a view states a fact, a corresponding claim SHOULD exist. (As of v0.8.0-preview, this is editorial discipline — the conformance runner does not detect "view-laundering" patterns where a view introduces unsupported assertions. Authors are responsible; see [AUTHORING.md §11](AUTHORING.md) anti-pattern #4.)
 2. Views are **derived** from claims. If a view disagrees with claims.md, claims.md is authoritative.
 3. Each view is independently displayable — no cross-view dependencies.
 4. Views SHOULD NOT contain claim notation (`{0.95|i|E001}` metadata). They contain readable prose.
@@ -520,7 +526,7 @@ All three checks MUST pass:
 | Check | Scope | Criteria |
 |-------|-------|----------|
 | Syntactic | claims.md | Document matches PEG grammar |
-| Semantic | claims.md + evidence.md | All constraints SC-01 through SC-11 pass |
+| Semantic | claims.md + evidence.md | All constraints SC-01 through SC-12 pass |
 | Schema | PACK.yaml | Validates against JSON Schema |
 
 ### Permissive Level
@@ -529,7 +535,7 @@ All three checks MUST pass:
 |-------|-------|----------|
 | Syntactic | claims.md | Document matches PEG grammar (MUST pass) |
 | Semantic (errors) | claims.md | SC-01 through SC-06 MUST pass |
-| Semantic (warnings) | cross-file | SC-07 through SC-11 produce warnings, not errors |
+| Semantic (warnings) | cross-file | SC-07 through SC-12 produce warnings, not errors |
 | Schema | PACK.yaml | Required fields validate; optional field types produce warnings |
 
 The distinction serves tooling: editors operate in permissive mode during drafting, switching to strict for publishing.

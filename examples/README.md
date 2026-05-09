@@ -5,7 +5,7 @@
 
 > **Status:** Four reference examples — two carryover from v0.7, two new in v0.8.0-preview.
 
-Curated sample Knowledge Packs that demonstrate the format. Every example pack is validated by `python3 conformance/run.py` as part of the conformance suite (15/15 passing as of v0.8.0-preview).
+Curated sample Knowledge Packs that demonstrate the format. Every example pack is validated by `python3 conformance/run.py` as part of the conformance suite (19/19 passing as of v0.8.0-preview).
 
 ## Examples
 
@@ -42,4 +42,4 @@ pip install -r ../conformance/requirements.txt
 python3 ../conformance/run.py
 ```
 
-Expected output: `15/15 passed` (11 fixtures in `../conformance/fixtures/` + 4 examples here).
+Expected output: `19/19 passed` (15 fixtures in `../conformance/fixtures/` + 4 examples here).

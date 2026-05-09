@@ -9,7 +9,7 @@ The PEG grammar in grammar/kp-claims.peg is the normative reference for
 KP:1 claim syntax. This runner validates equivalent regular-expression
 patterns for v0.8.0-preview; a PEG-driven parser using parsimonious or
 lark is planned for a future phase. JSON Schema validation and semantic
-constraints SC-01 through SC-11 are also enforced. See
+constraints SC-01 through SC-12 are also enforced. See
 conformance/README.md for the grammar-vs-runner contract.
 
 Dependencies: pyyaml, jsonschema (see requirements.txt)
@@ -57,6 +57,10 @@ INVALID_ORDER = [
     "confidence-overflow.kpack",
     "duplicate-ids.kpack",
     "missing-evidence-field.kpack",
+    "cyclic-supersession.kpack",
+    "dangling-relation-target.kpack",
+    "wrong-pack-name.kpack",
+    "prediction-too-confident.kpack",
 ]
 
 # Expected error categories for invalid fixtures.
@@ -67,6 +71,10 @@ INVALID_EXPECTED = {
     "confidence-overflow.kpack": "SC-01",
     "duplicate-ids.kpack": "SC-02",
     "missing-evidence-field.kpack": "parse",
+    "cyclic-supersession.kpack": "SC-04",
+    "dangling-relation-target.kpack": "SC-05",
+    "wrong-pack-name.kpack": "SC-07",
+    "prediction-too-confident.kpack": "SC-12",
 }
 EXAMPLE_ORDER = [
     "solar-energy-market.kpack",

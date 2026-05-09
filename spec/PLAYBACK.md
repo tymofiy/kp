@@ -209,7 +209,21 @@ The contract is enforceable at the application layer; PLAYBACK does not specify 
 
 ## 9. Status and stability
 
-This entire companion is **experimental** for v0.8.0-preview. The schema may evolve before v0.9 based on observed behavior:
+This entire companion is **experimental** for v0.8.0-preview. Producers MAY emit `PlaybackPlan` artifacts and consumers SHOULD treat them as advisory.
+
+### Stable for v0.8.0-preview
+
+The following are committed for the v0.8.0-preview tag and will not change without a deprecation cycle:
+
+- The top-level `PlaybackPlan` shape (`pack_id`, `audience_profile`, `duration_tier`, `phases[]`, `resume_policy`, `handoff_policy`).
+- `AudienceProfile` field set (`familiarity`, `duration_tier`, `purpose`, `domain_lens`, `register`, `inferred`) and the enum values for the four required fields.
+- The four primary `register` values (`plain` / `curatorial` / `technical` / `investor`) and their tie to [VOICE.md §4.1](VOICE.md).
+- Rule P1 (the language model MUST NOT have a phase-advancement tool) and Rule P2 (only the real-time voice pipeline actor sends protocol messages; only the playback controller decides current phase). These are the architectural invariants the format depends on.
+- The `min_tier` mechanism (one PlaybackPlan describes all three tiers via filtering).
+
+### Mutable before v0.9
+
+The schema may evolve based on observed behavior:
 
 - The phase `source_refs[]` vocabulary is likely to expand once real packs ship presentations.
 - `transition_intent` enum values may consolidate or expand based on prosody experiments.

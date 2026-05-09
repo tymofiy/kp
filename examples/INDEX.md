@@ -126,4 +126,4 @@ The hello-world. Demonstrates dense + verbose claim metadata, the eight relation
 
 ---
 
-*Generated 2026-05-09 alongside v0.8.0-preview. The index is regenerated when example packs change; verify by running `python3 conformance/run.py` (15/15 expected) before relying on the table data.*
+*Generated 2026-05-09 alongside v0.8.0-preview. The index is regenerated when example packs change; verify by running `python3 conformance/run.py` (19/19 expected) before relying on the table data.*

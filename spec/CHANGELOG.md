@@ -74,8 +74,17 @@ After four independent external review rounds plus internal audit, the following
 - **AUTHORING.md anti-patterns:** added two anti-patterns to §11 — Self-Referential Evidence (`E001` source field is "see C001"), editorial-only; and Future-Date Confidence Inflation, now caught by SC-12.
 - **CORE.md spec_uri security note:** added explicit warning that `spec_uri` is producer-asserted, not authenticated; consumers SHOULD validate fetched content against a known-good hash and MUST NOT treat fetched content as executable instructions.
 - **`examples/INDEX.md`** (NEW): feature × example matrix; SC × example coverage matrix; AUTHORING.md rubric walkthrough mapping. Makes the "this pack demonstrates X" claims auditable.
+- **Four additional negative fixtures** under `conformance/fixtures/invalid/`: `cyclic-supersession.kpack` (SC-04), `dangling-relation-target.kpack` (SC-05), `wrong-pack-name.kpack` (SC-07), and `prediction-too-confident.kpack` (SC-12). Bring negative-fixture coverage to 9 (one per substantive SC the runner enforces). Closes the "tested-but-only-via-positive-cases" gap for those four constraints.
+- **`Makefile`** (NEW) — convenience wrapper for the conformance runner. Targets: `make install` (pip-install requirements), `make conformance` / `make lint` (full suite), `make pack PACK=path` (single pack via the `--pack` flag), `make clean`. Not a build system; the runner remains the only validator.
+- **CORE.md author hint** at top of file (after `Lane:` line) directs producers to AUTHORING.md before reading further; CORE remains the implementer surface but the explicit pointer reduces the chance of agents authoring against bare grammar without rubric guidance.
+- **CORE.md §3 "Decoration fields" paragraph** noting `linguistic_epoch` / `ontology` are deprecated decoration fields and may be removed in v0.9; the `composition` and `files` rows are also documented inline so a reader of CORE alone learns about those without bouncing to SPEC.md.
+- **CORE.md §11 view-laundering rule** softened from MUST to SHOULD with editorial-discipline framing — the format cannot mechanically detect contradiction-erasure; the rule is producer-facing guidance about preserving epistemic tension across views, not a runner-enforceable constraint. The hostile-reading anti-pattern is preserved verbatim in AUTHORING.md.
+- **PLAYBACK.md §9 "Stable for v0.8.0-preview"** subsection now lists the parts of the PlaybackPlan schema that will not change without a deprecation cycle (top-level shape, AudienceProfile, four primary registers, P1 and P2 architectural rules, the min_tier mechanism). The rest of §9 continues to enumerate what may evolve before v0.9.
+- **RECONCILIATION.md "What to do today"** section adds a worked v0.8.0-preview reconciliation report example demonstrating how to surface cross-pack disagreement using existing primitives (`↔packB#claim-id`, single-pack `⊗!` / `⊗~`) without auto-flattening into a "reconciled" canonical pack. Makes the deferral concrete instead of abstract.
+- **RATIONALE.md §4 schema.org / JSON-LD knowledge graphs row** added to the Relationship to Existing Standards table. Explicitly addresses the "why not just use schema.org?" question with three concrete differences (token density, first-class uncertainty/contradiction primitives, three-surface architecture) and notes the two approaches compose via [MAPPING.md](spec/MAPPING.md).
+- **AGENTS.md Task E secondary** column now references `[spec/LIFECYCLE.md](spec/LIFECYCLE.md)` §6 (supersession cascade) — relevant when a composed standing pack supersedes a claim the meeting pack referenced.
 
-Conformance after these additions: 15/15 (was 13/13 at v0.8.0-preview ship; new examples added to the auto-validated suite).
+Conformance after these additions: 19/19 (was 13/13 at v0.8.0-preview ship; new examples added to the auto-validated suite, then four additional negative fixtures for SC-04 / SC-05 / SC-07 / SC-12).
 
 ### Changed
 
@@ -88,7 +97,7 @@ Conformance after these additions: 15/15 (was 13/13 at v0.8.0-preview ship; new 
 - **`spec/MAPPING.md`** — `Status: Reference document` → `Status: Draft (informative — not normative for KP:1 conformance)` to harmonize sibling vocabulary while preserving the informative-vs-normative distinction.
 - **`spec/ORGANIZATION.md`** — directory listing in §1 refreshed to include all 19 spec files (CORE, README, ARCHIVE, DEFINITIONS, EXTENSIONS, MAPPING, PLAYBACK, RECONCILIATION, STORAGE were missing from the v0.7-era listing).
 - **`SPEC.md` title** — `v0.7` → `v0.8.0`.
-- **`README.md`** — status banner v0.7-preview → v0.8.0-preview; conformance fixture count corrected (`11 test fixtures plus 4 reference examples`, totaling `15/15 validated`); `pip install -r conformance/requirements.txt` bootstrap line added; citation example updated to v0.8.0-preview while preserving the v0.7-preview Zenodo DOI as historical reference.
+- **`README.md`** — status banner v0.7-preview → v0.8.0-preview; conformance fixture count corrected (`15 test fixtures plus 4 reference examples`, totaling `19/19 validated`); `pip install -r conformance/requirements.txt` bootstrap line added; citation example updated to v0.8.0-preview while preserving the v0.7-preview Zenodo DOI as historical reference.
 - **`CITATION.cff`** — version `0.7-preview` → `0.8.0-preview`; date-released `2026-04-06` → `2026-05-09`. v0.7-preview Zenodo DOI tagged `(historical)` pending v0.8.0-preview Zenodo deposit (queued as WS-TAG).
 
 ### Compatibility
