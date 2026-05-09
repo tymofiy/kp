@@ -26,7 +26,7 @@ A `✓` means the pack uses the feature; `–` means it does not. Patterns are c
 | Dense metadata (6 positions) | ✓ | ✓ | ✓ | ✓ |
 | Verbose metadata | ✓ | – | – | – |
 | Mixed dense + verbose | ✓ | – | – | – |
-| All four claim types (`o/r/c/i`) | ✓ | – (i-heavy) | ✓ | ✓ |
+| All four claim types (`o/r/c/i`) | – (no `c`) | – (i-heavy) | ✓ | ✓ |
 | `nature: judgment` | – | ✓ | ✓ | ✓ |
 | `nature: prediction` | – | – | ✓ | ✓ |
 | `nature: meta` | – | – | ✓ | – |
@@ -42,7 +42,7 @@ A `✓` means the pack uses the feature; `–` means it does not. Patterns are c
 | Multiple evidence refs per claim | ✓ | ✓ | ✓ | ✓ |
 | Per-claim entity annotation in H1 | ✓ | ✓ | ✓ | ✓ |
 | `display` block fields | ✓ | ✓ | ✓ | ✓ |
-| Multiple views (display + voice) | ✓ | ✓ | ✓ | ✓ |
+| Multiple views (display + voice) | – (overview only) | ✓ | ✓ | ✓ |
 | `register` axis on voice view | – | – | ✓ (curatorial) | ✓ (curatorial) |
 | Explicit decline / negative recommendation | – | – | – | ✓ |
 | `extensions.*` blocks | – | – | – | – |
@@ -113,13 +113,13 @@ Walks the `nature: judgment` annotation discipline and the §5 confidence-calibr
 
 ### `solar-energy-market.kpack` — basic syntax sampler
 
-The hello-world. Demonstrates dense + verbose claim metadata, the eight relation symbols, and a single voice view. Use this to learn the syntax before opening the larger packs.
+The hello-world. Demonstrates dense + verbose claim metadata, a representative subset of relation symbols (`→`, `⊗~`, `←`; not the full eight — see the matrix above), and a single overview view. Use this to learn the syntax before opening the larger packs.
 
 ---
 
 ## How to use this index
 
-- **Building a parser?** Start with `solar-energy-market.kpack` for the syntax, then run `python3 conformance/run.py --pack solar-energy-market.kpack` to see the validator pipeline.
+- **Building a parser?** Start with `solar-energy-market.kpack` for the syntax, then run `python3 conformance/run.py --pack examples/solar-energy-market.kpack` (from the repo root) to see the validator pipeline.
 - **Authoring a new pack?** Read [`spec/AUTHORING.md`](../spec/AUTHORING.md) alongside `art-acquisition-decision.kpack`; the rubric walkthrough above shows which sections to consult for each authoring decision.
 - **Implementing a renderer?** All four packs have multiple views; the audience-specific views in `art-acquisition-decision.kpack` and `auction-house-consignment-review.kpack` show how `display_as` / `purpose` / `register` differentiate audience targeting.
 - **Validating cross-pack references?** Only `auction-house-consignment-review.kpack` exercises `↔`. Note the pack's explicit Cross-References disclaimer about illustrative targets.

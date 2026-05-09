@@ -11,7 +11,7 @@ Curated sample Knowledge Packs that demonstrate the format. Every example pack i
 
 | Pack | Claims | Evidence | Views | Purpose |
 |------|--------|----------|-------|---------|
-| [`solar-energy-market.kpack`](solar-energy-market.kpack/) | 8 | 8 | 1 | Hello-world — dense + verbose syntax, all relation types, solar energy domain |
+| [`solar-energy-market.kpack`](solar-energy-market.kpack/) | 8 | 8 | 1 | Hello-world — dense + verbose syntax, a subset of relation types (`→`, `⊗~`, `←`), solar energy domain |
 | [`kp-external-assessment.kpack`](kp-external-assessment.kpack/) | 12 | 4 | 4 | Self-assessment — KP:1's own external assessment, demonstrates truth-over-posture positioning |
 | [`art-acquisition-decision.kpack`](art-acquisition-decision.kpack/) | 22 | 11 | 3 | Buyer-side decision pack — anonymized art acquisition demonstrating all four claim types, all three contradiction qualifiers (`⊗` / `⊗!` / `⊗~`), supersession (`⊘`), multiple confidence calibrations, judgment / prediction / meta natures, and three audience-specific views (overview, counsel, voice briefing). Walks the [AUTHORING.md](../spec/AUTHORING.md) decision rubrics end-to-end. |
 | [`auction-house-consignment-review.kpack`](auction-house-consignment-review.kpack/) | 20 | 9 | 4 | Consigner-side decision pack — anonymized auction-house review of a sculpture consignment over a foundry-mark attribution dispute. The complement to `art-acquisition-decision.kpack`: same domain, opposite role, the *decline* path, cross-pack `↔` references, and four audience-specific views including a formal-register consignor decline letter. |
@@ -38,7 +38,7 @@ For a fresh reader of KP:1:
 ## Validation
 
 ```bash
-pip install -r ../conformance/requirements.txt
+pip install -r ../requirements.txt
 python3 ../conformance/run.py
 ```
 

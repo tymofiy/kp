@@ -502,7 +502,6 @@ These constraints MUST be validated after parsing succeeds. They are not express
 | SC-02 | All claim IDs MUST be unique within the document |
 | SC-03 | All evidence references in claims MUST have corresponding entries in evidence.md |
 | SC-04 | Supersession chains (`⊘`) MUST be acyclic |
-| SC-12 | When `nature` is `prediction`, confidence MUST be ≤ 0.95. Predictions about future states have irreducible uncertainty; the 0.99+ band is reserved for trivially-falsifiable claims per [AUTHORING.md §5](AUTHORING.md). |
 | SC-05 | All claim ID targets in relations MUST exist (within pack or as valid cross-pack references) |
 | SC-06 | Spec version in Rosetta header MUST equal `1` for KP:1 conformance |
 | SC-07 | Frontmatter pack name MUST match PACK.yaml `name` field |
@@ -510,6 +509,7 @@ These constraints MUST be validated after parsing succeeds. They are not express
 | SC-09 | Frontmatter domain MUST match PACK.yaml `domain` field |
 | SC-10 | Frontmatter scale name MUST match PACK.yaml `confidence.scale` |
 | SC-11 | Verbose type names MUST map to their single-letter equivalents: observed=o, reported=r, computed=c, inferred=i |
+| SC-12 | When `nature` is `prediction`, confidence MUST be ≤ 0.95. Predictions about future states have irreducible uncertainty; the 0.99+ band is reserved for trivially-falsifiable claims per [AUTHORING.md §5](AUTHORING.md). |
 
 ### Formal Grammar
 

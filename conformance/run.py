@@ -439,7 +439,10 @@ def validate_pack(pack_dir: Path) -> list[Err]:
 def main():
     # `--pack PATH` validates a single pack directory and exits.
     # The natural workflow for an external author validating their own pack.
-    if len(sys.argv) >= 3 and sys.argv[1] == "--pack":
+    if len(sys.argv) >= 2 and sys.argv[1] == "--pack":
+        if len(sys.argv) < 3:
+            print(f"{RED}usage: run.py --pack PATH{RESET}")
+            sys.exit(2)
         pack_path = Path(sys.argv[2])
         if not pack_path.is_dir():
             print(f"{RED}Pack directory not found: {pack_path}{RESET}")

@@ -31,12 +31,12 @@ The v0.8.0 preview consolidates a deliberate architectural pass on the spec's no
 ### Bifurcated
 
 - **`spec/SPEC.md` §15 / §17 / §18 / §20** — sections moved to RATIONALE.md and replaced with stubs that link forward.
-  - §15 Design Principles → [RATIONALE.md §1](spec/RATIONALE.md). All 25 numbered principles.
-  - §17 Style Systems → [RATIONALE.md §2](spec/RATIONALE.md). Style-system rationale, schema, renderer pipeline. SPEC.md §17 retains only the brief PACK.yaml `style` field reference.
-  - §18 Cognitive Perception Layer → split. SPEC.md §18 retains the **normative** `display` block field list, the `hint` field, and the fallback hierarchy (the contract a renderer needs). The **rationale** (perception stages with timed budgets, Why-each-field-exists boxes, Stranger Test, Good/Bad authoring tables) moves to [RATIONALE.md §3](spec/RATIONALE.md).
-  - §20 Relationship to Existing Standards → [RATIONALE.md §4](spec/RATIONALE.md). Comparison to AGENTS.md / llms.txt / SKILL.md / MCP / RDF / Nanopublications.
+  - §15 Design Principles → [RATIONALE.md §1](RATIONALE.md). All 25 numbered principles.
+  - §17 Style Systems → [RATIONALE.md §2](RATIONALE.md). Style-system rationale, schema, renderer pipeline. SPEC.md §17 retains only the brief PACK.yaml `style` field reference.
+  - §18 Cognitive Perception Layer → split. SPEC.md §18 retains the **normative** `display` block field list, the `hint` field, and the fallback hierarchy (the contract a renderer needs). The **rationale** (perception stages with timed budgets, Why-each-field-exists boxes, Stranger Test, Good/Bad authoring tables) moves to [RATIONALE.md §3](RATIONALE.md).
+  - §20 Relationship to Existing Standards → [RATIONALE.md §4](RATIONALE.md). Comparison to AGENTS.md / llms.txt / SKILL.md / MCP / RDF / Nanopublications.
 - **Cross-reference sweep.** All "(Principle N)" / "(SPEC.md §15, Principle N)" references in the rest of the spec corpus updated to point at `RATIONALE.md §1` instead. Touched: COMPOSITION.md, CONSISTENCY.md, DEFINITIONS.md, LIFECYCLE.md, SPEC.md, STORAGE.md.
-- **CORE.md / SPEC.md companion lists refreshed.** CORE.md Appendix C and SPEC.md §19 now enumerate all 19 spec/*.md files (was missing AUTHORING, RATIONALE, EXTENSIONS, ARCHIVE, PLAYBACK, RECONCILIATION, MAPPING). CORE.md Scope (§1) likewise.
+- **CORE.md / SPEC.md companion lists refreshed.** CORE.md Appendix C and SPEC.md §19 now enumerate all 22 spec/*.md files (was missing AUTHORING, RATIONALE, EXTENSIONS, ARCHIVE, PLAYBACK, RECONCILIATION, MAPPING). CORE.md Scope (§1) likewise.
 - **CORE.md / SPEC.md status headers refreshed** to `KP:1 Public Draft — 2026-05` (`v0.8.0-preview`), date `2026-05-09`. The `2026-04` / `2026-03-29` labels were stale relative to README.md and CITATION.cff.
 - **CORE.md `entities.md` directory entry** updated from `OPTIONAL` to `DEPRECATED (since v0.7.4)` with forward-pointer to `extensions.entities`.
 
@@ -81,10 +81,25 @@ After four independent external review rounds plus internal audit, the following
 - **CORE.md §11 view-laundering rule** softened from MUST to SHOULD with editorial-discipline framing — the format cannot mechanically detect contradiction-erasure; the rule is producer-facing guidance about preserving epistemic tension across views, not a runner-enforceable constraint. The hostile-reading anti-pattern is preserved verbatim in AUTHORING.md.
 - **PLAYBACK.md §9 "Stable for v0.8.0-preview"** subsection now lists the parts of the PlaybackPlan schema that will not change without a deprecation cycle (top-level shape, AudienceProfile, four primary registers, P1 and P2 architectural rules, the min_tier mechanism). The rest of §9 continues to enumerate what may evolve before v0.9.
 - **RECONCILIATION.md "What to do today"** section adds a worked v0.8.0-preview reconciliation report example demonstrating how to surface cross-pack disagreement using existing primitives (`↔packB#claim-id`, single-pack `⊗!` / `⊗~`) without auto-flattening into a "reconciled" canonical pack. Makes the deferral concrete instead of abstract.
-- **RATIONALE.md §4 schema.org / JSON-LD knowledge graphs row** added to the Relationship to Existing Standards table. Explicitly addresses the "why not just use schema.org?" question with three concrete differences (token density, first-class uncertainty/contradiction primitives, three-surface architecture) and notes the two approaches compose via [MAPPING.md](spec/MAPPING.md).
-- **AGENTS.md Task E secondary** column now references `[spec/LIFECYCLE.md](spec/LIFECYCLE.md)` §6 (supersession cascade) — relevant when a composed standing pack supersedes a claim the meeting pack referenced.
+- **RATIONALE.md §4 schema.org / JSON-LD knowledge graphs row** added to the Relationship to Existing Standards table. Explicitly addresses the "why not just use schema.org?" question with three concrete differences (token density, first-class uncertainty/contradiction primitives, three-surface architecture) and notes the two approaches compose via [MAPPING.md](MAPPING.md).
+- **AGENTS.md Task E secondary** column now references [LIFECYCLE.md](LIFECYCLE.md) §6 (supersession cascade) — relevant when a composed standing pack supersedes a claim the meeting pack referenced.
 
 Conformance after these additions: 19/19 (was 13/13 at v0.8.0-preview ship; new examples added to the auto-validated suite, then four additional negative fixtures for SC-04 / SC-05 / SC-07 / SC-12).
+
+### Polish (final pre-tag audit)
+
+A last consistency pass before tagging surfaced and resolved the following nits. None substantive; all cosmetic-class.
+
+- **CHANGELOG.md broken relative links** — `[RATIONALE.md §N](spec/RATIONALE.md)` and `[MAPPING.md](spec/MAPPING.md)` resolved to `spec/spec/...` from inside the spec/ directory. Stripped the redundant `spec/` prefix; LIFECYCLE.md, MAPPING.md, RATIONALE.md links from CHANGELOG now resolve to siblings. Also fixed a typo: §17 Style Systems was mislabeled `§15 Style Systems` in the bifurcation bullet.
+- **`spec/CORE.md` SC table ordering** — SC-12 was sorted between SC-04 and SC-05 by mistake; moved to the end of the table after SC-11 so the table reads in numerical order.
+- **`examples/README.md` install command path** — `pip install -r ../conformance/requirements.txt` referenced a nonexistent file; corrected to `../requirements.txt` (the actual location at the repo root).
+- **`examples/INDEX.md` --pack example path** — `python3 conformance/run.py --pack solar-energy-market.kpack` would fail from the repo root because the pack lives at `examples/solar-energy-market.kpack`; corrected the example.
+- **`examples/INDEX.md` + `examples/README.md` solar-energy-market description drift** — the pack was described as exercising "all four claim types," "all relation types," and "multiple views (display + voice)." It actually has only `o/r/i` (no `c`), three relation symbols (`→` / `⊗~` / `←`), and a single overview view. The matrix and prose now describe the actual surface honestly; the larger packs remain the place to look for the full feature set.
+- **`conformance/fixtures/README.md` SC-07 terminology** — the wrong-pack-name fixture's prose called the `pack:` field a "Rosetta header" field; per CORE.md §3 the Rosetta header is the `<!-- KP:1 ... -->` comment, while `pack:` lives in the YAML frontmatter that follows. Tightened to "frontmatter `pack:` field" with an inline parenthetical clarification of the distinction.
+- **`conformance/fixtures/README.md` PEG vs regex framing** — said the runner "parses each `claims.md` against `grammar/kp-claims.peg`," contradicting `conformance/README.md`'s honest disclosure that the runner uses equivalent regex patterns and that the PEG file is the normative reference. Aligned the wording.
+- **`conformance/run.py --pack` with no path** — silently fell through to the full-suite branch and exited green. Now prints `usage: run.py --pack PATH` and exits 2.
+- **CHANGELOG.md count fix** — two references to "all 19 spec/*.md files" corrected to "all 22 spec/*.md files" (matches the actual `spec/` listing and the `~9,400 lines of spec prose across the 22 spec/*.md files` count in AGENTS.md).
+- **CI bump** — `actions/setup-node@v6.3.0` → `@v6.4.0` (only floating Action that wasn't on its latest tag at audit time). `actions/checkout@v6.0.2` and `actions/setup-python@v6.2.0` confirmed already at latest. `pyyaml>=6.0.3` and `jsonschema>=4.26` confirmed at latest PyPI versions; `markdownlint-cli@0.48.0` confirmed at latest npm version.
 
 ### Changed
 
@@ -95,7 +110,7 @@ Conformance after these additions: 19/19 (was 13/13 at v0.8.0-preview ship; new 
 - **`spec/SPEC.md`** — Quick Start `claims.md` example gained the previously-omitted Rosetta header, so a fresh agent copying the example produces a pack that actually passes conformance. The cleanup commit also fixed pedagogical examples in COMPOSITION.md §3 (ASCII relation glyphs `-> * <- ~ / <->` → KP symbols `→ ⊗ ← ~ ⊘ ↔`; `[M001]–[M005]` → `[C001]–[C005]`) and LIFECYCLE.md (`[M001]–[M008]` → `[C001]–[C008]`; `EM003`/`EM004` → `E003`/`E004`) so the worked examples actually validate against CORE.
 - **`spec/MULTILINGUAL.md`** — section ordering corrected (Evidentiary multilingual exception is §12; Decision Log is §13; the master-plan ship had them reversed). Decision Log D1a entry updated correspondingly. The §12 + D1a inaugural-producer narrative replaced specific project codenames with the generic `witness statements collected in the field` framing.
 - **`spec/MAPPING.md`** — `Status: Reference document` → `Status: Draft (informative — not normative for KP:1 conformance)` to harmonize sibling vocabulary while preserving the informative-vs-normative distinction.
-- **`spec/ORGANIZATION.md`** — directory listing in §1 refreshed to include all 19 spec files (CORE, README, ARCHIVE, DEFINITIONS, EXTENSIONS, MAPPING, PLAYBACK, RECONCILIATION, STORAGE were missing from the v0.7-era listing).
+- **`spec/ORGANIZATION.md`** — directory listing in §1 refreshed to include all 22 spec files (CORE, README, ARCHIVE, DEFINITIONS, EXTENSIONS, MAPPING, PLAYBACK, RECONCILIATION, STORAGE were missing from the v0.7-era listing).
 - **`SPEC.md` title** — `v0.7` → `v0.8.0`.
 - **`README.md`** — status banner v0.7-preview → v0.8.0-preview; conformance fixture count corrected (`15 test fixtures plus 4 reference examples`, totaling `19/19 validated`); `pip install -r conformance/requirements.txt` bootstrap line added; citation example updated to v0.8.0-preview while preserving the v0.7-preview Zenodo DOI as historical reference.
 - **`CITATION.cff`** — version `0.7-preview` → `0.8.0-preview`; date-released `2026-04-06` → `2026-05-09`. v0.7-preview Zenodo DOI tagged `(historical)` pending v0.8.0-preview Zenodo deposit (queued as WS-TAG).

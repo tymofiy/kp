@@ -67,7 +67,7 @@ Implementations MUST reject each fixture, flagging the specific violation.
 | `missing-evidence-field.kpack` | Empty evidence ref position in metadata | Syntactic (PEG) | MUST reject |
 | `cyclic-supersession.kpack` | C001 ⊘ C002 and C002 ⊘ C001 (supersession cycle) | SC-04 | MUST reject |
 | `dangling-relation-target.kpack` | Claim references C999 via → but C999 does not exist | SC-05 | MUST reject |
-| `wrong-pack-name.kpack` | Rosetta `pack:` value disagrees with PACK.yaml `name:` | SC-07 | MUST reject |
+| `wrong-pack-name.kpack` | Frontmatter `pack:` value disagrees with PACK.yaml `name:` | SC-07 | MUST reject |
 | `prediction-too-confident.kpack` | nature=prediction with confidence 0.97 (>0.95 cap) | SC-12 | MUST reject |
 
 ### Violation Details
@@ -101,10 +101,12 @@ intra-pack relation target to resolve to a defined claim ID in the same
 pack. Cross-pack references using the `pack#section` form are exempt; this
 fixture uses bare `→C999` (no `#`), so the dangling-target rule applies.
 
-**wrong-pack-name:** Semantic constraint SC-07 requires the Rosetta header's
-`pack:` field to equal the PACK.yaml `name:` field. The fixture lies in
-the Rosetta header (`pack: a-different-name` vs PACK.yaml
-`name: wrong-pack-name`); the disagreement triggers SC-07.
+**wrong-pack-name:** Semantic constraint SC-07 requires the frontmatter's
+`pack:` field (the YAML block between `---` markers at the top of `claims.md`,
+distinct from the `<!-- KP:1 ... -->` Rosetta header comment that precedes it)
+to equal the PACK.yaml `name:` field. The fixture lies in the frontmatter
+(`pack: a-different-name` vs PACK.yaml `name: wrong-pack-name`); the
+disagreement triggers SC-07.
 
 **prediction-too-confident:** Semantic constraint SC-12 caps confidence on
 predictive claims (nature=prediction) at 0.95. Predictions about future
@@ -120,11 +122,13 @@ The automated test runner validates all fixtures:
 python conformance/run.py
 ```
 
-This parses each `claims.md` against `grammar/kp-claims.peg`, validates each
-`PACK.yaml` against `grammar/kp-pack.schema.json`, validates each
-`signatures.yaml` against `grammar/kp-signatures.schema.json` when present,
-runs semantic constraint checks (SC-01 through SC-12), and verifies that all
-valid fixtures pass and all invalid fixtures fail with expected errors.
+This validates each `claims.md` against an equivalent regex implementation of
+`grammar/kp-claims.peg` (the PEG file is the normative reference; see
+`../README.md` "Grammar vs Runner"), validates each `PACK.yaml` against
+`grammar/kp-pack.schema.json`, validates each `signatures.yaml` against
+`grammar/kp-signatures.schema.json` when present, runs semantic constraint
+checks (SC-01 through SC-12), and verifies that all valid fixtures pass and
+all invalid fixtures fail with expected errors.
 Current result: **19/19 tests pass** (15 fixtures + 4 reference example packs).
 
 To validate a single pack outside the bundled set:
