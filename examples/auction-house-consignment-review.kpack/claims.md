@@ -84,6 +84,14 @@ confidence: simple | normalized
 
 ## Cross-References
 
+> **Note on cross-pack references:** the two `↔` cross-pack pointers below
+> are *illustrative*. The target packs (`foundry-marks-paris-1925-1960`,
+> `sculptor-y-attribution-research`) do not exist in this repository's
+> `examples/` directory; they are placeholders to demonstrate the cross-pack
+> reference grammar (`↔pack_name#section`). In a real consigner-side pack,
+> these would resolve to actual reference packs maintained by the house
+> specialist or published by a recognized authority.
+
 - [C019] Foundry F's operating dates and known mark variations are documented in a separate reference pack maintained by the house specialist.
   {0.91|r|E006|2026-05-09|investigated} Pointer to the reference work used for the mark identification (C005).
   ↔foundry-marks-paris-1925-1960#foundry-f

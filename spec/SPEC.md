@@ -1293,7 +1293,7 @@ A conversation flow using navigation:
 
 ---
 
-## 13. Tooling
+## 13. Tooling (planned reference CLI)
 
 > **Status of the `kpack` CLI (as of v0.8.0-preview):** the commands listed
 > in this section describe **planned reference tooling**, not commands that
@@ -1309,6 +1309,8 @@ A conversation flow using navigation:
 ### MVP Commands
 
 ```bash
+# Planned reference tooling — not currently shipped.
+# See ../reference/kpack for the contract-pointer stub.
 kpack lint [path]              # Validate structure and references
 kpack test [path]              # Run validation.yaml against an LLM
 kpack export [path] --format   # Export to JSONL, JSON, or other formats
@@ -1319,6 +1321,9 @@ kpack render [path] --view X   # Regenerate a specific view
 ### Extended Commands
 
 ```bash
+# Planned reference tooling — not currently shipped.
+# See ../reference/kpack for the contract-pointer stub.
+
 # Pack creation
 kpack new [name]                       # Create new pack (interactive)
 kpack new --template meeting-prep [name]  # Create from template
@@ -1687,7 +1692,7 @@ A `null` or omitted `style` field means the views render as plain markdown — w
 
 Knowledge Packs serve three surfaces: reasoning (AI), display (visual), and voice (spoken). The reasoning surface (`claims.md`) is dense and optimized for inference. The display and voice surfaces are optimized for human perception. The `display` block in PACK.yaml and the per-view `hint` field carry the structured metadata renderers need to support human perception across rendering contexts (web, mobile, terminal, voice, PDF, etc.).
 
-The rationale for these fields — the four perception stages with timed budgets, why each field exists, the Stranger Test, the Good/Bad authoring tables — is in [RATIONALE.md §4](RATIONALE.md). This section specifies the fields themselves; RATIONALE.md §4 explains why.
+The rationale for these fields — the four perception stages with timed budgets, why each field exists, the Stranger Test, the Good/Bad authoring tables — is in [RATIONALE.md §3](RATIONALE.md). This section specifies the fields themselves; RATIONALE.md §3 explains why.
 
 ### Manifest: `display` Block
 
@@ -1746,7 +1751,7 @@ Renderers MUST resolve display metadata in this order:
 
 This hierarchy ensures packs work without display metadata (backward-compatible), while rewarding authors who provide it with better human perception.
 
-For the rationale behind each field — *why* `short_title` is 2–4 words rather than something else, what cognitive job each field does, the Stranger Test for verifying authored fields, and Good/Bad worked examples — see [RATIONALE.md §4](RATIONALE.md).
+For the rationale behind each field — *why* `short_title` is 2–4 words rather than something else, what cognitive job each field does, the Stranger Test for verifying authored fields, and Good/Bad worked examples — see [RATIONALE.md §3](RATIONALE.md).
 
 ---
 
@@ -1774,7 +1779,7 @@ These documents are normative — they carry the same authority as this core spe
 
 ## 20. Relationship to Existing Standards
 
-The positioning of KP:1 against `AGENTS.md` / `llms.txt` / `SKILL.md` / MCP Resources / JSON-LD / RDF / Nanopublications has been moved to [RATIONALE.md §3](RATIONALE.md). For the field-by-field translation analysis between KP:1 and RDF / JSON-LD / PROV-O / Nanopublications, see [MAPPING.md](MAPPING.md).
+The positioning of KP:1 against `AGENTS.md` / `llms.txt` / `SKILL.md` / MCP Resources / JSON-LD / RDF / Nanopublications has been moved to [RATIONALE.md §4](RATIONALE.md). For the field-by-field translation analysis between KP:1 and RDF / JSON-LD / PROV-O / Nanopublications, see [MAPPING.md](MAPPING.md).
 
 ---
 

@@ -162,25 +162,7 @@ The renderer is NOT part of the Knowledge Pack spec — it's part of the consumi
 
 ---
 
-## 3. Relationship to Existing Standards
-
-KP:1 sits in a small ecosystem of AI-facing content formats. The table below records how KP:1 relates to each, where the boundary is, and what each format is for.
-
-| Standard | Relationship |
-|----------|-------------|
-| Agent instruction files (e.g., AGENTS.md) | Orthogonal — agent instruction files configure behavior, Knowledge Packs provide facts |
-| Agent Skills (SKILL.md) | Complementary — Skills declare `requires_knowledge` for pack dependencies |
-| MCP Resources | Knowledge Packs can be served as MCP resources at runtime |
-| llms.txt | Discovery — llms.txt could point to available Knowledge Packs |
-| Entity-Claim-Evidence (ECS) systems | Implementation pattern — ECS is an operational index; Knowledge Packs are the canonical source. See [STORAGE.md](STORAGE.md) |
-| JSON-LD / RDF | Inspiration — semantic structure, but optimized for neural nets, not symbol processors |
-| Nanopublications | Spiritual ancestor — assertion + provenance, but in markdown, not RDF |
-
-For the field-by-field translation analysis between KP:1 and RDF / JSON-LD / PROV-O / Nanopublications, see [MAPPING.md](MAPPING.md).
-
----
-
-## 4. Cognitive Perception Layer
+## 3. Cognitive Perception Layer
 
 The `display` block in PACK.yaml and the per-view `hint` field exist because human perception of a pack happens in measurable stages, with measurable time budgets, that any renderer needs to support. The normative spec for these fields lives in [SPEC.md §18](SPEC.md) and [SPEC.md §3](SPEC.md) (manifest); the rationale for **why each field exists, what cognitive job it does, and how to author it well** lives here.
 
@@ -287,6 +269,24 @@ If a stranger reading this sequence can answer "what is this, why should I care,
 - They are not summaries of the content (that's what views are for).
 
 They are **cognitive handles** — the minimum information a human brain needs to recognize, locate, engage with, and navigate this pack across any display context.
+
+---
+
+## 4. Relationship to Existing Standards
+
+KP:1 sits in a small ecosystem of AI-facing content formats. The table below records how KP:1 relates to each, where the boundary is, and what each format is for.
+
+| Standard | Relationship |
+|----------|-------------|
+| Agent instruction files (e.g., AGENTS.md) | Orthogonal — agent instruction files configure behavior, Knowledge Packs provide facts |
+| Agent Skills (SKILL.md) | Complementary — Skills declare `requires_knowledge` for pack dependencies |
+| MCP Resources | Knowledge Packs can be served as MCP resources at runtime |
+| llms.txt | Discovery — llms.txt could point to available Knowledge Packs |
+| Entity-Claim-Evidence (ECS) systems | Implementation pattern — ECS is an operational index; Knowledge Packs are the canonical source. See [STORAGE.md](STORAGE.md) |
+| JSON-LD / RDF | Inspiration — semantic structure, but optimized for neural nets, not symbol processors |
+| Nanopublications | Spiritual ancestor — assertion + provenance, but in markdown, not RDF |
+
+For the field-by-field translation analysis between KP:1 and RDF / JSON-LD / PROV-O / Nanopublications, see [MAPPING.md](MAPPING.md).
 
 ---
 

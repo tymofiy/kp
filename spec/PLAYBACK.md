@@ -225,6 +225,6 @@ The status will graduate from experimental to active after at least three real p
 ## 10. Related
 
 - [VOICE.md §4.1](VOICE.md) — the four primary voice registers (`plain`, `curatorial`, `technical`, `investor`). `AudienceProfile.register` is the session-time selector across this axis.
-- [MULTILINGUAL.md §3.3](MULTILINGUAL.md) — locale-specific sub-registers (Halychyna, Quebec, MSA, etc.). PLAYBACK respects sub-register declarations at the voice-view layer; the runtime SHOULD honor `sub_register` if set on the source voice view.
+- [MULTILINGUAL.md §3.3](MULTILINGUAL.md) — locale-specific sub-registers (Halychyna, Quebec, MSA, etc.). `sub_register` is informational per MULTILINGUAL.md §3.3 (not a normative enum); the runtime MAY honor it if set on the source voice view, but MUST not depend on its presence and SHOULD not treat its absence as an error.
 - [EXTENSIONS.md §2.1 `ai_brief`](EXTENSIONS.md) — `ai_brief.headline` / `redFlags` / `beCarefulAbout` / `next` are common phase `source_refs`.
 - [COMPOSITION.md](COMPOSITION.md) — multi-pack composition for meeting packs. A meeting-pack `PlaybackPlan` may aggregate phases across the composed packs in the order COMPOSITION declares.

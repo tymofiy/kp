@@ -43,6 +43,8 @@ An LLM reading a claims pack can reason about claims without definitions loaded.
 
 ## 3. Definition Schema
 
+> **See also:** entity *instances* (as opposed to entity *types* defined here) live in `extensions.entities` and use the canonical `ent_<type>_<6-hex>` ID format documented in [EXTENSIONS.md §3.1](EXTENSIONS.md). DEFINITIONS.md governs the *types* (vocabulary); EXTENSIONS.md §2.2 governs *instances* of those types attached to specific packs.
+
 ### File Location
 
 Definitions live in the `definitions/` subdirectory of a `.kpack/` directory:

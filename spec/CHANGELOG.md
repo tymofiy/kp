@@ -33,8 +33,8 @@ The v0.8.0 preview consolidates a deliberate architectural pass on the spec's no
 - **`spec/SPEC.md` §15 / §17 / §18 / §20** — sections moved to RATIONALE.md and replaced with stubs that link forward. SPEC.md reduced from 1,996 to ~1,780 lines.
   - §15 Design Principles → [RATIONALE.md §1](spec/RATIONALE.md). All 25 numbered principles.
   - §17 Style Systems → [RATIONALE.md §2](spec/RATIONALE.md). Style-system rationale, schema, renderer pipeline. SPEC.md §17 retains only the brief PACK.yaml `style` field reference.
-  - §18 Cognitive Perception Layer → split. SPEC.md §18 retains the **normative** `display` block field list, the `hint` field, and the fallback hierarchy (the contract a renderer needs). The **rationale** (perception stages with timed budgets, Why-each-field-exists boxes, Stranger Test, Good/Bad authoring tables) moves to [RATIONALE.md §4](spec/RATIONALE.md).
-  - §20 Relationship to Existing Standards → [RATIONALE.md §3](spec/RATIONALE.md). Comparison to AGENTS.md / llms.txt / SKILL.md / MCP / RDF / Nanopublications.
+  - §18 Cognitive Perception Layer → split. SPEC.md §18 retains the **normative** `display` block field list, the `hint` field, and the fallback hierarchy (the contract a renderer needs). The **rationale** (perception stages with timed budgets, Why-each-field-exists boxes, Stranger Test, Good/Bad authoring tables) moves to [RATIONALE.md §3](spec/RATIONALE.md).
+  - §20 Relationship to Existing Standards → [RATIONALE.md §4](spec/RATIONALE.md). Comparison to AGENTS.md / llms.txt / SKILL.md / MCP / RDF / Nanopublications.
 - **Cross-reference sweep.** All "(Principle N)" / "(SPEC.md §15, Principle N)" references in the rest of the spec corpus updated to point at `RATIONALE.md §1` instead. Touched: COMPOSITION.md, CONSISTENCY.md, DEFINITIONS.md, LIFECYCLE.md, SPEC.md, STORAGE.md.
 
 ### Tooling

@@ -62,6 +62,8 @@ A Knowledge Pack is a directory. The `.kpack/` suffix is RECOMMENDED but not req
 
 Implementations MUST require `PACK.yaml` and `claims.md`. All other files are OPTIONAL for conformance.
 
+> **Composition-pack exception.** When a pack contains a `composition.yaml` file, the pack is a *composition pack* (meeting-prep, briefing, presentation, etc. — see [COMPOSITION.md](COMPOSITION.md)). Composition packs MAY omit `evidence.md` and MAY have narrative-only `claims.md` (claims about the composition context itself, not dense claim bullets), per [SPEC.md §2 "Composition-pack File Requirements"](SPEC.md). Conformance runners detect composition packs by the presence of `composition.yaml` and apply this relaxation; non-composition packs follow the standard rule.
+
 ---
 
 ## 3. PACK.yaml Manifest

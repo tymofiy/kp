@@ -22,7 +22,7 @@ This file fills that gap. Each section gives you:
 3. **Worked examples** — positive and negative.
 4. **Anti-patterns** — common ways producers (especially LLM agents) get this wrong.
 
-If you implement an authoring agent, treat this document as the producer-side conformance contract. CORE.md is what the parser checks; AUTHORING.md is what the author should check.
+If you implement an authoring agent, treat this document as the producer-side authoring guide — the discipline an author should hold themselves to. AUTHORING.md is informative, not normative: the parser does not check it, and `conformance/run.py` will pass packs that violate AUTHORING.md as long as they are syntactically valid. CORE.md is what the parser checks; AUTHORING.md is what the author should check.
 
 ---
 

@@ -176,7 +176,7 @@ Run before committing any pack. Six checks, in order:
 
 4. **Meeting/pitch composition.** Meeting and pitch pack claims contain only meeting- or pitch-specific context. Standing knowledge (product architecture, competitive positioning, technical details) is cross-referenced to standing packs, not independently defined.
 
-5. **Display block stranger test** ([RATIONALE.md §4 "The Stranger Test"](RATIONALE.md)). Can someone who has never heard of this product understand the tagline and hook in one reading? No insider jargon, no acronyms requiring context, no process language, no version numbers.
+5. **Display block stranger test** ([RATIONALE.md §3 "The Stranger Test"](RATIONALE.md)). Can someone who has never heard of this product understand the tagline and hook in one reading? No insider jargon, no acronyms requiring context, no process language, no version numbers.
 
 6. **Hub routing, not restating.** Hub pack overview claims summarize and route to detail packs via `see_also` links. If a hub claim contains >3 sentences of detail about a concept that lives in a detail sub-pack, move the detail down.
 
