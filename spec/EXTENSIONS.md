@@ -212,12 +212,66 @@ through the existing pipeline.
 
 **Owner:** kp-forge research-metadata module
 (`repos/kp-forge/src/research-metadata.ts`).
-**Status:** active (precedent for the producer-defined pattern).
+**Status:** active (precedent for the producer-defined pattern; emitted by
+~16 packs in the Nova ecosystem as of v0.7.7).
 
 Free-text anchor subject and surrounding research metadata. Predates the
 typed entity graph; coexists with it. New work targets `extensions.entities`
 as the structured channel; `extensions.research.anchor_subject` remains
 valid for legacy and lightweight cases.
+
+### 2.8 `extensions.translations` — evidentiary multilingual transcripts
+
+**Owner:** kilimanjaro-intake (Mariupol pipeline) +
+`repos/kp-packs/src/intake/handwritten/`. Consumed by KP Viewer and the
+Bernard relays.
+**Status:** active (introduced 2026-05-09 with the Mariupol corpus).
+
+When a claim's canonical text is English (per
+[MULTILINGUAL.md §2 P1](MULTILINGUAL.md)) but the underlying evidence is in
+another language — handwritten Russian/Ukrainian witness statements,
+foreign-language press, recorded interviews — the `translations` block
+carries original-language transcripts as audit trail without making them
+co-canonical. The English claim remains the single normative assertion;
+the transcripts are evidence-shaped, not claim-shaped.
+
+```yaml
+extensions:
+  translations:
+    ru:
+      transcript: |
+        Оригинальный текст показаний свидетеля...
+      transcript_format: verbatim          # verbatim | summary | excerpt
+      source_evidence_id: E007             # which evidence this transcript backs
+      transcribed_by: field-team-mariupol
+      transcribed_at: "2026-04-22T14:30:00Z"
+    uk:
+      transcript: |
+        Оригінальний текст свідчення...
+      transcript_format: verbatim
+      source_evidence_id: E007
+```
+
+**Schema.** `translations: { [locale: string]: { transcript: string,
+transcript_format?: "verbatim" | "summary" | "excerpt", source_evidence_id?:
+string, transcribed_by?: string, transcribed_at?: string } }`. Locale keys
+are BCP-47 strings (per [MULTILINGUAL.md](MULTILINGUAL.md)).
+
+**Producer expectations.** Producers SHOULD include `source_evidence_id`
+whenever the transcript is excerpted from a larger evidence record, so
+audit-trail reconstruction can map transcript → evidence → claim. When
+multiple transcripts back the same evidence record, locales sit side-by-side
+under the same `translations` block keyed by BCP-47 locale.
+
+**Cross-reference.** See [MULTILINGUAL.md §13](MULTILINGUAL.md) (forthcoming
+in v0.8.0 via WS-M4) for the normative exception this block carries — it is
+the sanctioned location for non-canonical-language text whose
+canonicalization-to-English would lose evidentiary fidelity.
+
+**Compatibility.** Consumers that do not understand the block MUST ignore
+it. The English claim remains valid and complete on its own; the
+translations block adds audit trail without creating a parallel canonical
+surface.
 
 ---
 
