@@ -7,6 +7,7 @@
 > **Editor:** Timothy Kompanchenko
 > **Date:** 2026-03-29
 > **Version history:** See `CHANGELOG.md`
+> **Lane:** Full normative spec + rationale + ecosystem — see [README.md](README.md) for the three-lane structure (CORE = implementer surface, SPEC = comprehensive, companions = topic-authoritative for their domains).
 
 ## Terminology
 
