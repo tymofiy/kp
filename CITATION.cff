@@ -41,13 +41,22 @@ keywords:
   - text-native format
 identifiers:
   - type: doi
+    value: "10.5281/zenodo.20100689"
+    description: >
+      Zenodo DOI for the v0.8.0-preview release (the release described by this
+      CITATION file).
+  - type: doi
+    value: "10.5281/zenodo.19445262"
+    description: >
+      Zenodo concept DOI for KP:1 across all versions. This DOI is evergreen
+      and always resolves to the most recently published version on Zenodo.
+      Use this identifier when citing the format generically rather than a
+      specific snapshot.
+  - type: doi
     value: "10.5281/zenodo.19445263"
     description: >
-      Zenodo DOI for the v0.7-preview release (the previous public preview).
-      The v0.8.0-preview release described by this CITATION file will be
-      deposited to Zenodo as a separate DOI under the same concept-DOI
-      umbrella; until that deposit is published, this DOI references the
-      predecessor release.
+      Zenodo DOI for the v0.7-preview release (the predecessor public preview).
+      Retained for historical reference.
   - type: other
     value: "USPTO 99747548"
     description: "United States trademark application for KP:1 (Class 9, intent-to-use, filed 2026-04-06)"

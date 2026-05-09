@@ -21,6 +21,7 @@
 
 **Editor:** Timothy Kompanchenko
 **Status:** Editor's Draft — `KP:1 Public Draft — 2026-05` (`v0.8.0-preview`)
+**Cite:** [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.19445262.svg)](https://doi.org/10.5281/zenodo.19445262) (concept DOI — always resolves to latest version)
 **See also:** [`spec/CORE.md`](spec/CORE.md), [`spec/SPEC.md`](spec/SPEC.md), [`spec/AUTHORING.md`](spec/AUTHORING.md), [`AGENTS.md`](AGENTS.md) (AI-first routing), [`GOVERNANCE.md`](GOVERNANCE.md), [`CONTRIBUTING.md`](CONTRIBUTING.md)
 
 ## What is KP:1?
@@ -181,9 +182,11 @@ See [`CONTRIBUTING.md`](CONTRIBUTING.md) for the contribution policy and [`GOVER
 
 ## How to Cite
 
-If you reference KP:1 in academic, technical, or evaluative work, please use the metadata in [`CITATION.cff`](CITATION.cff). The v0.7-preview release is published on Zenodo with DOI [`10.5281/zenodo.19445263`](https://doi.org/10.5281/zenodo.19445263); a v0.8.0-preview Zenodo deposit will follow this release. The recommended short form (using the latest preview tag) is:
+If you reference KP:1 in academic, technical, or evaluative work, please use the metadata in [`CITATION.cff`](CITATION.cff). The v0.8.0-preview release is published on Zenodo with DOI [`10.5281/zenodo.20100689`](https://doi.org/10.5281/zenodo.20100689). The Zenodo **concept DOI** [`10.5281/zenodo.19445262`](https://doi.org/10.5281/zenodo.19445262) always resolves to the most recently published version. The v0.7-preview predecessor release remains available at DOI [`10.5281/zenodo.19445263`](https://doi.org/10.5281/zenodo.19445263).
 
-> Kompanchenko, T. (2026). *KP:1 — Knowledge Pack Format Specification* (Version 0.8.0-preview). https://github.com/tymofiy/kp
+The recommended short form (using the v0.8.0-preview snapshot DOI) is:
+
+> Kompanchenko, T. (2026). *KP:1 — Knowledge Pack Format Specification* (Version 0.8.0-preview). Zenodo. <https://doi.org/10.5281/zenodo.20100689>
 
 The editor and an acknowledgment of AI drafting assistance are also recorded in [`ACKNOWLEDGMENTS.md`](ACKNOWLEDGMENTS.md).
 
