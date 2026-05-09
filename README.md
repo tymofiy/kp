@@ -20,7 +20,7 @@
 > as structure. AI-first, human-accessible.
 
 **Editor:** Timothy Kompanchenko
-**Status:** Editor's Draft — `KP:1 Public Draft — 2026-04` (`v0.7-preview`)
+**Status:** Editor's Draft — `KP:1 Public Draft — 2026-05` (`v0.8.0-preview`)
 **See also:** [`spec/CORE.md`](spec/CORE.md), [`spec/SPEC.md`](spec/SPEC.md), [`GOVERNANCE.md`](GOVERNANCE.md), [`CONTRIBUTING.md`](CONTRIBUTING.md)
 
 ## What is KP:1?
@@ -136,7 +136,7 @@ format's genuinely novel contributions.
 
 ## Status
 
-This is an **editor's draft** maintained by a single editor in a public repository. It is published as `KP:1 Public Draft — 2026-04` (git tag `v0.7-preview`, with subsequent preview revisions through v0.7.5 documented in [`spec/CHANGELOG.md`](spec/CHANGELOG.md)). It has a formal grammar, a JSON Schema, a conformance suite with 11 test fixtures, and two reference examples.
+This is an **editor's draft** maintained by a single editor in a public repository. It is published as `KP:1 Public Draft — 2026-05` (git tag `v0.8.0-preview`, with the v0.7.x preview series and the iterative v0.8.0 buildup documented in [`spec/CHANGELOG.md`](spec/CHANGELOG.md)). It has a formal grammar, a JSON Schema, a conformance suite with 13 test fixtures, and reference examples.
 
 The specification is **not final** and may change in any way at any time, including breaking changes. It is **not yet ratified** by any standards body. Compatibility commitments will arrive only with a non-draft version. See [`GOVERNANCE.md`](GOVERNANCE.md) for the full governance picture, including how decisions are made during the preview phase and what changes when the Knowledge Pack Foundation is incorporated.
 
@@ -153,9 +153,9 @@ See [`CONTRIBUTING.md`](CONTRIBUTING.md) for the contribution policy and [`GOVER
 
 ## How to Cite
 
-If you reference KP:1 in academic, technical, or evaluative work, please use the metadata in [`CITATION.cff`](CITATION.cff). The v0.7-preview release is published on Zenodo with DOI [`10.5281/zenodo.19445263`](https://doi.org/10.5281/zenodo.19445263). The recommended short form is:
+If you reference KP:1 in academic, technical, or evaluative work, please use the metadata in [`CITATION.cff`](CITATION.cff). The v0.7-preview release is published on Zenodo with DOI [`10.5281/zenodo.19445263`](https://doi.org/10.5281/zenodo.19445263); a v0.8.0-preview Zenodo deposit will follow this release. The recommended short form (using the latest preview tag) is:
 
-> Kompanchenko, T. (2026). *KP:1 — Knowledge Pack Format Specification* (Version 0.7-preview). Zenodo. https://doi.org/10.5281/zenodo.19445263
+> Kompanchenko, T. (2026). *KP:1 — Knowledge Pack Format Specification* (Version 0.8.0-preview). https://github.com/tymofiy/kp
 
 The editor and an acknowledgment of AI drafting assistance are also recorded in [`ACKNOWLEDGMENTS.md`](ACKNOWLEDGMENTS.md).
 

@@ -3,7 +3,6 @@
 
 # Storage Independence — Knowledge Pack Companion Spec
 
-> **Parent:** SPEC.md v0.6
 > **Date:** 2026-03-29
 > **Status:** Draft
 > **Editor:** Timothy Kompanchenko

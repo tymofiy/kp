@@ -1,7 +1,7 @@
 <!-- SPDX-License-Identifier: CC-BY-4.0 -->
 <!-- SPDX-FileCopyrightText: 2026 Timothy Kompanchenko -->
 
-# Knowledge Pack Specification v0.7
+# Knowledge Pack Specification v0.8.0
 
 > **Status:** Editor's Draft — `KP:1 Public Draft — 2026-04`
 > **Editor:** Timothy Kompanchenko

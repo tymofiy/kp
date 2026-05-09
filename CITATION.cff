@@ -7,8 +7,8 @@ abstract: >
   designed for inspectability and portability with a strict core and
   explicit extension profiles.
 type: software
-version: "0.7-preview"
-date-released: "2026-04-06"
+version: "0.8.0-preview"
+date-released: "2026-05-09"
 authors:
   - family-names: "Kompanchenko"
     given-names: "Timothy"
@@ -25,7 +25,7 @@ keywords:
 identifiers:
   - type: doi
     value: "10.5281/zenodo.19445263"
-    description: "Zenodo DOI for the v0.7-preview release"
+    description: "Zenodo DOI for the v0.7-preview release (historical)"
   - type: other
     value: "USPTO 99747548"
     description: "United States trademark application for KP:1 (Class 9, intent-to-use, filed 2026-04-06)"

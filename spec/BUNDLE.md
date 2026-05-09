@@ -3,7 +3,6 @@
 
 # Bundle Format — Knowledge Pack Companion Spec
 
-> **Parent:** SPEC.md v0.4
 > **Date:** 2026-03-22
 > **Status:** Draft
 > **Decisions:** D11 (sharing format), D19 (bundle marker)

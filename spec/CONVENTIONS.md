@@ -3,7 +3,6 @@
 
 # Linguistic Conventions — Knowledge Pack Companion Spec
 
-> **Parent:** SPEC.md v0.4
 > **Date:** 2026-03-22
 > **Status:** Draft
 > **Decisions:** D1 (canonical language — American English, Merriam-Webster)
