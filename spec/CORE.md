@@ -83,7 +83,7 @@ PACK.yaml is a YAML file declaring pack identity and configuration. The normativ
 |-------|------|-------------|
 | `kind` | enum | `claim` (default), `definition`, `policy`, `mixed` |
 | `description` | string | Human-readable summary |
-| `spec_uri` | URL | URL to the KP:1 specification this pack conforms to. Default published location: `https://github.com/tymofiy/kp`. See "Spec Discovery" below. |
+| `spec_uri` | URL | Onboarding pointer to the KP:1 specification this pack conforms to. Informational, not a runtime parse dependency. Default published location: `https://github.com/tymofiy/kp`. See "Spec Onboarding Pointer" below. |
 | `spec_version` | string | Version label of the KP:1 spec this pack conforms to (typically a tag, e.g., `v0.8.0-preview`). Pairs with `spec_uri` to pin against a specific revision. |
 | `confidence` | object | `scale` (string, required within object), `normalize` (boolean), `labels` (object, for custom scales) |
 | `freshness` | date | Last substantive review date |
@@ -101,13 +101,15 @@ PACK.yaml is a YAML file declaring pack identity and configuration. The normativ
 
 The full set of optional fields and conditional constraints is defined in the JSON Schema. Key conditionals: when `tier` is `hub`, `sub_packs` is REQUIRED; when `sensitivity` is `confidential` or `restricted`, `channels` MUST NOT contain `public` or `org`; when `sensitivity` is `internal`, `channels` MUST NOT contain `public`; when a view declares `voice: true`, `duration` and `pace` are REQUIRED on that view entry.
 
-### Spec Discovery
+### Spec Onboarding Pointer
 
-The Rosetta header at the top of `claims.md` is the **inline self-describing parse hint** — it carries enough information for a parser to recognize a Knowledge Pack and tokenize its contents without external context.
+The Rosetta header at the top of `claims.md` is the **inline self-describing parse hint** — it carries enough information for a parser to recognize a Knowledge Pack and tokenize its contents without external context. Rosetta is the load-bearing offline parse signal.
 
-The optional `spec_uri` and `spec_version` fields on PACK.yaml complement Rosetta with a **discovery pointer**: any consumer that wants the full normative specification can fetch it on demand from the URL the pack itself declares.
+The optional `spec_uri` and `spec_version` fields on PACK.yaml are an **informational onboarding pointer**: a previously-unfamiliar consumer that has never seen KP:1 can fetch the spec on demand from the URL the pack itself declares. The fields are not a runtime parse dependency; they help a fresh agent learn the format on first encounter.
 
-This matters most for **cold receivers of sealed `.kpack` archives** ([ARCHIVE.md §2](ARCHIVE.md)). A receiver that opens a `.kpack` for the first time has, by construction, no surrounding context — the file extension is the only signal of what they are holding. Reading PACK.yaml first and following `spec_uri` lets a previously-unfamiliar consumer learn the format from the pack itself, with no out-of-band coordination.
+> **Invariant.** Consumers MUST NOT treat unreachability or absence of `spec_uri` as a parse failure. The Rosetta header alone is sufficient for parsing. Offline-first validators MUST function without ever resolving `spec_uri`.
+
+This matters most for **cold receivers of sealed `.kpack` archives** ([ARCHIVE.md §2](ARCHIVE.md)). A receiver that opens a `.kpack` for the first time has, by construction, no surrounding context — the file extension is the only signal of what they are holding. Reading PACK.yaml first and (optionally) following `spec_uri` lets such a consumer learn the format from the pack itself on first encounter, with no out-of-band coordination. Once the consumer has internalized KP:1, the field carries no further operational weight on subsequent reads of the same pack or other KP packs.
 
 ```yaml
 name: marquet-le-passeur
@@ -118,7 +120,7 @@ spec_uri: https://github.com/tymofiy/kp
 spec_version: v0.8.0-preview
 ```
 
-Producers SHOULD include both fields when packs are intended for ecosystem-wide distribution (especially `.kpack` archives that may be received cold). Internal-only packs MAY omit them. When omitted, consumers MAY assume the published reference implementation at `https://github.com/tymofiy/kp` but MUST treat the assumption as informational, not a guarantee.
+Sealed-archive producers SHOULD include both fields when packs are intended for ecosystem-wide distribution (especially `.kpack` archives that may be received cold). Internal-only packs MAY omit them. When omitted, consumers MAY assume the published reference implementation at `https://github.com/tymofiy/kp` but MUST treat the assumption as informational, not a guarantee — and MUST NOT fail because the assumption resolves to an unreachable endpoint.
 
 `spec_version` is recommended whenever a pack is archived for the long term, so future consumers can validate against the exact spec revision the producer targeted (rather than against a moving "latest" version).
 

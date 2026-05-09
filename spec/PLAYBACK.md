@@ -115,7 +115,7 @@ playback_plan:
 | `audience_profile` | Yes | The profile this plan was composed against. Stored for audit. |
 | `duration_tier` | Yes | The selected tier; controls which phases are included via `min_tier`. |
 | `phases[]` | Yes | Ordered phase list. Each phase has `phase_id`, `narrative_hint`, `source_refs[]`, optional `view_target`, `transition_intent`, `word_budget`, `min_tier`. |
-| `phases[].source_refs[]` | Yes | References into pack content the renderer reads from. Format: `claims.<ID>`, `evidence.<ID>`, `views.<name>`, `extensions.<path>`. |
+| `phases[].source_refs[]` | Yes | References into pack content the renderer reads from. See "Source-ref grammar" below for the normative path syntax. |
 | `phases[].view_target` | No | Optional view name the renderer surfaces during the phase (visual layer extension). |
 | `phases[].transition_intent` | Yes | Hint for prosody between phases: `opening`, `emphasis`, `building`, `qualifying`, `closing`. |
 | `phases[].word_budget` | Yes | Approximate word count budget for the phase narration. |
@@ -123,7 +123,21 @@ playback_plan:
 | `resume_policy` | Yes | Contract for what the runtime does when narration is paused (interruption or barge-in). |
 | `handoff_policy` | Yes | Contract for question-handling and inactivity. |
 
-### 4.1 Form variants
+### 4.1 Source-ref grammar (normative)
+
+Each entry in `source_refs[]` is a string with one of the following prefixes. Validators MUST reject plans whose `source_refs[]` entries do not match this grammar.
+
+| Prefix | Meaning | Example |
+|---|---|---|
+| `claims.<ID>` | A claim ID from `claims.md` (matches the claim ID grammar in [CORE.md §5](CORE.md)). | `claims.C001` |
+| `evidence.<ID>` | An evidence ID from `evidence.md`. | `evidence.E007` |
+| `history.<ID>` | A superseded or retracted claim from `history.md`. Used when the playback plan needs to narrate why a claim changed. | `history.C001` |
+| `views.<name>` | A view declared in PACK.yaml's `views` array (`name` field). | `views.briefing` |
+| `extensions.<path>` | A dotted path into the manifest's `extensions` block. Path segments are object keys; bracketed indices select array members. | `extensions.ai_brief.headline`, `extensions.ai_brief.redFlags[0]` |
+
+The grammar is regular: `^(claims|evidence|history|views)\.[^.]+$` for the first four forms; `^extensions\.[A-Za-z_][A-Za-z0-9_]*(\.[A-Za-z_][A-Za-z0-9_]*|\[\d+\])*$` for the extensions form. Producers MUST emit references that resolve to existing content in the pack at plan-generation time. Consumers SHOULD treat unresolvable references as soft errors (skip the phase or substitute a fallback) rather than fatal validation failures, since pack content can drift between plan generation and playback.
+
+### 4.2 Form variants
 
 A single `PlaybackPlan` can describe all three duration tiers via `min_tier` filtering on phases:
 
@@ -158,13 +172,13 @@ When the listener is a returning user (the renderer has prior-session context), 
 
 ---
 
-## 6. Phase advancement — app-owned, not model-decided
+## 6. Phase advancement — renderer-owned, not model-decided
 
-The runtime that advances phases is part of the application, not a tool the language model can call. This is normative:
+The runtime that advances phases is part of the **renderer** (the application that consumes a `PlaybackPlan` and drives the voice pipeline), not a tool the language model can call. This is normative for renderers, since it is the contract that makes a `PlaybackPlan` interpretable consistently across renderer implementations:
 
-> **Rule (P1).** The language model MUST NOT have a tool that advances, skips, or restarts a phase. Phase advancement is decided by the application based on `PlaybackPlan` ordering, the listener's interruption signals, and the resume / handoff policies.
+> **Rule (P1).** A KP:1-conformant renderer MUST NOT expose a phase-advancement tool to the language model. Phase advancement is decided by the renderer based on `PlaybackPlan` ordering, the listener's interruption signals, and the resume / handoff policies. A renderer that does expose such a tool MUST document the resulting non-conformance and SHOULD NOT advertise itself as KP:1 PLAYBACK-conformant.
 
-Rationale: if the model could advance phases, it could also produce inconsistent narration sequences (skipping ahead, looping, going back) that would conflict with the deterministic plan. Keeping advancement in the application preserves the plan's value as a contract.
+Rationale: if the model could advance phases, it could also produce inconsistent narration sequences (skipping ahead, looping, going back) that would conflict with the deterministic plan. Keeping advancement in the renderer preserves the plan's value as a contract — a plan emitted by one composer renders identically across conformant renderers.
 
 The model MAY have a tool that **captures the audience profile** at session start (one tool call). The model MAY have tools that **navigate to a view** or **read a section** as part of the visual layer (out of scope for v1). The phase-advancement tool is the one explicitly forbidden.
 

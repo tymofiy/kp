@@ -102,14 +102,14 @@ An export archive is a valid ZIP containing a valid pack. It is not sealed and d
 
 ### Format discoverability
 
-A receiver that encounters a `.kpack` archive cold — with no surrounding context, no documentation, no prior exposure to KP:1 — should be able to learn the format from the archive itself. Two pack-internal mechanisms support this:
+A receiver that encounters a `.kpack` archive cold — with no surrounding context, no documentation, no prior exposure to KP:1 — should be able to learn the format from the archive itself. Two pack-internal mechanisms support this, **in this order of priority**:
 
-1. **Rosetta header.** The first line of `claims.md` is a self-describing HTML comment naming the spec version and tokenization legend ([CORE.md §4](CORE.md#claims-md--rosetta-header)). It is enough to recognize a pack and parse it.
-2. **`spec_uri` / `spec_version` (optional manifest fields).** Producers MAY declare a discovery URL on PACK.yaml pointing to the full KP:1 specification ([CORE.md §3 "Spec Discovery"](CORE.md#spec-discovery)). When present, the receiver can fetch the spec from the URL the pack itself names, with no out-of-band lookup.
+1. **Rosetta header (load-bearing).** The first line of `claims.md` is a self-describing HTML comment naming the spec version and tokenization legend ([CORE.md §4](CORE.md#claims-md--rosetta-header)). It is enough to recognize a pack and parse it. The Rosetta header is the offline, network-free parse signal — it does not depend on any external resource.
+2. **`spec_uri` / `spec_version` (informational onboarding pointer).** Sealed-archive producers SHOULD declare a discovery URL on PACK.yaml pointing to the full KP:1 specification ([CORE.md §3 "Spec Onboarding Pointer"](CORE.md#spec-onboarding-pointer)). When present, a previously-unfamiliar consumer can fetch the spec from the URL the pack itself names — useful for first-time onboarding of agents that have never encountered KP:1 before. **`spec_uri` is informational, not a runtime parse dependency.** Consumers MUST NOT treat unreachability of `spec_uri` as a parse failure; the Rosetta header alone is sufficient for parsing. Once a consumer has internalized the format, `spec_uri` carries no further operational weight.
 
-Consumers SHOULD read PACK.yaml first and follow `spec_uri` (when declared) to access the normative spec for the pack's declared `spec_version`. When `spec_uri` is absent, consumers MAY assume the published reference implementation at `https://github.com/tymofiy/kp` but MUST treat the assumption as informational, not a guarantee.
+Consumers SHOULD read PACK.yaml first and, on initial encounter, follow `spec_uri` (when declared) to onboard against the spec for the pack's declared `spec_version`. When `spec_uri` is absent, consumers MAY assume the published reference implementation at `https://github.com/tymofiy/kp` but MUST treat the assumption as informational, not a guarantee. Offline-first validators MUST NOT fail on absent or unreachable `spec_uri` — the field's purpose is onboarding ergonomics, not integrity.
 
-This makes a sealed `.kpack` archive **self-explaining**: the file extension identifies the format family, the Rosetta header identifies the version, and the manifest discovery fields point at the full spec. A previously-unfamiliar receiver can parse, validate, and reason about the pack without any prior agreement with the producer.
+This makes a sealed `.kpack` archive **self-explaining**: the file extension identifies the format family, the Rosetta header identifies the version (offline, with no external dependency), and the optional manifest onboarding pointer helps an unfamiliar receiver learn the format on first encounter. The archive remains parseable without any network reach.
 
 ---
 
