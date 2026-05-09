@@ -80,6 +80,8 @@ If you want to implement a conforming parser today, target the PEG grammar, not 
   constraints). PEG cannot express cross-references, value ranges, or acyclicity.
 - **16 ambiguity resolutions**: See `grammar/README.md` for the full list. Each
   is a normative decision that was not fully specified in the prose spec.
-- **Existing examples validated**: Both `solar-energy-market.kpack` and
-  `kp-external-assessment.kpack` pass the grammar (after fixing one missing
-  claim target C020 in the solar example).
+- **All four example packs validated**: `solar-energy-market.kpack`,
+  `kp-external-assessment.kpack`, `art-acquisition-decision.kpack`, and
+  `auction-house-consignment-review.kpack` all pass the grammar and the
+  semantic constraints. The runner validates them on every run alongside
+  the 11 fixture cases (15/15 total).

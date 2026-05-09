@@ -20,7 +20,7 @@ This companion spec defines how Knowledge Packs support multiple languages. It c
 
 ## 2. Core Principles
 
-**P1. Claims are always English.** The reasoning surface (`claims.md`) is written in American English. It is never bilingual, never translated. Translations exist only at the view layer. *Exception:* see [§12 "Evidentiary multilingual exception"](#12-evidentiary-multilingual-exception-normative) for the single sanctioned audit-trail carrier when underlying evidence is inherently multilingual (Mariupol-style witness statements). The exception does not relax P1; it places original-language transcripts in `extensions.translations` as evidence-shaped, not claim-shaped.
+**P1. Claims are always English.** The reasoning surface (`claims.md`) is written in American English. It is never bilingual, never translated. Translations exist only at the view layer. *Exception:* see [§12 "Evidentiary multilingual exception"](#12-evidentiary-multilingual-exception-normative) for the single sanctioned audit-trail carrier when underlying evidence is inherently multilingual (e.g., field-collected witness statements in Russian or Ukrainian, foreign-language press, recorded interviews). The exception does not relax P1; it places original-language transcripts in `extensions.translations` as evidence-shaped, not claim-shaped.
 
 **P2. Translations are derived views, never authoritative.** If a translated view disagrees with `claims.md`, claims win. Translations carry no independent authority — they are rendered presentations of the canonical knowledge, not alternative sources of truth.
 

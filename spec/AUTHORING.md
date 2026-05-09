@@ -24,6 +24,8 @@ This file fills that gap. Each section gives you:
 
 If you implement an authoring agent, treat this document as the producer-side authoring guide — the discipline an author should hold themselves to. AUTHORING.md is informative, not normative: the parser does not check it, and `conformance/run.py` will pass packs that violate AUTHORING.md as long as they are syntactically valid. CORE.md is what the parser checks; AUTHORING.md is what the author should check.
 
+> **Note on examples in this document.** Worked examples below are shown in *compact form* — `[C001] headline {metadata} relations` on a single line, without the `- ` list marker — for readability. Real KP:1 claims follow the two-line CORE.md §6.1 grammar: `- [C001] headline\n  {metadata} optional context`. When copying these examples into a real pack, prepend `- ` and break the line after the headline. See `conformance/fixtures/valid/maximal.kpack/claims.md` for the canonical real-pack form.
+
 ---
 
 ## 2. Claim type — `o` / `r` / `c` / `i`
@@ -406,8 +408,8 @@ An agent that turns every sentence of a source document into an isolated `o` cla
    ```text
    # evidence.md
    ## E001
-   > type: research | captured: 2025-03-15
-   > source: BloombergNEF Q1 2025 Renewables Report, p. 14
+   > **type:** research | **captured:** 2025-03-15
+   > **source:** BloombergNEF Q1 2025 Renewables Report, p. 14
    "Utility-scale solar LCOE in low-cost markets has fallen to $0.029/kWh, with continued downward pressure from polysilicon overcapacity."
 
    # claims.md
@@ -477,14 +479,16 @@ Before you seal a pack version (issue a `signatures.yaml`, distribute, or stop a
 
 ## 11. Hostile-reading sanity checks
 
-These are the four "look-fine but degraded" patterns to actively avoid:
+These are the "look-fine but degraded" patterns to actively avoid:
 
 1. **The Agreeable Pack.** Many `⊗~`, zero `⊗!`, zero `⊘`. → You defaulted to non-commitment. Re-triage.
 2. **Atomic Dust.** Hundreds of tiny `o` claims with no relations and no `c` / `i` claims building on them. → No reasoning structure; the pack is data, not knowledge.
 3. **Confidence Hallucination.** Every claim at 0.95 or 1.0. → Self-rating, not calibration. Re-distribute against actual evidence depth.
 4. **View Laundering.** A polished `views/overview.md` that contains assertions absent from `claims.md`. → The view is making up knowledge. Move assertions to claims or remove from view.
+5. **Self-Referential Evidence.** A claim cites `E001`; the `E001` entry's `source` field is "see C001" (the same claim). → Circular justification with no external grounding. The evidence-claim chain must terminate at something outside the pack (a document, a measurement, an interview, a database snapshot). If the source field can only be filled by pointing back at a claim ID, the claim has no real evidence and should either be marked `nature: judgment` or removed. Note: as of v0.8.0-preview, this pattern is editorial-only — the runner does not detect circular evidence; AUTHORING.md flags it.
+6. **Future-Date Confidence Inflation.** A claim with `nature: prediction` and `since:` set to a future date carries confidence 0.99+ — the runner now rejects this via SC-12 (predictions MUST have confidence ≤ 0.95). The pattern existed in v0.7 and was caught only editorially; v0.8.0-preview makes it a normative semantic constraint. If you genuinely believe a future-state claim at 0.99+, you are either wrong about confidence or wrong about it being a prediction.
 
-If your pack has any of the four patterns, conformance will pass and the pack will still be epistemically degraded. The format protects against syntactic errors; only the author can protect against these.
+If your pack has any of these patterns, conformance may pass (depending on the pattern — SC-12 catches #6) and the pack may still be epistemically degraded. The format protects against syntactic errors and a small set of named semantic ones; only the author can protect against the rest.
 
 ---
 

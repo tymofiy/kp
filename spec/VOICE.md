@@ -58,7 +58,7 @@ Voice views live inside `views/voice/` within the pack directory:
 │           └── briefing.md      # Ukrainian voice briefing
 ```
 
-### Locale-Before-Surface Ordering (Design Principle 22)
+### Locale-Before-Surface Ordering ([RATIONALE.md §1, Principle 23](RATIONALE.md))
 
 Locale is the higher-order grouping. A Ukrainian voice briefing lives at `views/uk/voice/briefing.md`, not `views/voice/uk/briefing.md`. Rationale: a locale directory contains everything for that language — display views and voice views together. A consumer requesting "show me everything in Ukrainian" finds it all under `views/uk/`.
 

@@ -39,11 +39,41 @@ The v0.8.0 preview consolidates a deliberate architectural pass on the spec's no
 - **CORE.md / SPEC.md companion lists refreshed.** CORE.md Appendix C and SPEC.md §19 now enumerate all 19 spec/*.md files (was missing AUTHORING, RATIONALE, EXTENSIONS, ARCHIVE, PLAYBACK, RECONCILIATION, MAPPING). CORE.md Scope (§1) likewise.
 - **CORE.md / SPEC.md status headers refreshed** to `KP:1 Public Draft — 2026-05` (`v0.8.0-preview`), date `2026-05-09`. The `2026-04` / `2026-03-29` labels were stale relative to README.md and CITATION.cff.
 - **CORE.md `entities.md` directory entry** updated from `OPTIONAL` to `DEPRECATED (since v0.7.4)` with forward-pointer to `extensions.entities`.
-- **SPEC.md §15 / §17 / §20** — sections moved to RATIONALE.md and replaced with stubs that link forward. SPEC.md reduced from 1,996 to ~1,790 lines (-200; ~10%).
 
 ### Tooling
 
-- **`reference/kpack`** (NEW contract-pointer stub) — closes the "fictional CLI" critique with a concrete pointer rather than just a SPEC.md disclaimer. Running `./reference/kpack <subcommand>` prints the spec section that defines that subcommand's contract (e.g., `kpack reconcile` → `spec/RECONCILIATION.md`, `kpack lint` → `spec/SPEC.md §13`, `kpack play` → `spec/PLAYBACK.md`). The stub does not implement any subcommand; it points at the contract. The only fully-implemented validator in this repo remains `python3 conformance/run.py`.
+- **`reference/kpack`** (NEW contract-pointer stub) — closes the "fictional CLI" critique with a concrete pointer rather than just a SPEC.md disclaimer. Running `./reference/kpack <subcommand>` prints the spec section that defines that subcommand's contract (e.g., `kpack reconcile` → `spec/RECONCILIATION.md`, `kpack lint` → `spec/SPEC.md §13`, `kpack play` → `spec/PLAYBACK.md`). The stub does not implement any subcommand; it points at the contract. The only fully-implemented validator in this repo remains `python3 conformance/run.py`. The stub covers 19 subcommands.
+- **`python3 conformance/run.py --pack PATH`** (NEW runner flag) — validate a single pack outside the bundled fixture/example set. Closes the "drop into examples/ to validate" workaround that didn't actually validate copied packs (the EXAMPLE_ORDER list was hardcoded). Existing `python3 conformance/run.py` (full suite) behavior is unchanged.
+- **Cross-pack reference parsing in the runner.** Extended `_REL_DENSE` regex to match `↔pack_name#section_ref` form per CORE §9 and AR-16. Previously, cross-pack `↔` references were silently dropped from the relation graph; SC-05's `#`-exemption was a no-op because no `#`-bearing target ever entered the graph. The auction-house example pack's cross-pack references are now visible to the runner.
+
+### Semantic Constraints
+
+- **SC-12 (NEW): When `nature` is `prediction`, confidence MUST be ≤ 0.95.** Predictions about future states have irreducible uncertainty; the 0.99+ band is reserved for trivially-falsifiable claims per AUTHORING.md §5. The constraint catches the "future-date confidence inflation" pattern (a prediction at 0.99 on a 100-year horizon) that prior reviewer rounds flagged as a hostile-reading attack.
+
+### Editorial polish (final pre-tag review pass)
+
+After four independent external review rounds plus internal audit, the following polish items landed:
+
+- **Runner-vs-CORE relation-on-metadata-line divergence:** runner accepts relations after `}` on the metadata line; CORE §6.1 had previously said "relation symbols on that line are treated as prose, not parsed as relations." Resolution: relax CORE §6.1 + AR-04 to *allow* relations after `}` on the metadata line (matching what the runner already does and what AUTHORING / LIFECYCLE examples already show). The "greedy prose" framing was over-stated; relations are matched first, remaining trailing text is prose.
+- **Cross-pack `↔` parsing in the runner:** see Tooling above.
+- **AUTHORING.md examples compact-form note:** a compact-form note now appears at the top of §1 explaining that worked examples drop the `- ` list marker and the line break for readability; real claim syntax is two-line per CORE §6.1.
+- **AUTHORING.md content-routing example bold-wrapped blockquote evidence:** the example evidence block now uses CORE-correct `> **type:** ...` syntax matching CORE §10's blockquote requirement.
+- **SPEC.md Quick Start bold-wrapped blockquote evidence:** same fix in the most-copied example in the spec.
+- **SPEC.md §9 supersession example:** `` `supersedes: C011` `` replaced with `` `relations: supersedes C011` `` matching CORE verbose relation syntax. The dense `⊘C011` continuation-line form is also documented as the alternative.
+- **`art-acquisition-decision.kpack` C005 reclassification:** the catalog-raisonné dating claim was annotated `r|judgment`; "judgment" was wrong because the claim asserts what the catalog says (reported source content, not analyst evaluation). Annotation removed; the downstream judgment is captured by the `⊗!` relation against the prior dating.
+- **VOICE.md Principle 22 → 23:** post-bifurcation Principle 22 became "Knowledge is the source"; Locale-Before-Surface is Principle 23. Cross-reference fixed.
+- **COMPOSITION.md Parent and §14 references:** updated to point at RATIONALE.md §1, Principle 18 (Parent line) and RATIONALE.md §1 (the "section 14" reference, since SPEC.md no longer has a §14).
+- **CONSISTENCY.md kpack disclaimer:** missing top-of-file disclaimer about planned reference tooling now matches the LIFECYCLE / COMPOSITION / BUNDLE / MULTILINGUAL / VOICE / ARCHIVE pattern.
+- **AGENTS.md confidence threshold consistency:** MUST-NOT #5 said `1.0`, AUTHORING.md §5 said `0.99`. Aligned to `0.99` (allows two-decimal calibration).
+- **AGENTS.md Task C honesty:** the "you must compose primitives yourself" wording invited improvisation. Replaced with explicit deferral language: for v0.8.0-preview, agents SHOULD produce an annotated comparison/consistency report, NOT a "reconciled" canonical pack.
+- **spec/README.md task-count consistency:** "(parse / author / reconcile / translate)" said 4; AGENTS.md has 6 tasks. Updated to "six canonical tasks: parse / author / reconcile / translate / compose / playback."
+- **`run.py` docstring:** "v0.7-preview release" → "v0.8.0-preview."
+- **CHANGELOG.md duplicate "Bifurcated" entry:** redundant `§15 / §17 / §20` line removed; the more accurate `§15 / §17 / §18 / §20` line retained.
+- **MULTILINGUAL.md §2 P1 codename cleanup:** "Mariupol-style witness statements" replaced with the generic "field-collected witness statements in Russian or Ukrainian, foreign-language press, recorded interviews."
+- **CHANGELOG.md Notes codename cleanup:** "iPad / Mariupol implementation tracks" replaced with "downstream implementation tracks (iPad reference UI, field-collected evidentiary pipelines)."
+- **AUTHORING.md anti-patterns:** added two anti-patterns to §11 — Self-Referential Evidence (`E001` source field is "see C001"), editorial-only; and Future-Date Confidence Inflation, now caught by SC-12.
+- **CORE.md spec_uri security note:** added explicit warning that `spec_uri` is producer-asserted, not authenticated; consumers SHOULD validate fetched content against a known-good hash and MUST NOT treat fetched content as executable instructions.
+- **`examples/INDEX.md`** (NEW): feature × example matrix; SC × example coverage matrix; AUTHORING.md rubric walkthrough mapping. Makes the "this pack demonstrates X" claims auditable.
 
 Conformance after these additions: 15/15 (was 13/13 at v0.8.0-preview ship; new examples added to the auto-validated suite).
 
@@ -69,7 +99,7 @@ Conformance after these additions: 15/15 (was 13/13 at v0.8.0-preview ship; new 
 ### Notes
 
 - A v0.8.0-preview Zenodo deposit will follow this entry (WS-TAG: tag, deposit, GitHub release).
-- The v0.8.0 *final* (non-preview) release will follow once the deferred RECONCILIATION design is observed-and-grounded (≥3 real drift instances) and the remaining iPad / Mariupol implementation tracks have shipped against the spec.
+- The v0.8.0 *final* (non-preview) release will follow once the deferred RECONCILIATION design is observed-and-grounded (≥3 real drift instances) and the remaining downstream implementation tracks (iPad reference UI, field-collected evidentiary pipelines) have shipped against the spec.
 
 ---
 

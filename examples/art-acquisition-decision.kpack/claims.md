@@ -39,8 +39,13 @@ confidence: simple | normalized
   specialist's qualifications are stated in the report header.
 
 - [C005] The work is dated 1962 in the museum catalog raisonné.
-  {0.91|r|E003|2020-04-30|exhaustive|judgment} The catalog raisonné is
+  {0.93|r|E003|2020-04-30|exhaustive} The catalog raisonné is
   field-authoritative; its dating reflects multi-year scholarly consensus.
+  Confidence is at the high end of the corroborated-multi-source band.
+  As written, this claim is *reported source content* (what the catalog
+  says) — not a judgment. The downstream judgment that the catalog's
+  dating should be preferred over E002's 1957 dating is captured by the
+  ⊗! relation (C005 is correct, C004 is the prior wrong dating).
   ⊗!C004
 
 - [C006] The auction-house specialist accepts the catalog dating as authoritative and withdrew the 1957 attribution in November 2025.

@@ -111,6 +111,8 @@ The optional `spec_uri` and `spec_version` fields on PACK.yaml are an **informat
 
 > **Invariant.** Consumers MUST NOT treat unreachability or absence of `spec_uri` as a parse failure. The Rosetta header alone is sufficient for parsing. Offline-first validators MUST function without ever resolving `spec_uri`.
 
+> **Security note.** `spec_uri` is *producer-asserted, not authenticated*. A pack author can declare any URL. Consumers that fetch `spec_uri` SHOULD validate the response against a known-good spec hash or trusted allowlist before relying on it; consumers MUST NOT treat fetched content as executable instructions. The recommended onboarding flow is: (1) parse the pack using the inline Rosetta header, (2) optionally fetch `spec_uri` for human/agent learning, (3) validate the fetched content matches a trusted KP:1 release before incorporating any updated rules into a parser. Treating an arbitrary `spec_uri` URL as authoritative is a vector for malicious specs to redirect a credulous consumer.
+
 This matters most for **cold receivers of sealed `.kpack` archives** ([ARCHIVE.md §2](ARCHIVE.md)). A receiver that opens a `.kpack` for the first time has, by construction, no surrounding context — the file extension is the only signal of what they are holding. Reading PACK.yaml first and (optionally) following `spec_uri` lets such a consumer learn the format from the pack itself on first encounter, with no out-of-band coordination. Once the consumer has internalized KP:1, the field carries no further operational weight on subsequent reads of the same pack or other KP packs.
 
 ```yaml
@@ -245,9 +247,9 @@ Each claim is a markdown list item. A claim uses EITHER dense OR verbose form fo
 
 Positions 1–4 are REQUIRED. Positions 5–6 are OPTIONAL. Empty interior slots are valid: `{0.85|r|E020|2026-03-10||prediction}`.
 
-**Context prose** may follow the metadata on the same line (trailing prose) or on subsequent indented continuation lines (2+ spaces, AR-11). Note: trailing prose on the metadata line is consumed greedily — relation symbols on that line are treated as prose, not parsed as relations.
+**Context prose** may follow the metadata on the same line (trailing prose) or on subsequent indented continuation lines (2+ spaces, AR-11).
 
-**Relations** appear on subsequent continuation lines (not the metadata line) using symbol syntax:
+**Relations** MAY appear immediately after the closing `}` on the metadata line (and continue across subsequent continuation lines) OR start on a subsequent continuation line. Where present on the metadata line, relations are matched first; remaining trailing text after the matched relations is consumed as prose. Relation symbols inside narrative prose elsewhere on the metadata line are not parsed as relations (the parser matches relations starting at the position immediately after `}`, then treats remaining text as prose). Relations use symbol syntax:
 
 ```text
 →C002, ⊗~C003
@@ -494,6 +496,7 @@ These constraints MUST be validated after parsing succeeds. They are not express
 | SC-02 | All claim IDs MUST be unique within the document |
 | SC-03 | All evidence references in claims MUST have corresponding entries in evidence.md |
 | SC-04 | Supersession chains (`⊘`) MUST be acyclic |
+| SC-12 | When `nature` is `prediction`, confidence MUST be ≤ 0.95. Predictions about future states have irreducible uncertainty; the 0.99+ band is reserved for trivially-falsifiable claims per [AUTHORING.md §5](AUTHORING.md). |
 | SC-05 | All claim ID targets in relations MUST exist (within pack or as valid cross-pack references) |
 | SC-06 | Spec version in Rosetta header MUST equal `1` for KP:1 conformance |
 | SC-07 | Frontmatter pack name MUST match PACK.yaml `name` field |
@@ -600,7 +603,7 @@ The following normative decisions resolve ambiguities identified during grammar 
 | AR-01 | Claim ID is `C[0-9]+(-v[0-9]+)?`. Zero-padding conventional, not required. |
 | AR-02 | Evidence ID is `E[0-9]+`. Same padding rules as claim IDs. |
 | AR-03 | Bold wrapping (`**[C001]**`) is optional syntactic sugar. No semantic meaning. |
-| AR-04 | Relations appear on continuation lines (2+ spaces). May trail prose or start a line. |
+| AR-04 | Relations MAY appear immediately after the closing `}` on the metadata line, and/or on subsequent continuation lines (2+ spaces). On the metadata line, relations are matched first (immediately after `}`); any text after the matched relations is consumed as prose. Relations may trail prose or start a line on continuation lines. |
 | AR-05 | Verbose relation names are a closed enum of 8 values. |
 | AR-06 | Evidence `type` is open vocabulary. Unknown types MUST be accepted. |
 | AR-07 | Both blockquote and list evidence formats are valid. Field names are case-insensitive. |

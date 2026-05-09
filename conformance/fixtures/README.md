@@ -1,7 +1,7 @@
 # KP:1 Conformance Fixtures
 
-> **Status:** Complete — Phase C3 (automated runner passes 13/13)
-> **Spec version:** KP:1
+> **Status:** Complete — Phase C3 (automated runner passes 15/15: 11 fixtures + 4 example packs)
+> **Spec version:** KP:1 v0.8.0-preview
 
 Test fixtures for KP:1 conformance validation. Each fixture is a complete
 `.kpack` directory. Standard packs include `PACK.yaml`, `claims.md`, and
@@ -100,4 +100,10 @@ This parses each `claims.md` against `grammar/kp-claims.peg`, validates each
 `signatures.yaml` against `grammar/kp-signatures.schema.json` when present,
 runs semantic constraint checks (SC-01 through SC-11), and verifies that all
 valid fixtures pass and all invalid fixtures fail with expected errors.
-Current result: 13/13 tests pass.
+Current result: **15/15 tests pass** (11 fixtures + 4 reference example packs).
+
+To validate a single pack outside the bundled set:
+
+```bash
+python conformance/run.py --pack path/to/your-pack.kpack
+```

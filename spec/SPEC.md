@@ -126,23 +126,25 @@ The HTML comment at the top is the **Rosetta header** ([CORE.md §4](CORE.md#4-c
 # Evidence
 
 ## E001
-> type: observed | captured: 2026-01-01
-> source: Company records, CRM dashboard
+> **type:** observed | **captured:** 2026-01-01
+> **source:** Company records, CRM dashboard
 
 Customer count and platform functionality verified directly.
 
 ## E002
-> type: research | captured: 2026-02-15
-> source: Internal A/B test — Q4 2025, 12 enterprise accounts
+> **type:** research | **captured:** 2026-02-15
+> **source:** Internal A/B test — Q4 2025, 12 enterprise accounts
 
 40% reduction in misclassification. AI classification vs. rule-based.
 
 ## E003
-> type: web | captured: 2026-02-10
-> source: Competitor documentation review (5 platforms)
+> **type:** web | **captured:** 2026-02-10
+> **source:** Competitor documentation review (5 platforms)
 
 All 5 competitors use rule-based classification, no ML/AI component.
 ```
+
+(Field names are bold-wrapped per [CORE.md §10](CORE.md#10-evidence-document-evidencemd) "Blockquote Format". The list-format alternative — `- Type: observed`, etc. — is also valid.)
 
 5. Done. Any LLM can read `claims.md` and reason about your project. Any human can inspect it and verify what's claimed.
 
@@ -985,13 +987,18 @@ When new evidence changes a fact:
 2. The old claim is moved to history.md with its full metadata
 
 ```markdown
-<!-- In claims.md — the new claim -->
+<!-- In claims.md — the new claim (verbose form) -->
 - **[C011-v2]** AI advisor migrated to Qwen 4.0 70B-A5B
   `confidence: 0.99 | type: observed | evidence: E040 | since: 2026-06-15`
   Upgraded from Qwen 3.5 35B-A3B after benchmarking showed 15% improvement
   in conversational quality with minimal cost increase due to larger MoE routing.
-  `supersedes: C011`
+  `relations: supersedes C011`
 ```
+
+The verbose-form relation line is `` `relations: <name> <target>[, <name> <target>...]` ``
+per [CORE.md §6.2 Verbose Claim Syntax](CORE.md). The dense equivalent is `⊘C011`
+on a continuation line. Either form is valid; mixing dense and verbose metadata
+within a single claim is forbidden by AR-13.
 
 ### history.md — Audit Trail
 

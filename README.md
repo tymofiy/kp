@@ -144,8 +144,9 @@ when present, and enforces semantic constraints SC-01 through SC-11.
 Run from a fresh checkout:
 
 ```bash
-pip install -r conformance/requirements.txt
-python3 conformance/run.py
+pip install -r requirements.txt
+python3 conformance/run.py                       # full suite (15/15 expected)
+python3 conformance/run.py --pack path/to/x.kpack  # validate a single pack
 ```
 
 See [conformance/README.md](conformance/README.md) for details.

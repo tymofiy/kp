@@ -6,7 +6,7 @@
 > **Status:** Draft
 > **Date:** 2026-03-22
 > **Editor:** Timothy Kompanchenko
-> **Parent:** [SPEC.md](SPEC.md), Design Principle 18
+> **Parent:** [SPEC.md](SPEC.md); design rationale in [RATIONALE.md §1, Principle 18](RATIONALE.md).
 > **Implements:** Decision D14 (Meeting pack composition, agenda overlay, pre_load/on_demand)
 
 > **`kpack` CLI invocations in this document describe planned reference tooling.** Only `python3 conformance/run.py` ships today. See [SPEC.md §13](SPEC.md) and the contract-pointer stub at [`reference/kpack`](../reference/kpack) for status.
@@ -583,7 +583,7 @@ For composite packs, `kpack lint` adds these checks:
 
 ## 10. Design Principles (Composition-Specific)
 
-These extend the core design principles in SPEC.md section 14.
+These extend the core design principles in [RATIONALE.md §1](RATIONALE.md).
 
 1. **Composition over duplication** ([RATIONALE.md §1, Principle 18](RATIONALE.md)). The foundational rule. Knowledge lives once. Composite packs are lenses, not copies.
 
