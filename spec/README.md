@@ -40,7 +40,7 @@ Companions do not weaken CORE: where CORE makes a claim, that claim holds. But f
 | [RECONCILIATION.md](RECONCILIATION.md) | Cross-pack reconciliation protocol (stub — design deferred to v0.9 / v1.0) |
 | [RATIONALE.md](RATIONALE.md) | Rationale and positioning (informative — design principles, style systems, relationship to other standards) |
 
-> **AI agents:** see [`AGENTS.md`](../AGENTS.md) at the repo root for a task-indexed reading map (parse / author / reconcile / translate). It points you at the minimum required reading per task, so you don't have to load all 9,000+ lines of normative prose into your context window.
+> **AI agents:** see [`AGENTS.md`](../AGENTS.md) at the repo root for a task-indexed reading map (parse / author / reconcile / translate). It points you at the minimum required reading per task, so you don't have to load all ~9,400 lines of spec prose across the 22 spec/*.md files into your context window.
 
 ## Interoperability
 

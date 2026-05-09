@@ -1,7 +1,7 @@
 name: art-acquisition-decision
 version: 2026.05.09
 domain: art/decision-support
-author: Reference Implementation
+author: Timothy Kompanchenko (anonymized demo pack)
 description: >
   Demonstration pack — a buyer-side decision-support pack for the acquisition
   of a mid-twentieth-century European painting. Fully anonymized: gallery,
@@ -24,7 +24,7 @@ sensitivity: public
 visibility: public
 
 provenance:
-  author: Reference Implementation
+  author: Timothy Kompanchenko
   role: individual
 
 display:

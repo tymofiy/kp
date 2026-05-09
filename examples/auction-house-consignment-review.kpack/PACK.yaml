@@ -1,7 +1,7 @@
 name: auction-house-consignment-review
 version: 2026.05.09
 domain: art/decision-support
-author: Reference Implementation
+author: Timothy Kompanchenko (anonymized demo pack)
 description: >
   Demonstration pack — the consigner-side counterpart to
   art-acquisition-decision.kpack. An auction house reviews a sculpture
@@ -30,7 +30,7 @@ sensitivity: public
 visibility: public
 
 provenance:
-  author: Reference Implementation
+  author: Timothy Kompanchenko
   role: individual
 
 display:

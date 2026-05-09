@@ -39,10 +39,10 @@ confidence: sherman_kent | normalized
   {0.90|i|E001,E003,E004|2026-03-31|exhaustive|judgment} The bundle treats this as the core benchmark question rather than something that can be settled by philosophical argument alone.
 
 - [C006] Numeric confidence floats are treated as a weak point in the current format because calibration research suggests linguistic or ordinal uncertainty markers are often more reliable for human interpretation
-  {0.87|i|E001,E003|2026-03-31|investigated|judgment} The assessment does not reject uncertainty metadata; it suggests a possible redesign toward bands or verbal levels, with investigation depth retained as a strong secondary signal.
+  {0.72|i|E001,E003|2026-03-31|investigated|judgment} The assessment does not reject uncertainty metadata; it suggests a possible redesign toward bands or verbal levels, with investigation depth retained as a strong secondary signal. Confidence here is moderate because the underlying calibration research is itself contested and the assessment treats the redesign as a candidate, not a recommendation.
 
 - [C007] The audience and deployment target for KP:1 remains unresolved, and that ambiguity is warping the specification's size and formality
-  {0.88|i|E001,E003|2026-03-31|investigated|judgment} A personal tool, an internal team standard, and an open industry format imply different requirements for collaboration, interoperability, and spec governance.
+  {0.78|i|E001,E003|2026-03-31|investigated|judgment} A personal tool, an internal team standard, and an open industry format imply different requirements for collaboration, interoperability, and spec governance.
 
 ## Gaps
 
@@ -50,7 +50,7 @@ confidence: sherman_kent | normalized
   {0.92|i|E001,E002,E004|2026-03-31|exhaustive|judgment} These are not cosmetic omissions; they define the boundary between a sophisticated personal system and a broader standard.
 
 - [C009] The voice-surface idea remains one of KP:1's most interesting open bets: directionally plausible, structurally novel, but not yet validated as an epistemically distinct knowledge architecture
-  {0.84|i|E001,E003,E004|2026-03-31|investigated|judgment} The bundle treats voice as a meaningful design frontier, but stops short of claiming the current argument is complete.
+  {0.68|i|E001,E003,E004|2026-03-31|investigated|judgment} The bundle treats voice as a meaningful design frontier, but stops short of claiming the current argument is complete. Confidence here is intentionally lower than other inferred-judgment claims in this pack because "directionally plausible but not yet validated" is the most provisional posture in the assessment.
 
 ## Recommended Next Moves
 
