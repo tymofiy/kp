@@ -66,6 +66,7 @@ All language tags use **BCP 47** format (IETF BCP 47 / RFC 5646):
 | Tag | Language |
 |-----|----------|
 | `en-US` | American English (canonical) |
+| `en-GB` | British English (en-US sibling — see §3.3) |
 | `uk-UA` | Ukrainian |
 | `de-DE` | German |
 | `fr-FR` | French |
@@ -73,6 +74,33 @@ All language tags use **BCP 47** format (IETF BCP 47 / RFC 5646):
 | `ar-SA` | Arabic |
 
 The subtag after the hyphen is the region. Use the most specific applicable tag. The short form (e.g., `uk` without `-UA`) is acceptable in directory names for brevity.
+
+`en-GB` is treated as a *mechanical sibling* of `en-US`, not a translation in the full sense: the two share semantics and structure, differing in spelling (colour/color, organise/organize), idiom (boot/trunk, lift/elevator), and a small set of dialect-specific terms. Tooling MAY auto-derive an en-GB view from en-US via spelling normalization plus a curated idiom list; full re-translation is not required. Other en-* tags (en-CA, en-AU, en-IN, etc.) are reserved for future use; producers SHOULD NOT mint custom en-* tags without filing a spec note.
+
+### Register Sub-distinctions
+
+Within a single locale, voice content may legitimately need to vary by **register** beyond the four primary registers defined in [VOICE.md §4.1](VOICE.md). Locale-specific sub-registers refine within that primary axis rather than replacing it.
+
+Examples:
+
+- **Ukrainian.** Literary Ukrainian (the standard reviewed by Kyiv-based editors) and Western Ukrainian / Halychyna register (Lviv-area diction, vocabulary differences, occasional loanwords from Polish or German) sound noticeably different in voice surfaces. A pack targeting a Western Ukrainian audience SHOULD declare the sub-register in voice view metadata so producers and reviewers can converge.
+- **French.** Parisian / Métropolitain French and Quebec French differ in vocabulary, idiom, and prosody. A French voice view should be explicit about which.
+- **Spanish.** European (peninsular) Spanish and Latin American Spanish differ in pronunciation (`vosotros` use, `s`/`z`/`c` distinctions), vocabulary, and rhythm.
+- **Arabic.** Modern Standard Arabic (MSA) is the literary register; spoken dialects (Egyptian, Levantine, Gulf, Maghrebi) are markedly different and not mutually intelligible by voice.
+
+When sub-register matters for a pack, producers SHOULD record it in the voice view's metadata header as a free-form annotation alongside `register`. Example:
+
+```markdown
+<!-- voice: briefing -->
+<!-- duration: ~90 seconds -->
+<!-- pace: measured -->
+<!-- register: curatorial -->
+<!-- sub_register: uk-halychyna -->
+```
+
+The `sub_register` field is informational, not a normative enum; values are agreed locally by producer and reviewer. The four primary `register` values from VOICE.md remain the authoritative axis. `sub_register` adds locale-specific nuance without expanding the spec-level vocabulary.
+
+**Reviewer responsibility.** A pack declaring `sub_register: uk-halychyna` MUST be reviewed by a native speaker of that sub-register — generic Ukrainian review is insufficient. Producers without access to a qualified reviewer SHOULD ship the pack at literary-Ukrainian register and tag the sub-register field as `null` or omit it, rather than ship unverified locale-specific prose.
 
 ---
 
