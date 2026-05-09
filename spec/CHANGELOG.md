@@ -5,6 +5,42 @@
 
 ---
 
+## v0.8.0-preview — 2026-05-09
+
+**Three-lane normative architecture, EXTENSIONS validation, spec self-discovery, and companion-doc readiness for v0.8.0.**
+
+The v0.8.0 preview consolidates a deliberate architectural pass on the spec's normative structure (the three lanes), an honest validation of every active extension block, two new spec-level fields that let a sealed `.kpack` archive be self-explaining to a cold receiver, and several companion-doc additions (RECONCILIATION stub, VOICE `register` axis, MULTILINGUAL `en-GB` row + sub-registers). No core schema is broken; pre-v0.8.0 packs continue to validate.
+
+### Added
+
+- **Three normative lanes** (`spec/README.md`) — explicit declaration that KP:1 carries normative weight across CORE.md (implementer surface), SPEC.md (full spec + rationale + ecosystem), and topic-authoritative companions. Companions are NOT mere extensions of CORE/SPEC: for matters within their domain, the companion is the normative authority. CORE.md and SPEC.md gain `Lane:` lines in their metadata blocks pointing at the README overview.
+- **`spec_uri` and `spec_version`** (PACK.yaml manifest root, optional) — discovery pointer that lets a previously-unfamiliar consumer (especially a cold receiver of a sealed `.kpack` archive) fetch the full spec from the URL the pack itself names. Complements the inline Rosetta header (the minimum-viable parse hint at the top of `claims.md`). New "Spec Discovery" subsection in CORE.md §3 and "Format discoverability" subsection in ARCHIVE.md §2 codify the cold-receiver protocol: consumers SHOULD read PACK.yaml first and follow `spec_uri` (when declared). Default published location: `https://github.com/tymofiy/kp`.
+- **`extensions.translations`** (EXTENSIONS.md §2.8, NEW block) — evidentiary multilingual transcripts for packs whose canonical claims are English (per MULTILINGUAL §2 P1) but whose underlying evidence is in another language (handwritten Russian / Ukrainian witness statements, foreign-language press, recorded interviews). The English claim remains the single normative assertion; `translations` carries original-language transcripts as audit trail without making them co-canonical. Inaugural producer: kilimanjaro-intake (Mariupol pipeline).
+- **VOICE.md `register` axis** — recommended metadata header field on voice views with four spec values: `plain`, `curatorial`, `technical`, `investor`. Composes orthogonally with `pace` (speed vs diction). Distinct from app-side `AudienceProfile.persona` (consumer concept).
+- **`en-GB` language tag** (MULTILINGUAL.md §3.2 table) — mechanical sibling of `en-US` distinguished by spelling, idiom, and a small set of dialect-specific terms. Other `en-*` tags reserved.
+- **Register Sub-distinctions** (MULTILINGUAL.md §3.3, NEW subsection) — informational `sub_register` voice-view metadata field for locale-specific sub-registers (Western Ukrainian / Halychyna, Quebec French, peninsular Spanish, MSA vs spoken Arabic). Refines within the four VOICE.md primary registers rather than replacing them. Reviewer-responsibility note: a pack declaring `sub_register` MUST be reviewed by a native speaker of that sub-register.
+- **RECONCILIATION.md** (NEW companion stub) — explicit placeholder for the cross-pack consolidation protocol. Full design deferred to v0.9 / v1.0 contingent on observing measurable drift across at least three real packs. Distinguishes from CONSISTENCY (single-workspace patrol) and LIFECYCLE (single-pack claim lifecycle).
+
+### Changed
+
+- **EXTENSIONS.md** — validation pass against producer evidence in `repos/packs/`. Status grid honest as-of v0.8.0: `ai_brief` (active, ~21 producers), `research` (active, ~16 producers), `entities` / `relations` / `intent` / `playbook` / `workspace` (experimental, 0–1 producers each). Added explicit producer counts on the `research` block. New `extensions.translations` block at §2.8 is tagged `active` despite single inaugural producer; the policy tension is documented inline.
+- **Companion-doc Parent: lines** — dropped stale `> **Parent:** SPEC.md v0.X` lines from MULTILINGUAL, CONVENTIONS, BUNDLE, ORGANIZATION, CONSISTENCY, NOTES, STORAGE. These companions are mature enough to stand alone; the parent-version reference was version pollution that needed bumping every spec release. Retained Parent: lines on ARCHIVE / COMPOSITION / DEFINITIONS / EXTENSIONS / LIFECYCLE / VOICE because they reference specific section anchors that genuinely matter.
+- **`SPEC.md` title** — `v0.7` → `v0.8.0`.
+- **`README.md`** — status banner v0.7-preview → v0.8.0-preview; conformance fixture count corrected to 13; citation example updated to v0.8.0-preview while preserving the v0.7-preview Zenodo DOI as historical reference.
+- **`CITATION.cff`** — version `0.7-preview` → `0.8.0-preview`; date-released `2026-04-06` → `2026-05-09`. v0.7-preview Zenodo DOI tagged `(historical)` pending v0.8.0-preview Zenodo deposit (queued as WS-TAG).
+
+### Compatibility
+
+- **No core schema break.** `spec_uri` and `spec_version` are optional manifest fields. `extensions.translations` lives in the existing `extensions` lane (added in v0.7.4). The VOICE `register` field is recommended, not required. Pre-v0.8.0 packs continue to validate against the v0.8.0-preview conformance runner.
+- **Companions reaffirmed normative.** The "Three normative lanes" framing does not weaken CORE: where CORE makes a claim, that claim still holds. But for topics CORE explicitly punts to a companion (per CORE's `see [COMPANION]` cross-references), the companion now carries explicit full normative weight on that topic, codifying what was implicit.
+
+### Notes
+
+- A v0.8.0-preview Zenodo deposit will follow this entry (WS-TAG: tag, deposit, GitHub release).
+- The v0.8.0 *final* (non-preview) release will follow once the deferred RECONCILIATION design is observed-and-grounded (≥3 real drift instances) and the remaining iPad / Mariupol implementation tracks have shipped against the spec.
+
+---
+
 ## v0.7.7.1 — 2026-05-09
 
 **Schema-only conformance relaxations.**
