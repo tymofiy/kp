@@ -10,7 +10,7 @@ The normative contract for Knowledge Pack version 1.
 
 ## Three normative lanes
 
-KP:1 carries normative weight across three documents, each with a distinct role. A correct implementation reads from all three.
+KP:1 carries normative weight across three documents, each with a distinct role. A conformant implementation reads the lanes relevant to the surfaces it implements: a parser need only consult CORE; a renderer that handles voice, locales, or sealed archives reads the relevant companions in addition.
 
 **[CORE.md](CORE.md) — implementer surface.** The minimum required to be KP:1-conformant. CORE.md is intentionally narrow: just enough to build interoperable parsers and validators. If you are implementing KP:1, start here; CORE.md is sufficient to ship a conformant parser.
 
@@ -38,6 +38,7 @@ Companions do not weaken CORE: where CORE makes a claim, that claim holds. But f
 | [NOTES.md](NOTES.md) | AI note-taking integration |
 | [PLAYBACK.md](PLAYBACK.md) | Self-driving presentation playback (experimental) |
 | [RECONCILIATION.md](RECONCILIATION.md) | Cross-pack reconciliation protocol (stub — design deferred to v0.9 / v1.0) |
+| [RATIONALE.md](RATIONALE.md) | Rationale and positioning (informative — design principles, style systems, relationship to other standards) |
 
 > **AI agents:** see [`AGENTS.md`](../AGENTS.md) at the repo root for a task-indexed reading map (parse / author / reconcile / translate). It points you at the minimum required reading per task, so you don't have to load all 9,000+ lines of normative prose into your context window.
 

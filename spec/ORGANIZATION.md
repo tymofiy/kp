@@ -35,6 +35,7 @@ your-knowledge-repo/
 │   ├── PLAYBACK.md                 # Self-driving presentation playback (experimental)
 │   ├── RECONCILIATION.md           # Cross-pack reconciliation (stub — design deferred)
 │   ├── MAPPING.md                  # Mapping to RDF/JSON-LD/PROV-O (informative)
+│   ├── RATIONALE.md                # Design principles, positioning, philosophy (informative)
 │   └── CHANGELOG.md                # Version history
 │
 ├── packs/                          # THE CONTENT — actual knowledge packs

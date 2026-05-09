@@ -553,7 +553,7 @@ When a definition is deprecated, existing claims referencing it are not invalida
 2. **Tooling should warn, not reject.** When a claim references a deprecated entity type, attribute, or relation, emit a warning: "entity type `widget` deprecated since 2026-06-01 — consider updating to `gadget`."
 3. **`superseded_by` enables migration.** If the deprecated definition has `superseded_by: gadget`, tooling can suggest the replacement. Automated migration is an implementation choice, not a spec requirement.
 4. **Orphan detection.** A claim referencing an entity type that exists in NO definition pack (not deprecated, not active — simply absent) is an orphan. Tooling should flag orphans for review — they may indicate a missing dependency declaration or a data entry error.
-5. **Retroactive invalidation is forbidden.** Changing a definition must never silently invalidate existing claims. This follows from the append-only principle (SPEC.md §15, Principle 5): the past is preserved.
+5. **Retroactive invalidation is forbidden.** Changing a definition must never silently invalidate existing claims. This follows from the append-only principle ([RATIONALE.md §1, Principle 5](RATIONALE.md)): the past is preserved.
 
 ---
 
