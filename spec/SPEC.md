@@ -1295,6 +1295,17 @@ A conversation flow using navigation:
 
 ## 13. Tooling
 
+> **Status of the `kpack` CLI (as of v0.8.0-preview):** the commands listed
+> in this section describe **planned reference tooling**, not commands that
+> ship in this repository today. The only command that exists in `kp` today
+> is `python3 conformance/run.py` (the conformance suite). Commands like
+> `kpack lint`, `kpack render`, `kpack reconcile`, `kpack translate`,
+> `kpack bundle`, etc. describe the contract a future reference tool will
+> implement. They are not currently executable. Producers can implement
+> these contracts independently against [CORE.md](CORE.md), the JSON Schema,
+> and [AUTHORING.md](AUTHORING.md). Tracking and an early implementation
+> live in [`reference/`](../reference/) (placeholder).
+
 ### MVP Commands
 
 ```bash

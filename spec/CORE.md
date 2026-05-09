@@ -26,7 +26,7 @@ This document covers:
 - Validation rules and semantic constraints
 - Conformance levels
 
-This document does **not** cover: voice surfaces (VOICE.md), composition/meetings (COMPOSITION.md), lifecycle management (LIFECYCLE.md), multilingual support (MULTILINGUAL.md), pack organization patterns (ORGANIZATION.md), consistency patrol (CONSISTENCY.md), naming conventions (CONVENTIONS.md), storage formats (STORAGE.md), bundling (BUNDLE.md), archive format and integrity (ARCHIVE.md), definition/policy document kinds (DEFINITIONS.md), or AI note-taking (NOTES.md). These are specified in companion documents within `spec/`.
+This document does **not** cover: producer-side decision rubrics (AUTHORING.md — how to choose claim type, contradiction qualifier, confidence value, depth, granularity), voice surfaces (VOICE.md), composition/meetings (COMPOSITION.md), lifecycle management (LIFECYCLE.md), multilingual support (MULTILINGUAL.md), pack organization patterns (ORGANIZATION.md), consistency patrol (CONSISTENCY.md), naming conventions (CONVENTIONS.md), storage formats (STORAGE.md), bundling (BUNDLE.md), archive format and integrity (ARCHIVE.md), definition/policy document kinds (DEFINITIONS.md), or AI note-taking (NOTES.md). These are specified in companion documents within `spec/`.
 
 ### Terminology
 
@@ -54,7 +54,7 @@ A Knowledge Pack is a directory. The `.kpack/` suffix is RECOMMENDED but not req
 ├── evidence.md        # RECOMMENDED — backing sources
 ├── history.md         # OPTIONAL — superseded/retracted claims
 ├── entities.md        # OPTIONAL — entity definitions
-├── validation.yaml    # OPTIONAL — test questions
+├── validation.yaml    # OPTIONAL — test questions (schema in SPEC.md §10)
 ├── signatures.yaml    # OPTIONAL — cryptographic integrity (see ARCHIVE.md)
 └── views/             # OPTIONAL — pre-rendered display content
     └── overview.md
@@ -602,7 +602,7 @@ The following normative decisions resolve ambiguities identified during grammar 
 | AR-07 | Both blockquote and list evidence formats are valid. Field names are case-insensitive. |
 | AR-08 | Frontmatter is KP-specific compact format, NOT arbitrary YAML. |
 | AR-09 | Entity annotation: `[entity_type]` or `[entity_type|alias1,alias2]` at end of H1. Entity type is `[a-z0-9-]+`; aliases are `[A-Za-z0-9_-]+`. |
-| AR-10 | Tilde `~` is a relation only when immediately followed by a valid claim ID reference (`C` + digits or cross-pack ref). |
+| AR-10 | Tilde `~` is a relation only when immediately followed by a valid claim ID reference (`C` + digits or cross-pack ref). Examples: `~C002` is the *refines* relation; `~refines` (the legend token in the Rosetta header) and `~the manuscript` (mid-prose tilde) are prose, not relations. |
 | AR-11 | Continuation lines use 2+ spaces of indentation. |
 | AR-12 | Claim ID gaps are permitted. Uniqueness is the only constraint (SC-02). |
 | AR-13 | A claim uses EITHER dense OR verbose metadata. No mixing within a single claim. |

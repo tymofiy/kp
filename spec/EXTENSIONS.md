@@ -19,9 +19,10 @@ the optional `extensions` object instead of appearing as new top-level keys
 [SPEC.md §3.2](SPEC.md)).
 
 This document is the catalogue of **producer-defined** extension blocks in
-active use across the Nova ecosystem. It is informative — KP:1 does not
-require any extension to exist, and consumers MUST ignore extension content
-they do not understand. New extensions are listed here so producers and
+active use across the reference implementation (the public `kp-forge`,
+`kp-packs`, and `kp-viewer` repositories). It is informative — KP:1 does
+not require any extension to exist, and consumers MUST ignore extension
+content they do not understand. New extensions are listed here so producers and
 consumers can converge on shared shapes without forcing schema breaks or
 prematurely promoting a payload into the core standard.
 
@@ -51,17 +52,17 @@ canonical example.
 
 ### 2.2 `extensions.entities` — typed entity graph
 
-**Owner:** kp-forge entity-extraction pipeline (`repos/kp-forge/src/entities/`).
+**Owner:** kp-forge entity-extraction pipeline.
 **Status:** experimental (introduced 2026-04-28).
 
 Promotes the in-memory entity graph to first-class manifest metadata.
 Consumed by Decision Workspace materialization and the cross-pack
-`entity_index` in the relay (`repos/kp-packs/src/storage/entity-index.ts`).
+`entity_index` in the kp-packs relay.
 
 ```yaml
 extensions:
   entities:
-    - id: ent_p_8a3f2c                  # canonical Nova ID, see §3.1
+    - id: ent_p_8a3f2c                  # canonical reference ID, see §3.1
       type: person                      # person | company | asset | event
       canonical: Alexei Mordashov       # display name, single source
       aliases:
@@ -124,22 +125,26 @@ defined elsewhere.
 
 ### 2.4 `extensions.intent` — decision frame
 
-**Owner:** kp-forge intent inference (`repos/kp-forge/src/intent.ts`).
+**Owner:** kp-forge intent inference module.
 **Status:** experimental (introduced 2026-04-28).
 
-The decision-frame tag selected for the pack. Used by the playbook module
-(`repos/intel/src/playbooks/`) to choose `(domain, intent) → Playbook`.
+The decision-frame tag selected for the pack. Used by the reference
+implementation's playbook module to choose `(domain, intent) → Playbook`.
 
 ```yaml
 extensions:
-  intent: SanctionScreen                # one of seven Intent values
+  intent: SanctionScreen                # current reference vocabulary, v1
   intent_schema_version: "1"            # pin against future intent-set expansions
   intent_derivation: explicit           # explicit | from_case_type | from_workspace
 ```
 
-**Intent vocabulary (v1):** `Buy`, `Consign`, `Comply`, `SanctionScreen`,
-`Advise`, `Cover`, `Discover`. Future intent-set expansions bump
-`intent_schema_version`; older clients detect-and-degrade.
+**Intent vocabulary (reference implementation, v1):** `Buy`, `Consign`,
+`Comply`, `SanctionScreen`, `Advise`, `Cover`, `Discover`. This is the
+producer-defined vocabulary used by the reference implementation; other
+producers MAY define their own values under `extensions.intent` per the
+informative-catalog disclaimer at the top of this document. Future
+reference-vocabulary expansions bump `intent_schema_version`; older
+clients detect-and-degrade.
 
 **Relationship to `case_type`.** `case_type` (compliance | academic |
 canonical | journalism) is a stylistic / verdict-shape tag retained
@@ -148,8 +153,8 @@ both; defaults derive `intent` from `case_type` when absent.
 
 ### 2.5 `extensions.playbook` — runtime trace
 
-**Owner:** kp-forge enrichment loop (`repos/kp-forge/src/enrich.ts`,
-`repos/intel/src/loop.ts`).
+**Owner:** kp-forge enrichment loop, in concert with the reference
+intelligence pipeline.
 **Status:** experimental (introduced 2026-04-28).
 
 The structured trace of a playbook execution. Written incrementally as
@@ -187,8 +192,7 @@ in-flight rather than malformed.
 
 ### 2.6 `extensions.workspace` — Decision Workspace metadata
 
-**Owner:** kp-forge workspace materialization
-(`repos/kp-forge/src/workspace/`).
+**Owner:** kp-forge workspace materialization module.
 **Status:** experimental (introduced 2026-04-28).
 
 Per-pack workspace bookkeeping. The wedge ships with single-pack
@@ -210,10 +214,9 @@ through the existing pipeline.
 
 ### 2.7 `extensions.research` — research metadata
 
-**Owner:** kp-forge research-metadata module
-(`repos/kp-forge/src/research-metadata.ts`).
+**Owner:** kp-forge research-metadata module.
 **Status:** active (precedent for the producer-defined pattern; emitted by
-~16 packs in the Nova ecosystem as of v0.7.7).
+~16 packs in the reference implementation as of v0.7.7).
 
 Free-text anchor subject and surrounding research metadata. Predates the
 typed entity graph; coexists with it. New work targets `extensions.entities`
@@ -222,10 +225,11 @@ valid for legacy and lightweight cases.
 
 ### 2.8 `extensions.translations` — evidentiary multilingual transcripts
 
-**Owner:** kilimanjaro-intake (Mariupol pipeline) +
-`repos/kp-packs/src/intake/handwritten/`. Consumed by KP Viewer and the
-Bernard relays.
-**Status:** active (introduced 2026-05-09 with the Mariupol corpus).
+**Owner:** the reference handwritten-inventory intake pipeline + the
+kp-packs relay's intake module. Consumed by kp-viewer and downstream
+relays.
+**Status:** active (introduced 2026-05-09 with the inaugural
+field-collected corpus).
 
 When a claim's canonical text is English (per
 [MULTILINGUAL.md §2 P1](MULTILINGUAL.md)) but the underlying evidence is in
@@ -318,10 +322,10 @@ vocabulary:
 | `courtlistener_party` | CourtListener | integer |
 | `lei` | GLEIF | 20-character LEI |
 
-Producers MUST NOT emit malformed external IDs. The kp-forge external-ID
-parsers (`repos/intel/src/entities/external-ids.ts`) validate format
-strictly; values that fail validation are dropped from the pack and
-recorded as a Gap in the playbook trace.
+Producers MUST NOT emit malformed external IDs. The reference
+implementation's external-ID parsers validate format strictly; values that
+fail validation are dropped from the pack and recorded as a Gap in the
+playbook trace.
 
 ### 3.3 Per-claim entity references
 

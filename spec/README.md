@@ -22,6 +22,7 @@ Companions do not weaken CORE: where CORE makes a claim, that claim holds. But f
 
 | Document | Topic |
 |----------|-------|
+| [AUTHORING.md](AUTHORING.md) | Producer-side decision rubrics — how to make sound choices when authoring |
 | [VOICE.md](VOICE.md) | Voice surfaces for rendering claims as prose |
 | [COMPOSITION.md](COMPOSITION.md) | Multi-pack composition and meetings |
 | [LIFECYCLE.md](LIFECYCLE.md) | Pack lifecycle management |
@@ -37,6 +38,8 @@ Companions do not weaken CORE: where CORE makes a claim, that claim holds. But f
 | [NOTES.md](NOTES.md) | AI note-taking integration |
 | [PLAYBACK.md](PLAYBACK.md) | Self-driving presentation playback (experimental) |
 | [RECONCILIATION.md](RECONCILIATION.md) | Cross-pack reconciliation protocol (stub — design deferred to v0.9 / v1.0) |
+
+> **AI agents:** see [`AGENTS.md`](../AGENTS.md) at the repo root for a task-indexed reading map (parse / author / reconcile / translate). It points you at the minimum required reading per task, so you don't have to load all 9,000+ lines of normative prose into your context window.
 
 ## Interoperability
 
