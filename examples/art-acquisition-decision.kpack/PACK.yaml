@@ -36,15 +36,15 @@ views:
   - name: overview
     file: views/overview.md
     purpose: Buyer-facing summary of the recommendation and its supporting claims
-    display_as: page
+    display_as: "Overview"
   - name: counsel
     file: views/counsel.md
     purpose: Compliance/counsel-facing summary emphasizing risk and audit trail
-    display_as: page
+    display_as: "Counsel Review"
   - name: briefing
     file: views/voice/briefing.md
     purpose: Voice briefing for the buyer (curatorial register)
-    display_as: voice
+    display_as: "Voice Briefing"
     voice: true
     duration: ~90 seconds
     pace: measured

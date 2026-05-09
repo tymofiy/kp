@@ -30,7 +30,7 @@ confidence: simple | normalized
   {0.99|o|E003|2026-05-02} Direct measurement and visual inspection by the house's nineteenth-century specialist.
 
 - [C004] Surface patina, casting weight, and bronze alloy composition are consistent with a casting executed between 1880 and 1900.
-  {0.83|o|E004|2026-05-02|investigated} The specialist's metallurgical observation; not formally confirmed by laboratory analysis.
+  {0.78|o|E004|2026-05-02|investigated} The specialist's metallurgical observation; not formally confirmed by laboratory analysis. Confidence reflects single-method visual + tactile assessment without instrument confirmation.
 
 - [C005] The foundry mark on the underside is "Foundry F, Paris," which is documented in the foundry-marks reference to have begun operating in 1925 — twelve years after Sculptor Y's death in 1913.
   {0.95|o|E005,E006|2026-05-03|exhaustive} Direct observation of the mark plus verification against the published reference of Parisian art-foundry marks.
@@ -41,7 +41,7 @@ confidence: simple | normalized
   {0.91|r|E001,E002|2026-04-22|investigated} Restating the consignor's position; not the house's read.
 
 - [C007] The house's specialist concludes that the work is a posthumous cast, executed by Foundry F between 1925 and approximately 1940, after a Sculptor Y model.
-  {0.87|i|E004,E005,E006|2026-05-03|investigated|judgment} The foundry-mark evidence is dispositive: a cast produced after the sculptor's death cannot be a lifetime work, regardless of how faithfully the model is rendered. ⊗!C006
+  {0.84|i|E004,E005,E006|2026-05-03|investigated|judgment} The foundry-mark evidence is dispositive on the cast-period question; the 1925-1940 narrowing is the specialist's judgment based on E006's mark-variant catalog. ⊗!C006
 
 - [C008] The 1971 auction catalog described the work as "by Sculptor Y" without distinguishing lifetime from posthumous casts; this attribution conflates two materially different categories under contemporary art-market conventions.
   {0.83|i|E002|2026-05-09|investigated|judgment} The 1971 catalog is genuine and accurate to its time; conventions for distinguishing lifetime from posthumous casts strengthened in the 1980s. The pre-convention catalog is not wrong but does not establish what Vendor V claims it establishes. →C007
@@ -63,7 +63,7 @@ confidence: simple | normalized
 ## Reputational and Operational Risk
 
 - [C013] Listing the work as "by Sculptor Y" without distinguishing the cast period would expose the house to reputational and potential legal risk if a buyer subsequently discovered the foundry-mark evidence.
-  {0.91|i|E005,E006,E007|2026-05-09|investigated|judgment} The risk is not theoretical: comparable mis-cataloguing has been the subject of post-sale rescission claims and downward revaluations in the field.
+  {0.88|i|E005,E006,E007|2026-05-09|investigated|judgment} The risk is not theoretical: comparable mis-cataloguing has been the subject of post-sale rescission claims and downward revaluations in the field. Confidence is high but not 0.95 because the specific magnitude of legal exposure depends on jurisdiction and contract terms not fully analyzed in this pack.
 
 - [C014] Listing the work as "after Sculptor Y, posthumous cast" would resolve the risk but would conflict with the consignor's attribution and likely lead to consignment withdrawal.
   {0.83|i|E001|2026-05-09|investigated|judgment} A reading of the consignor's likely response based on the reserve calibration (C012).

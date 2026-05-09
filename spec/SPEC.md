@@ -1,11 +1,11 @@
 <!-- SPDX-License-Identifier: CC-BY-4.0 -->
 <!-- SPDX-FileCopyrightText: 2026 Timothy Kompanchenko -->
 
-# Knowledge Pack Specification v0.8.0
+# Knowledge Pack Specification v0.8.0-preview
 
-> **Status:** Editor's Draft — `KP:1 Public Draft — 2026-04`
+> **Status:** Editor's Draft — `KP:1 Public Draft — 2026-05` (`v0.8.0-preview`)
 > **Editor:** Timothy Kompanchenko
-> **Date:** 2026-03-29
+> **Date:** 2026-05-09
 > **Version history:** See `CHANGELOG.md`
 > **Lane:** Full normative spec + rationale + ecosystem — see [README.md](README.md) for the three-lane structure (CORE = implementer surface, SPEC = comprehensive, companions = topic-authoritative for their domains).
 
@@ -1761,17 +1761,25 @@ The following topics are specified in companion documents within the `spec/` dir
 
 | Document | Topic | Decisions |
 |----------|-------|-----------|
-| `spec/MULTILINGUAL.md` | Locale subdirectories, translation workflow, drift detection, status tracking | D1, D2 |
-| `spec/VOICE.md` | Voice view format, spoken delivery conventions, duration/pace metadata | D13 |
+| `spec/CORE.md` | The implementer surface — minimum required to be KP:1-conformant | — |
+| `spec/AUTHORING.md` | Producer-side decision rubrics (informative) — how to choose claim type, nature, contradiction qualifier, confidence value, depth, granularity | — |
+| `spec/RATIONALE.md` | Design principles, style systems rationale, cognitive perception rationale, relationship to existing standards (informative) | — |
+| `spec/MULTILINGUAL.md` | Locale subdirectories, translation workflow, drift detection, status tracking, evidentiary multilingual exception | D1, D2 |
+| `spec/VOICE.md` | Voice view format, spoken delivery conventions, duration/pace metadata, register axis | D13 |
 | `spec/COMPOSITION.md` | Meeting pack composition, agenda overlay, pre_load/on_demand, composition.yaml | D14 |
 | `spec/BUNDLE.md` | Export format (full bundle + clipboard), KP:1 markers, CLI commands | D11, D19 |
-| `spec/LIFECYCLE.md` | Pack types (ephemeral/seasonal/permanent), archival, intelligent reconciliation, visibility | D4, D15, D19 |
+| `spec/LIFECYCLE.md` | Pack types (ephemeral/seasonal/permanent), archival, supersession cascade, intelligent reconciliation, visibility | D4, D15, D19 |
 | `spec/NOTES.md` | AI note-taking metadata, disclosure vs consent, active vs passive modes | D16 |
 | `spec/CONSISTENCY.md` | Cross-pack patrol, claim contradiction detection, real-time alerting, confidence decay | D18 |
 | `spec/CONVENTIONS.md` | Linguistic conventions — American English, Merriam-Webster, 30-rule table, fallback hierarchy | D1 |
 | `spec/ORGANIZATION.md` | Nested pack categories, working set, migration strategy, repo structure | D3, D12 |
 | `spec/STORAGE.md` | Pack-as-master principle, serialization formats, index contract, storage independence | — |
 | `spec/DEFINITIONS.md` | Definition and policy document kinds, YAML schemas, codegen concept, migration guidance | — |
+| `spec/EXTENSIONS.md` | Producer-defined `extensions.*` blocks catalogue, canonical entity ID format | — |
+| `spec/ARCHIVE.md` | ZIP archive format, content hashing, integrity chain, signatures.yaml | — |
+| `spec/PLAYBACK.md` | Self-driving voice playback, PlaybackPlan, AudienceProfile (experimental) | — |
+| `spec/RECONCILIATION.md` | Cross-pack reconciliation protocol (stub — design deferred to v0.9 / v1.0) | — |
+| `spec/MAPPING.md` | RDF / JSON-LD / PROV-O / Nanopublications field-by-field translation (informative) | — |
 
 These documents are normative — they carry the same authority as this core spec. The core spec defines the format; companion specs define the ecosystem.
 

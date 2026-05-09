@@ -6,6 +6,8 @@
 > **Date:** 2026-03-22
 > **Status:** Draft
 
+> **`kpack` CLI invocations in this document describe planned reference tooling.** Only `python3 conformance/run.py` ships today. See [SPEC.md §13](SPEC.md) and the contract-pointer stub at [`reference/kpack`](../reference/kpack) for status.
+
 ---
 
 ## 1. Scope

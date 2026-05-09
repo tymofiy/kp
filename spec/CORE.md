@@ -3,9 +3,9 @@
 
 # KP:1 Core Specification
 
-> **Status:** Editor's Draft — `KP:1 Public Draft — 2026-04`
+> **Status:** Editor's Draft — `KP:1 Public Draft — 2026-05` (`v0.8.0-preview`)
 > **Editor:** Timothy Kompanchenko
-> **Date:** 2026-04-04
+> **Date:** 2026-05-09
 > **Derived from:** SPEC.md, `conformance/grammar/kp-claims.peg`, `conformance/grammar/kp-pack.schema.json`
 > **Lane:** Implementer surface — see [README.md](README.md) for the three-lane structure (CORE = implementer, SPEC = full normative + rationale, companions = topic-authoritative for their domains).
 
@@ -26,7 +26,7 @@ This document covers:
 - Validation rules and semantic constraints
 - Conformance levels
 
-This document does **not** cover: producer-side decision rubrics (AUTHORING.md — how to choose claim type, contradiction qualifier, confidence value, depth, granularity), voice surfaces (VOICE.md), composition/meetings (COMPOSITION.md), lifecycle management (LIFECYCLE.md), multilingual support (MULTILINGUAL.md), pack organization patterns (ORGANIZATION.md), consistency patrol (CONSISTENCY.md), naming conventions (CONVENTIONS.md), storage formats (STORAGE.md), bundling (BUNDLE.md), archive format and integrity (ARCHIVE.md), definition/policy document kinds (DEFINITIONS.md), or AI note-taking (NOTES.md). These are specified in companion documents within `spec/`.
+This document does **not** cover: producer-side decision rubrics ([AUTHORING.md](AUTHORING.md)), design-principles rationale and standards-comparison ([RATIONALE.md](RATIONALE.md)), voice surfaces ([VOICE.md](VOICE.md)), composition/meetings ([COMPOSITION.md](COMPOSITION.md)), lifecycle management ([LIFECYCLE.md](LIFECYCLE.md)), multilingual support ([MULTILINGUAL.md](MULTILINGUAL.md)), pack organization patterns ([ORGANIZATION.md](ORGANIZATION.md)), consistency patrol ([CONSISTENCY.md](CONSISTENCY.md)), naming conventions ([CONVENTIONS.md](CONVENTIONS.md)), storage formats ([STORAGE.md](STORAGE.md)), bundling ([BUNDLE.md](BUNDLE.md)), archive format and integrity ([ARCHIVE.md](ARCHIVE.md)), definition/policy document kinds ([DEFINITIONS.md](DEFINITIONS.md)), AI note-taking ([NOTES.md](NOTES.md)), the producer-defined `extensions.*` catalogue ([EXTENSIONS.md](EXTENSIONS.md)), self-driving voice playback ([PLAYBACK.md](PLAYBACK.md), experimental), cross-pack reconciliation ([RECONCILIATION.md](RECONCILIATION.md), stub), or RDF/JSON-LD/PROV-O mapping ([MAPPING.md](MAPPING.md), informative). These are specified in companion documents within `spec/`. Cold AI agents should start from [`AGENTS.md`](../AGENTS.md) at the repo root for a task-indexed reading map.
 
 ### Terminology
 
@@ -53,7 +53,7 @@ A Knowledge Pack is a directory. The `.kpack/` suffix is RECOMMENDED but not req
 ├── claims.md          # REQUIRED — current claims
 ├── evidence.md        # RECOMMENDED — backing sources
 ├── history.md         # OPTIONAL — superseded/retracted claims
-├── entities.md        # OPTIONAL — entity definitions
+├── entities.md        # DEPRECATED (since v0.7.4) — use extensions.entities; see EXTENSIONS.md
 ├── validation.yaml    # OPTIONAL — test questions (schema in SPEC.md §10)
 ├── signatures.yaml    # OPTIONAL — cryptographic integrity (see ARCHIVE.md)
 └── views/             # OPTIONAL — pre-rendered display content
@@ -610,7 +610,7 @@ The following normative decisions resolve ambiguities identified during grammar 
 | AR-11 | Continuation lines use 2+ spaces of indentation. |
 | AR-12 | Claim ID gaps are permitted. Uniqueness is the only constraint (SC-02). |
 | AR-13 | A claim uses EITHER dense OR verbose metadata. No mixing within a single claim. |
-| AR-14 | `signatures.yaml` schema defined in ARCHIVE.md. `composition.yaml` schema deferred to Phase C2. |
+| AR-14 | `signatures.yaml` schema defined in ARCHIVE.md. `composition.yaml` schema is published at `conformance/grammar/kp-composition.schema.json` (informative); the conformance runner detects composition packs by `composition.yaml` presence (per [SPEC.md §2](SPEC.md), [COMPOSITION.md](COMPOSITION.md)) but does not currently validate them against the published schema. Producers MAY validate independently. |
 | AR-15 | `tier` is optional. When `hub`, `sub_packs` is required. |
 | AR-16 | Cross-pack references: `pack_name#section_ref`. `#` is the separator. |
 
@@ -620,15 +620,21 @@ The following normative decisions resolve ambiguities identified during grammar 
 
 | Document | Covers | When you need it |
 |----------|--------|-----------------|
-| VOICE.md | Voice surface format and spoken delivery conventions | Building voice/audio interfaces |
-| COMPOSITION.md | Meeting packs, composite packs, agenda overlays | Composing packs from multiple sources |
-| LIFECYCLE.md | Ephemeral/seasonal/permanent packs, archival, reconciliation | Managing pack lifecycles |
-| MULTILINGUAL.md | Locale subdirectories, translation workflow | Supporting multiple languages |
+| AUTHORING.md | Producer-side decision rubrics — claim type, nature, contradiction qualifier, confidence calibration, granularity, content routing | Authoring a pack from source material (informative) |
+| VOICE.md | Voice surface format, spoken delivery conventions, register axis | Building voice/audio interfaces |
+| COMPOSITION.md | Meeting packs, composite packs, agenda overlays, `composition.yaml` | Composing packs from multiple sources |
+| LIFECYCLE.md | Ephemeral/seasonal/permanent packs, archival, supersession cascade, reconciliation | Managing pack lifecycles |
+| MULTILINGUAL.md | Locale subdirectories, translation workflow, register sub-distinctions, evidentiary multilingual exception | Supporting multiple languages |
 | ORGANIZATION.md | Hub/detail hierarchy, working sets, repo structure | Organizing large pack collections |
 | CONSISTENCY.md | Cross-pack patrol, contradiction detection, confidence decay | Maintaining consistency across packs |
 | CONVENTIONS.md | Linguistic conventions, naming style | Standardizing prose style |
 | STORAGE.md | Pack-as-master, serialization, index contract | Storing packs in databases/caches |
 | BUNDLE.md | Export formats, clipboard format, sharing | Exporting and sharing packs |
 | ARCHIVE.md | ZIP archive, content hashing, integrity chain, signatures.yaml | Transporting packs between systems |
-| DEFINITIONS.md | Definition/policy YAML schemas, codegen | Building ontology layers |
+| DEFINITIONS.md | Definition/policy YAML schemas, entity types, codegen | Building ontology layers |
+| EXTENSIONS.md | Producer-defined `extensions.*` blocks catalogue, canonical entity ID format | Adding `extensions.*` payloads or interpreting them |
 | NOTES.md | AI note-taking metadata, disclosure, consent | Recording meetings with AI |
+| PLAYBACK.md | Self-driving voice playback, PlaybackPlan, AudienceProfile (experimental) | Building voice presentation runtimes |
+| RECONCILIATION.md | Cross-pack reconciliation protocol (stub — design deferred to v0.9 / v1.0) | Multi-pack drift detection (design pending) |
+| MAPPING.md | RDF / JSON-LD / PROV-O / Nanopublications field-by-field translation (informative) | Interoperability with semantic-web standards |
+| RATIONALE.md | Design principles, style systems rationale, cognitive perception rationale, relationship to existing standards (informative) | Understanding *why* the format is shaped the way it is |

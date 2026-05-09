@@ -42,19 +42,19 @@ views:
   - name: decision
     file: views/decision.md
     purpose: Committee-facing decision summary
-    display_as: page
+    display_as: "Committee Decision"
   - name: specialist
     file: views/specialist.md
     purpose: Specialist's working notes
-    display_as: page
+    display_as: "Specialist Notes"
   - name: consignor-letter
     file: views/consignor-letter.md
     purpose: Consignor-facing decline letter (formal register)
-    display_as: page
+    display_as: "Consignor Letter"
   - name: briefing
     file: views/voice/briefing.md
     purpose: Voice briefing for the committee chair
-    display_as: voice
+    display_as: "Voice Briefing"
     voice: true
     duration: ~75 seconds
     pace: measured

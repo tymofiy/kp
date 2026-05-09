@@ -101,6 +101,32 @@ COMMAND_REGISTRY = {
         "Drive a self-driving voice presentation of a pack via a "
         "PlaybackPlan. Defined in PLAYBACK.md.",
     ),
+    "seal": (
+        "spec/ARCHIVE.md §4 Sealing & Verification",
+        "Seal a pack directory into a `.kpack` ZIP archive with a "
+        "`signatures.yaml` integrity record. Defined in ARCHIVE.md.",
+    ),
+    "verify": (
+        "spec/ARCHIVE.md §4 Sealing & Verification",
+        "Verify a `.kpack` archive's integrity (content hash, signature, "
+        "ZIP safety). Optionally verify a version chain across multiple "
+        "sealed archives (`--chain v1 v2 v3`).",
+    ),
+    "extract": (
+        "spec/ARCHIVE.md §5 Extraction",
+        "Extract a sealed `.kpack` archive into a directory. Inverse of "
+        "`seal`. Validates archive integrity before extraction.",
+    ),
+    "info": (
+        "spec/ARCHIVE.md §5 Extraction",
+        "Display archive metadata (signatures, content hash, contained "
+        "files) without extracting. Defined in ARCHIVE.md.",
+    ),
+    "unbundle": (
+        "spec/BUNDLE.md",
+        "Reconstruct a pack directory from a markdown bundle (the inverse "
+        "of `bundle` / `export`). Defined in BUNDLE.md.",
+    ),
 }
 
 

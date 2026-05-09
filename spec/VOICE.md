@@ -7,6 +7,8 @@
 > **Status:** Draft
 > **Decisions:** D13 (voice view format), D22 (locale-before-surface ordering)
 
+> **`kpack` CLI invocations in this document describe planned reference tooling.** Only `python3 conformance/run.py` ships today. See [SPEC.md §13](SPEC.md) and the contract-pointer stub at [`reference/kpack`](../reference/kpack) for status.
+
 ---
 
 ## 1. Purpose

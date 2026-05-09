@@ -30,12 +30,16 @@ The v0.8.0 preview consolidates a deliberate architectural pass on the spec's no
 
 ### Bifurcated
 
-- **`spec/SPEC.md` §15 / §17 / §18 / §20** — sections moved to RATIONALE.md and replaced with stubs that link forward. SPEC.md reduced from 1,996 to ~1,780 lines.
+- **`spec/SPEC.md` §15 / §17 / §18 / §20** — sections moved to RATIONALE.md and replaced with stubs that link forward.
   - §15 Design Principles → [RATIONALE.md §1](spec/RATIONALE.md). All 25 numbered principles.
   - §17 Style Systems → [RATIONALE.md §2](spec/RATIONALE.md). Style-system rationale, schema, renderer pipeline. SPEC.md §17 retains only the brief PACK.yaml `style` field reference.
   - §18 Cognitive Perception Layer → split. SPEC.md §18 retains the **normative** `display` block field list, the `hint` field, and the fallback hierarchy (the contract a renderer needs). The **rationale** (perception stages with timed budgets, Why-each-field-exists boxes, Stranger Test, Good/Bad authoring tables) moves to [RATIONALE.md §3](spec/RATIONALE.md).
   - §20 Relationship to Existing Standards → [RATIONALE.md §4](spec/RATIONALE.md). Comparison to AGENTS.md / llms.txt / SKILL.md / MCP / RDF / Nanopublications.
 - **Cross-reference sweep.** All "(Principle N)" / "(SPEC.md §15, Principle N)" references in the rest of the spec corpus updated to point at `RATIONALE.md §1` instead. Touched: COMPOSITION.md, CONSISTENCY.md, DEFINITIONS.md, LIFECYCLE.md, SPEC.md, STORAGE.md.
+- **CORE.md / SPEC.md companion lists refreshed.** CORE.md Appendix C and SPEC.md §19 now enumerate all 19 spec/*.md files (was missing AUTHORING, RATIONALE, EXTENSIONS, ARCHIVE, PLAYBACK, RECONCILIATION, MAPPING). CORE.md Scope (§1) likewise.
+- **CORE.md / SPEC.md status headers refreshed** to `KP:1 Public Draft — 2026-05` (`v0.8.0-preview`), date `2026-05-09`. The `2026-04` / `2026-03-29` labels were stale relative to README.md and CITATION.cff.
+- **CORE.md `entities.md` directory entry** updated from `OPTIONAL` to `DEPRECATED (since v0.7.4)` with forward-pointer to `extensions.entities`.
+- **SPEC.md §15 / §17 / §20** — sections moved to RATIONALE.md and replaced with stubs that link forward. SPEC.md reduced from 1,996 to ~1,790 lines (-200; ~10%).
 
 ### Tooling
 

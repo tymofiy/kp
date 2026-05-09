@@ -19,7 +19,7 @@ KP:1 (Knowledge Pack v1) is a plain-text format for representing **epistemic sta
 
 [`conformance/fixtures/valid/maximal.kpack/`](conformance/fixtures/valid/maximal.kpack/) demonstrates **all the hard features**: the `⊗!` (error) and `⊗~` (productive tension) qualifiers, supersession (`⊘`) chains, cross-pack `↔` references, all six metadata positions in the dense form, and meta-claims. It passes conformance. Read this before reading prose about what those features mean.
 
-The two `examples/` packs (`solar-energy-market.kpack`, `kp-external-assessment.kpack`) are friendlier but exercise fewer features.
+The four `examples/` packs are progressively more demanding: `solar-energy-market.kpack` (hello-world; dense + verbose syntax), `kp-external-assessment.kpack` (meta example), `art-acquisition-decision.kpack` (full feature surface; walks AUTHORING.md end-to-end), and `auction-house-consignment-review.kpack` (consigner-side counterpart; cross-pack `↔` references).
 
 ---
 
@@ -30,7 +30,7 @@ Pick your task. Read the **Required** column. The **Secondary** column is useful
 | Your task | Required reading | Secondary | Skip |
 |---|---|---|---|
 | **A. Parse / validate an existing pack** | [`spec/CORE.md`](spec/CORE.md), [`conformance/grammar/kp-pack.schema.json`](conformance/grammar/kp-pack.schema.json), [`conformance/grammar/kp-claims.peg`](conformance/grammar/kp-claims.peg) | `conformance/fixtures/` (worked examples); [`spec/ARCHIVE.md`](spec/ARCHIVE.md) **if your parser handles sealed `.kpack` archives**; [`spec/COMPOSITION.md`](spec/COMPOSITION.md) **if your parser handles composition packs** (which may omit `evidence.md` and have narrative `claims.md`) | `spec/SPEC.md`, `spec/RATIONALE.md`, other companions |
-| **B. Author a new pack** | [`spec/CORE.md`](spec/CORE.md), [`spec/AUTHORING.md`](spec/AUTHORING.md), [`conformance/fixtures/valid/maximal.kpack/`](conformance/fixtures/valid/maximal.kpack/) | [`spec/EXTENSIONS.md`](spec/EXTENSIONS.md) for `extensions.*` payloads | `spec/SPEC.md` (rationale; not needed for authoring), `spec/RATIONALE.md` (positioning, not authoring), `conformance/run.py` (validator internals) |
+| **B. Author a new pack** | [`spec/CORE.md`](spec/CORE.md), [`spec/AUTHORING.md`](spec/AUTHORING.md), [`conformance/fixtures/valid/maximal.kpack/`](conformance/fixtures/valid/maximal.kpack/), [`examples/art-acquisition-decision.kpack/`](examples/art-acquisition-decision.kpack/) (walks the rubrics end-to-end) | [`spec/EXTENSIONS.md`](spec/EXTENSIONS.md) for `extensions.*` payloads; [`spec/RATIONALE.md`](spec/RATIONALE.md) §3 specifically for the **Stranger Test** and the Why-it-exists rationale on `display.short_title` / `tagline` / `hook` / `hint` (the rest of RATIONALE.md is positioning and can be skipped for authoring) | `spec/SPEC.md` (full normative — useful only for hard cases CORE.md doesn't cover), `conformance/run.py` (validator internals) |
 | **C. Reconcile two packs with contradictory claims** | [`spec/CORE.md`](spec/CORE.md) (relation symbols), [`spec/CONSISTENCY.md`](spec/CONSISTENCY.md), [`spec/AUTHORING.md`](spec/AUTHORING.md) §"Contradiction Qualifiers" | [`spec/RECONCILIATION.md`](spec/RECONCILIATION.md) — but note: full reconciliation algorithm is **deferred to v0.9 / v1.0**; for v0.8.0-preview you must compose `⊗!` / `⊗~` / `↔` primitives yourself per AUTHORING.md guidance | `spec/SPEC.md`, the rest of the companions |
 | **D. Translate a pack into a second locale** | [`spec/MULTILINGUAL.md`](spec/MULTILINGUAL.md), [`spec/CORE.md`](spec/CORE.md) §10 (Views) | [`spec/VOICE.md`](spec/VOICE.md) if voice views are involved | `spec/SPEC.md`, `conformance/`, all companions except MULTILINGUAL/VOICE |
 | **E. Compose a meeting / briefing pack from existing packs** | [`spec/COMPOSITION.md`](spec/COMPOSITION.md), [`spec/CORE.md`](spec/CORE.md) | [`conformance/fixtures/valid/composition.kpack/`](conformance/fixtures/valid/composition.kpack/) | `spec/SPEC.md`, the rest |
@@ -99,7 +99,7 @@ These exist in the repository but are not load-bearing for any of Tasks A–F:
 - `research/` — benchmark design and prior-art analysis, not normative
 - `decisions/` — decision records, useful for understanding *why* but not *what*
 - `scripts/` — git hooks and validation helpers, not normative
-- `reference/` — placeholder for reference parser/tooling that ships separately
+- `reference/` — `reference/kpack` is a contract-pointer stub for the planned `kpack` CLI (run it to see which spec section defines each subcommand); the actual reference parser/tooling ships separately
 - `GOVERNANCE.md`, `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`, `LICENSE*`, `DCO.txt` — governance, not format
 
 ---
