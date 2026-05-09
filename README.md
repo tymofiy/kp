@@ -79,7 +79,7 @@ optional context with relations to other claims.
 |-----------|---------|
 | `spec/` | Normative specification -- [CORE.md](spec/CORE.md), [SPEC.md](spec/SPEC.md), and companion documents |
 | `conformance/` | PEG grammar, JSON Schema, and 11 test fixtures |
-| `examples/` | Two complete `.kpack` examples |
+| `examples/` | Four complete `.kpack` reference examples (validated by the conformance suite) |
 | `positioning/` | Public-facing positioning and design rationale |
 | `research/` | Benchmark design and prior art analysis |
 | `reference/` | Reference parser and tooling (planned) |
@@ -90,7 +90,7 @@ Top-level governance and policy files include `GOVERNANCE.md`, `CONTRIBUTING.md`
 
 ## Examples
 
-Two complete Knowledge Packs demonstrate the format:
+Four complete Knowledge Packs demonstrate the format:
 
 - **[Solar Energy Market](examples/solar-energy-market.kpack/)** -- Market
   analysis with cost trajectories, technology trends, and regional adoption.
