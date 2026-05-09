@@ -3,10 +3,11 @@
 
 # Voice Views — Knowledge Pack Companion Spec
 
-> **Parent:** SPEC.md v0.7
 > **Date:** 2026-04-12
 > **Status:** Draft
 > **Decisions:** D13 (voice view format), D22 (locale-before-surface ordering)
+
+> **`kpack` CLI invocations in this document describe planned reference tooling.** Only `python3 conformance/run.py` ships today. See [SPEC.md §13](SPEC.md) and the contract-pointer stub at [`reference/kpack`](../reference/kpack) for status.
 
 ---
 
@@ -57,7 +58,7 @@ Voice views live inside `views/voice/` within the pack directory:
 │           └── briefing.md      # Ukrainian voice briefing
 ```
 
-### Locale-Before-Surface Ordering (Design Principle 22)
+### Locale-Before-Surface Ordering ([RATIONALE.md §1, Principle 23](RATIONALE.md))
 
 Locale is the higher-order grouping. A Ukrainian voice briefing lives at `views/uk/voice/briefing.md`, not `views/voice/uk/briefing.md`. Rationale: a locale directory contains everything for that language — display views and voice views together. A consumer requesting "show me everything in Ukrainian" finds it all under `views/uk/`.
 
@@ -75,6 +76,7 @@ Every voice view begins with HTML comment metadata:
 <!-- voice: briefing -->
 <!-- duration: ~90 seconds -->
 <!-- pace: measured -->
+<!-- register: curatorial -->
 <!-- generated: 2026-03-22 | claims: v2026.03.22 -->
 <!-- source: C001, C002, C010, C020, C030, C040, C050 -->
 ```
@@ -84,8 +86,22 @@ Every voice view begins with HTML comment metadata:
 | `voice` | Yes | View identifier | Matches the `name` field in PACK.yaml voice view declaration |
 | `duration` | Yes | `~N seconds` or `~N minutes` | Approximate spoken duration at natural pace |
 | `pace` | Yes | `brisk`, `measured`, `deliberate` | Speaking tempo hint for TTS or human reader |
+| `register` | Recommended | `plain`, `curatorial`, `technical`, `investor` | Voice register — diction and emphasis profile (see §4.1 below) |
 | `generated` | Recommended | ISO date + claims version | Staleness detection (same mechanism as display views) |
 | `source` | Recommended | Comma-separated claim IDs | Traceability back to claims.md |
+
+### Register
+
+`register` is an orthogonal axis to `pace`: pace controls speed, register controls diction and emphasis profile. The four spec values:
+
+- **`plain`** — straightforward declarative narration. Default for general-audience packs and for first-encounter explanations.
+- **`curatorial`** — careful, balanced, evidence-forward. The default register for art / heritage / scholarship packs where the voice is the curator-as-narrator: confident on what is known, explicit about uncertainty, restrained on emphasis.
+- **`technical`** — precise, terminology-honest, minimal hedging. For internal technical briefings to listeners already fluent in the domain.
+- **`investor`** — verdict-forward, risk-explicit, decision-shaped. Opens with a one-line takeaway; closes with what matters for action.
+
+`register` composes orthogonally with locale and persona surfaces: the same pack may emit `views/uk/voice/briefing.md` at `register: curatorial` and `views/voice/briefing.md` at `register: investor` from the same underlying claims. It is also distinct from app-side `AudienceProfile.persona` (consumer concept) — `register` is a producer-side spec field on the voice view itself, governing how the prose was authored.
+
+For language-specific register sub-distinctions (e.g., Western Ukrainian vs literary Ukrainian, Quebec French vs Parisian French) see [MULTILINGUAL.md §3.3](MULTILINGUAL.md#33-register-sub-distinctions). The four values above are the primary axis; locale-specific sub-registers refine within them rather than replacing them.
 
 ### Body Conventions
 

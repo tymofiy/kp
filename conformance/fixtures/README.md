@@ -1,7 +1,7 @@
 # KP:1 Conformance Fixtures
 
-> **Status:** Complete — Phase C3 (automated runner passes 13/13)
-> **Spec version:** KP:1
+> **Status:** Complete — Phase C3 (automated runner passes 19/19: 15 fixtures + 4 example packs)
+> **Spec version:** KP:1 v0.8.0-preview
 
 Test fixtures for KP:1 conformance validation. Each fixture is a complete
 `.kpack` directory. Standard packs include `PACK.yaml`, `claims.md`, and
@@ -65,6 +65,10 @@ Implementations MUST reject each fixture, flagging the specific violation.
 | `confidence-overflow.kpack` | Confidence value 1.50 exceeds [0.0, 1.0] | SC-01 | MUST reject |
 | `duplicate-ids.kpack` | Two claims share ID [C001] | SC-02 | MUST reject |
 | `missing-evidence-field.kpack` | Empty evidence ref position in metadata | Syntactic (PEG) | MUST reject |
+| `cyclic-supersession.kpack` | C001 ⊘ C002 and C002 ⊘ C001 (supersession cycle) | SC-04 | MUST reject |
+| `dangling-relation-target.kpack` | Claim references C999 via → but C999 does not exist | SC-05 | MUST reject |
+| `wrong-pack-name.kpack` | Frontmatter `pack:` value disagrees with PACK.yaml `name:` | SC-07 | MUST reject |
+| `prediction-too-confident.kpack` | nature=prediction with confidence 0.97 (>0.95 cap) | SC-12 | MUST reject |
 
 ### Violation Details
 
@@ -87,6 +91,29 @@ unique within a document. Duplicates create ambiguous relation targets.
 contain at least one `EvidenceRef`. An empty position 3 (`{0.75|i||2026}`)
 fails to match `EvidenceRefList <- EvidenceRef (',' EvidenceRef)*`.
 
+**cyclic-supersession:** Semantic constraint SC-04 requires the supersession
+graph to be a directed acyclic graph (DAG). C001 ⊘ C002 ⊘ C001 forms a
+2-cycle and is rejected. The runner detects cycles via DFS over the
+supersession edge set after parse.
+
+**dangling-relation-target:** Semantic constraint SC-05 requires every
+intra-pack relation target to resolve to a defined claim ID in the same
+pack. Cross-pack references using the `pack#section` form are exempt; this
+fixture uses bare `→C999` (no `#`), so the dangling-target rule applies.
+
+**wrong-pack-name:** Semantic constraint SC-07 requires the frontmatter's
+`pack:` field (the YAML block between `---` markers at the top of `claims.md`,
+distinct from the `<!-- KP:1 ... -->` Rosetta header comment that precedes it)
+to equal the PACK.yaml `name:` field. The fixture lies in the frontmatter
+(`pack: a-different-name` vs PACK.yaml `name: wrong-pack-name`); the
+disagreement triggers SC-07.
+
+**prediction-too-confident:** Semantic constraint SC-12 caps confidence on
+predictive claims (nature=prediction) at 0.95. Predictions about future
+states have irreducible uncertainty; the 0.99+ band is reserved for
+trivially-falsifiable claims (per AUTHORING.md §5). The fixture asserts
+0.97 on a future-tense prediction and is rejected.
+
 ## Running Fixtures
 
 The automated test runner validates all fixtures:
@@ -95,9 +122,17 @@ The automated test runner validates all fixtures:
 python conformance/run.py
 ```
 
-This parses each `claims.md` against `grammar/kp-claims.peg`, validates each
-`PACK.yaml` against `grammar/kp-pack.schema.json`, validates each
-`signatures.yaml` against `grammar/kp-signatures.schema.json` when present,
-runs semantic constraint checks (SC-01 through SC-11), and verifies that all
-valid fixtures pass and all invalid fixtures fail with expected errors.
-Current result: 13/13 tests pass.
+This validates each `claims.md` against an equivalent regex implementation of
+`grammar/kp-claims.peg` (the PEG file is the normative reference; see
+`../README.md` "Grammar vs Runner"), validates each `PACK.yaml` against
+`grammar/kp-pack.schema.json`, validates each `signatures.yaml` against
+`grammar/kp-signatures.schema.json` when present, runs semantic constraint
+checks (SC-01 through SC-12), and verifies that all valid fixtures pass and
+all invalid fixtures fail with expected errors.
+Current result: **19/19 tests pass** (15 fixtures + 4 reference example packs).
+
+To validate a single pack outside the bundled set:
+
+```bash
+python conformance/run.py --pack path/to/your-pack.kpack
+```

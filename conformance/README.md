@@ -27,12 +27,16 @@ conformance/
       mixed-syntax.kpack/
       maximal.kpack/
       composition.kpack/
-    invalid/                   5 packs that MUST be rejected
+    invalid/                   9 packs that MUST be rejected
       no-rosetta.kpack/
       orphan-evidence-ref.kpack/
       confidence-overflow.kpack/
       duplicate-ids.kpack/
       missing-evidence-field.kpack/
+      cyclic-supersession.kpack/
+      dangling-relation-target.kpack/
+      wrong-pack-name.kpack/
+      prediction-too-confident.kpack/
 ```
 
 ## What This Proves
@@ -42,7 +46,7 @@ A KP:1 implementation is **conformant** if it:
 1. Parses all valid fixtures without errors
 2. Rejects all invalid fixtures with the expected error
 3. Validates PACK.yaml against the JSON Schema
-4. Enforces semantic constraints SC-01 through SC-11
+4. Enforces semantic constraints SC-01 through SC-12
 
 ## Running the Suite
 
@@ -53,13 +57,13 @@ pip install -r requirements.txt
 python3 conformance/run.py
 ```
 
-Expected result: `13/13 passed`. The runner has two Python dependencies (`pyyaml`, `jsonschema`) declared in `requirements.txt`.
+Expected result: `19/19 passed`. The runner has two Python dependencies (`pyyaml`, `jsonschema`) declared in `requirements.txt`.
 
 ## Grammar vs Runner
 
 The PEG grammar in `grammar/kp-claims.peg` is the **normative** reference for KP:1 claim syntax. It is what implementations should target.
 
-The `run.py` runner in this preview release validates fixtures against **equivalent regular-expression patterns** rather than parsing through the PEG grammar directly. The two paths are kept in sync by hand. A future phase will replace the regex layer with a PEG-driven parser using a library such as `parsimonious` or `lark`. The fixture suite is the contract: any future runner that passes 13/13 against these fixtures is acceptable.
+The `run.py` runner in this preview release validates fixtures against **equivalent regular-expression patterns** rather than parsing through the PEG grammar directly. The two paths are kept in sync by hand. A future phase will replace the regex layer with a PEG-driven parser using a library such as `parsimonious` or `lark`. The fixture suite is the contract: any future runner that passes 19/19 against these fixtures is acceptable.
 
 If you want to implement a conforming parser today, target the PEG grammar, not the runner's regexes.
 
@@ -67,9 +71,9 @@ If you want to implement a conforming parser today, target the PEG grammar, not 
 
 | Phase | Description | Status |
 |-------|-------------|--------|
-| C1 | Formal grammar (PEG), JSON Schema, 11 fixtures | **Done** |
+| C1 | Formal grammar (PEG), JSON Schema, 15 fixtures | **Done** |
 | C2 | YAML schemas for signatures.yaml, composition.yaml | **Done** |
-| C3 | Automated test runner (`run.py`, 13/13 pass) | **Done** |
+| C3 | Automated test runner (`run.py`, 19/19 pass) | **Done** |
 | C4 | Round-trip consistency tests | Not started |
 
 ## Key Design Decisions
@@ -80,6 +84,8 @@ If you want to implement a conforming parser today, target the PEG grammar, not 
   constraints). PEG cannot express cross-references, value ranges, or acyclicity.
 - **16 ambiguity resolutions**: See `grammar/README.md` for the full list. Each
   is a normative decision that was not fully specified in the prose spec.
-- **Existing examples validated**: Both `solar-energy-market.kpack` and
-  `kp-external-assessment.kpack` pass the grammar (after fixing one missing
-  claim target C020 in the solar example).
+- **All four example packs validated**: `solar-energy-market.kpack`,
+  `kp-external-assessment.kpack`, `art-acquisition-decision.kpack`, and
+  `auction-house-consignment-review.kpack` all pass the grammar and the
+  semantic constraints. The runner validates them on every run alongside
+  the 15 fixture cases (19/19 total).

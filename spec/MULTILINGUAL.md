@@ -3,9 +3,10 @@
 
 # Multilingual Support — Knowledge Pack Companion Spec
 
-> **Parent:** SPEC.md v0.4
 > **Date:** 2026-03-22
 > **Status:** Draft
+
+> **`kpack` CLI invocations in this document describe planned reference tooling.** Only `python3 conformance/run.py` ships today. See [SPEC.md §13](SPEC.md) and the contract-pointer stub at [`reference/kpack`](../reference/kpack) for status.
 
 ---
 
@@ -19,7 +20,7 @@ This companion spec defines how Knowledge Packs support multiple languages. It c
 
 ## 2. Core Principles
 
-**P1. Claims are always English.** The reasoning surface (`claims.md`) is written in American English. It is never bilingual, never translated. Translations exist only at the view layer.
+**P1. Claims are always English.** The reasoning surface (`claims.md`) is written in American English. It is never bilingual, never translated. Translations exist only at the view layer. *Exception:* see [§12 "Evidentiary multilingual exception"](#12-evidentiary-multilingual-exception-normative) for the single sanctioned audit-trail carrier when underlying evidence is inherently multilingual (e.g., field-collected witness statements in Russian or Ukrainian, foreign-language press, recorded interviews). The exception does not relax P1; it places original-language transcripts in `extensions.translations` as evidence-shaped, not claim-shaped.
 
 **P2. Translations are derived views, never authoritative.** If a translated view disagrees with `claims.md`, claims win. Translations carry no independent authority — they are rendered presentations of the canonical knowledge, not alternative sources of truth.
 
@@ -67,6 +68,7 @@ All language tags use **BCP 47** format (IETF BCP 47 / RFC 5646):
 | Tag | Language |
 |-----|----------|
 | `en-US` | American English (canonical) |
+| `en-GB` | British English (en-US sibling — see §3.3) |
 | `uk-UA` | Ukrainian |
 | `de-DE` | German |
 | `fr-FR` | French |
@@ -74,6 +76,33 @@ All language tags use **BCP 47** format (IETF BCP 47 / RFC 5646):
 | `ar-SA` | Arabic |
 
 The subtag after the hyphen is the region. Use the most specific applicable tag. The short form (e.g., `uk` without `-UA`) is acceptable in directory names for brevity.
+
+`en-GB` is treated as a *mechanical sibling* of `en-US`, not a translation in the full sense: the two share semantics and structure, differing in spelling (colour/color, organise/organize), idiom (boot/trunk, lift/elevator), and a small set of dialect-specific terms. Tooling MAY auto-derive an en-GB view from en-US via spelling normalization plus a curated idiom list; full re-translation is not required. Other en-* tags (en-CA, en-AU, en-IN, etc.) are reserved for future use; producers SHOULD NOT mint custom en-* tags without filing a spec note.
+
+### Register Sub-distinctions
+
+Within a single locale, voice content may legitimately need to vary by **register** beyond the four primary registers defined in [VOICE.md §4.1](VOICE.md). Locale-specific sub-registers refine within that primary axis rather than replacing it.
+
+Examples:
+
+- **Ukrainian.** Literary Ukrainian (the standard reviewed by Kyiv-based editors) and Western Ukrainian / Halychyna register (Lviv-area diction, vocabulary differences, occasional loanwords from Polish or German) sound noticeably different in voice surfaces. A pack targeting a Western Ukrainian audience SHOULD declare the sub-register in voice view metadata so producers and reviewers can converge.
+- **French.** Parisian / Métropolitain French and Quebec French differ in vocabulary, idiom, and prosody. A French voice view should be explicit about which.
+- **Spanish.** European (peninsular) Spanish and Latin American Spanish differ in pronunciation (`vosotros` use, `s`/`z`/`c` distinctions), vocabulary, and rhythm.
+- **Arabic.** Modern Standard Arabic (MSA) is the literary register; spoken dialects (Egyptian, Levantine, Gulf, Maghrebi) are markedly different and not mutually intelligible by voice.
+
+When sub-register matters for a pack, producers SHOULD record it in the voice view's metadata header as a free-form annotation alongside `register`. Example:
+
+```markdown
+<!-- voice: briefing -->
+<!-- duration: ~90 seconds -->
+<!-- pace: measured -->
+<!-- register: curatorial -->
+<!-- sub_register: uk-halychyna -->
+```
+
+The `sub_register` field is informational, not a normative enum; values are agreed locally by producer and reviewer. The four primary `register` values from VOICE.md remain the authoritative axis. `sub_register` adds locale-specific nuance without expanding the spec-level vocabulary.
+
+**Reviewer responsibility.** A pack declaring `sub_register: uk-halychyna` MUST be reviewed by a native speaker of that sub-register — generic Ukrainian review is insufficient. Producers without access to a qualified reviewer SHOULD ship the pack at literary-Ukrainian register and tag the sub-register field as `null` or omit it, rather than ship unverified locale-specific prose.
 
 ---
 
@@ -336,11 +365,36 @@ These are not specified in this version but inform the design:
 
 ---
 
-## 12. Decision Log
+## 12. Evidentiary multilingual exception (normative)
+
+Principle [P1](#2-core-principles) — *claims are always English* — is the default rule for KP:1 packs. There is one normative exception, codified here so it cannot be misread as a relaxation of P1.
+
+When a pack's underlying evidence is **inherently multilingual and evidentiary** — handwritten witness statements in Russian or Ukrainian, foreign-language press reports, recorded interviews, court records, or any source whose canonicalization to English would lose evidentiary fidelity — the pack MAY carry the original-language transcripts as audit trail. The English claim remains the single normative assertion.
+
+**Sanctioned location.** Original-language transcripts MUST live in [`extensions.translations`](EXTENSIONS.md#28-extensionstranslations--evidentiary-multilingual-transcripts) (per `EXTENSIONS.md §2.8`). They MUST NOT be promoted to `claims.md`, MUST NOT appear as parallel claim text, and MUST NOT trigger a "co-canonical" reading. The translations block is evidence-shaped, not claim-shaped:
+
+- The English claim in `claims.md` is the assertion.
+- The original-language transcript in `extensions.translations` is the audit trail backing it.
+- Disagreement between them is resolved in favor of `claims.md` per [P2](#2-core-principles); the translation may be flagged as needing review, but the claim is what the pack asserts.
+
+**Producer responsibility.** When a producer chooses this path, the pack SHOULD also include an explicit narrative-prose acknowledgment in `evidence.md` that the underlying source material is non-English, naming the language(s). This makes the pack's evidentiary character legible to readers without requiring them to inspect the manifest.
+
+**Scope limit.** This exception exists for *evidentiary multilingual domains* — content where the original language is the source of truth and the English claim is a derived translation. It does NOT extend to:
+
+- Convenience translations of internally-authored prose (those belong in `views/{locale}/`).
+- Co-canonical multilingual claims (rejected in v0.8.0 per Decision Log D1; revisit only if a new pack class genuinely warrants it).
+- Bilingual reasoning surfaces (also rejected in D1).
+
+**Inaugural producer.** Witness statements collected in the field were authored in Russian and Ukrainian; English claims are derived from them. The transcripts in `extensions.translations.{ru,uk}` are the audit trail; the English `claims.md` is what the pack asserts.
+
+---
+
+## 13. Decision Log
 
 | # | Decision | Alternatives Considered | Rationale |
 |---|----------|------------------------|-----------|
 | D1 | Canonical language is American English; claims are never bilingual | Bilingual claims, per-claim language tags | Complexity explosion. Claims are the reasoning surface — one language keeps them unambiguous. Translations belong at the view layer. |
+| D1a | Evidentiary multilingual exception: original-language transcripts MAY ship in `extensions.translations` for evidentiary domains where canonicalization to English loses fidelity (witness statements collected in the field, foreign-language court records, recorded interviews) | Co-canonical claims (rejected per D1), per-claim language tags (rejected per D1), prose-only acknowledgment in evidence.md without structured carrier | The sanctioned `extensions.translations` block (EXTENSIONS.md §2.8) keeps transcripts machine-readable for audit while preserving D1's "claims are English" rule. The English claim remains the assertion; the transcript is evidence-shaped. See §12. |
 | D2 | Translation storage uses locale subdirectories (`views/{locale}/`) | Filename suffixes (`overview.uk.md`), flat directories | Subdirectories are cleaner for discovery (`ls views/uk/`), removal (`rm -rf views/uk/`), and grep. Filename suffixes create visual clutter and complicate glob patterns. |
 | D2a | Locale before surface type (`views/uk/voice/`) | Surface before locale (`views/voice/uk/`) | Locale is the higher-order grouping. A locale is a complete translation; a surface type is a rendering format. You add/remove entire locales, rarely individual surface types within a locale. |
 | D2b | Short language code for directory names (`uk`, `de`) | Full BCP 47 tag (`uk-UA`, `de-DE`) | Directories are for humans too. Short codes are sufficient for disambiguation in practice. Full tags remain in PACK.yaml metadata. |

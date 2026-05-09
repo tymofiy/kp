@@ -1,12 +1,13 @@
 <!-- SPDX-License-Identifier: CC-BY-4.0 -->
 <!-- SPDX-FileCopyrightText: 2026 Timothy Kompanchenko -->
 
-# Knowledge Pack Specification v0.7
+# Knowledge Pack Specification v0.8.0-preview
 
-> **Status:** Editor's Draft — `KP:1 Public Draft — 2026-04`
+> **Status:** Editor's Draft — `KP:1 Public Draft — 2026-05` (`v0.8.0-preview`)
 > **Editor:** Timothy Kompanchenko
-> **Date:** 2026-03-29
+> **Date:** 2026-05-09
 > **Version history:** See `CHANGELOG.md`
+> **Lane:** Full normative spec + rationale + ecosystem — see [README.md](README.md) for the three-lane structure (CORE = implementer surface, SPEC = comprehensive, companions = topic-authoritative for their domains).
 
 ## Terminology
 
@@ -90,6 +91,15 @@ confidence: { scale: simple, normalize: true }
 
 3. Write `claims.md`:
 ```markdown
+<!-- KP:1 — Knowledge Pack Format
+Claims: - [ID] assertion {confidence|type|evidence|date|depth|nature} context
+  Positions 5-6 optional. Verbose named-field syntax also accepted.
+Types: o=observed r=reported c=computed i=inferred
+Depth: assumed | investigated | exhaustive (optional, position 5)
+Nature: judgment | prediction | meta (optional, position 6; omitted=factual)
+Relations: →supports ⊗contradicts ⊗!error ⊗~tension ←requires ~refines ⊘supersedes ↔see_also
+Files: evidence.md=sources history.md=past entities.md=graph
+-->
 ---
 pack: my-project | v: 2026.03.19 | domain: technology/saas
 confidence: simple | normalized
@@ -109,28 +119,32 @@ confidence: simple | normalized
   competitors' rule-based systems (12-account A/B test). →C001
 ```
 
+The HTML comment at the top is the **Rosetta header** ([CORE.md §4](CORE.md#4-claimsmd--rosetta-header) — required, self-describing). It lets a previously-unfamiliar consumer recognize a Knowledge Pack and tokenize its contents without external context.
+
 4. Write `evidence.md`:
 ```markdown
 # Evidence
 
 ## E001
-> type: observed | captured: 2026-01-01
-> source: Company records, CRM dashboard
+> **type:** observed | **captured:** 2026-01-01
+> **source:** Company records, CRM dashboard
 
 Customer count and platform functionality verified directly.
 
 ## E002
-> type: research | captured: 2026-02-15
-> source: Internal A/B test — Q4 2025, 12 enterprise accounts
+> **type:** research | **captured:** 2026-02-15
+> **source:** Internal A/B test — Q4 2025, 12 enterprise accounts
 
 40% reduction in misclassification. AI classification vs. rule-based.
 
 ## E003
-> type: web | captured: 2026-02-10
-> source: Competitor documentation review (5 platforms)
+> **type:** web | **captured:** 2026-02-10
+> **source:** Competitor documentation review (5 platforms)
 
 All 5 competitors use rule-based classification, no ML/AI component.
 ```
+
+(Field names are bold-wrapped per [CORE.md §10](CORE.md#10-evidence-document-evidencemd) "Blockquote Format". The list-format alternative — `- Type: observed`, etc. — is also valid.)
 
 5. Done. Any LLM can read `claims.md` and reason about your project. Any human can inspect it and verify what's claimed.
 
@@ -779,7 +793,7 @@ dependencies:
 
 The `kind: definition` field on a dependency entry signals that this pack provides vocabulary constraints (not epistemic content). When this dependency is loaded, tooling can validate claims against the ontology. When it's absent, claims remain self-contained — the Voyager Principle is preserved.
 
-**Deprecation handling:** When a definition pack deprecates an entity type, claim packs referencing that type are not invalidated. The claim's `since` date establishes when it was made. Tooling should warn ("entity type `X` deprecated since 2026-06-01") but not reject. Claims are historical assertions — retroactive invalidation by ontology changes would violate the append-only principle (§15, Principle 5).
+**Deprecation handling:** When a definition pack deprecates an entity type, claim packs referencing that type are not invalidated. The claim's `since` date establishes when it was made. Tooling should warn ("entity type `X` deprecated since 2026-06-01") but not reject. Claims are historical assertions — retroactive invalidation by ontology changes would violate the append-only principle ([RATIONALE.md §1, Principle 5](RATIONALE.md)).
 
 ### Cross-Pack Reference Semantics (Future Work)
 
@@ -845,7 +859,19 @@ by Fraunhofer ISE CalLab. Commercial module target: 2028.
 
 ---
 
-## 7. entities.md — Entity Definitions (Optional)
+## 7. Deprecated: entities.md — Entity Definitions
+
+> **Deprecated as of v0.7.6 (2026-04-28).** New packs MUST NOT emit
+> `entities.md`. Use [`extensions.entities`](EXTENSIONS.md#22-extensionsentities--typed-entity-graph)
+> for the typed entity graph and [`extensions.relations`](EXTENSIONS.md#23-extensionsrelations--typed-edges)
+> for typed edges. The successor surfaces carry stable Nova IDs, an external-ID
+> vocabulary suitable for cross-pack resolution, per-claim `entity_refs`, and
+> the `relation_types` schema from [DEFINITIONS.md §3](DEFINITIONS.md). A
+> one-shot migration script in kp-forge rewrites legacy packs into the new
+> shape. Legacy `entities.md` packs continue to validate; the change is
+> producer-side guidance, not a validation removal.
+
+The following sections are preserved for legacy reference.
 
 ### Structure
 
@@ -961,13 +987,18 @@ When new evidence changes a fact:
 2. The old claim is moved to history.md with its full metadata
 
 ```markdown
-<!-- In claims.md — the new claim -->
+<!-- In claims.md — the new claim (verbose form) -->
 - **[C011-v2]** AI advisor migrated to Qwen 4.0 70B-A5B
   `confidence: 0.99 | type: observed | evidence: E040 | since: 2026-06-15`
   Upgraded from Qwen 3.5 35B-A3B after benchmarking showed 15% improvement
   in conversational quality with minimal cost increase due to larger MoE routing.
-  `supersedes: C011`
+  `relations: supersedes C011`
 ```
+
+The verbose-form relation line is `` `relations: <name> <target>[, <name> <target>...]` ``
+per [CORE.md §6.2 Verbose Claim Syntax](CORE.md). The dense equivalent is `⊘C011`
+on a continuation line. Either form is valid; mixing dense and verbose metadata
+within a single claim is forbidden by AR-13.
 
 ### history.md — Audit Trail
 
@@ -1269,11 +1300,24 @@ A conversation flow using navigation:
 
 ---
 
-## 13. Tooling
+## 13. Tooling (planned reference CLI)
+
+> **Status of the `kpack` CLI (as of v0.8.0-preview):** the commands listed
+> in this section describe **planned reference tooling**, not commands that
+> ship in this repository today. The only fully-implemented command is
+> `python3 conformance/run.py` (the conformance suite). A contract-pointer
+> stub at [`reference/kpack`](../reference/kpack) prints which spec section
+> defines each subcommand's contract — run `./reference/kpack` (or `./reference/kpack <subcommand>`)
+> to see where to look. Commands like `kpack lint`, `kpack render`,
+> `kpack reconcile`, etc. describe the contract a future reference tool will
+> implement. Producers can implement these contracts independently against
+> [CORE.md](CORE.md), the JSON Schema, and [AUTHORING.md](AUTHORING.md).
 
 ### MVP Commands
 
 ```bash
+# Planned reference tooling — not currently shipped.
+# See ../reference/kpack for the contract-pointer stub.
 kpack lint [path]              # Validate structure and references
 kpack test [path]              # Run validation.yaml against an LLM
 kpack export [path] --format   # Export to JSONL, JSON, or other formats
@@ -1281,9 +1325,12 @@ kpack render [path]            # Generate/regenerate views from claims
 kpack render [path] --view X   # Regenerate a specific view
 ```
 
-### Extended Commands (v0.4)
+### Extended Commands
 
 ```bash
+# Planned reference tooling — not currently shipped.
+# See ../reference/kpack for the contract-pointer stub.
+
 # Pack creation
 kpack new [name]                       # Create new pack (interactive)
 kpack new --template meeting-prep [name]  # Create from template
@@ -1371,31 +1418,9 @@ Packs declare dependencies in `PACK.yaml`. The consuming system is responsible f
 
 ## 15. Design Principles
 
-1. **The Voyager Principle** — Zero dependencies beyond "a device that can process text." No internet, no registry, no parser. The files are the knowledge.
-2. **Inspectability over readability** — Optimized for AI consumption. Humans CAN inspect (it's plain text), but format favors density over reading comfort.
-3. **Density-optimized plain text** — Maximum knowledge per token. Compressed metadata `{0.95|i|E001|2026-03-01}`, symbolic relations `→⊗←`, minimal prose.
-4. **Contradictions are knowledge** — Disagreements between claims are surfaced, not resolved. Resolution is context-dependent.
-5. **Append-only** — Claims are superseded (`⊘`), not edited. The past is preserved.
-6. **Freeform with conventions** — Predicates, entity types, and sections are freeform. Vocabulary overlays are optional.
-7. **Claims file is self-contained** — An LLM reading only claims.md can reason about the domain. Evidence and entities are supporting.
-8. **Git-native** — Files, directories, diffs, PRs. No special infrastructure required.
-9. **Any LLM, any system** — Portable by default. No platform lock-in. From a 7B local model to a frontier model.
-10. **Progressive loading** — Hub always loaded, detail on demand, evidence on citation. Never dump everything into context.
-11. **Navigable** — Every pack knows what's adjacent. Root index (`KNOWLEDGE.yaml`) for discovery, hub `sub_packs` for structure, inline `↔` for depth.
-12. **Constitutional core** — The claim syntax (`- [ID] headline {metadata} prose`), confidence range (0-1), evidence references (`E` + id), relation symbols (`→⊗←~⊘↔`), and Rosetta Header (`<!-- KP:N`) are frozen across ALL spec versions. Everything else may evolve.
-13. **Don't over-atomize** — Claims need enough context to prevent semantically valid but context-wrong extractions. Not every domain benefits from decomposition. A claim should be the smallest unit that is independently falsifiable — no smaller (Hu et al., Decomposition Dilemmas, NAACL 2025).
-14. **Hallucination tolerance, not elimination** — Hallucination is mathematically inevitable even for optimal estimators (Liu et al. 2025). Knowledge Packs make hallucination detectable and traceable through confidence, evidence, and contradictions. They do not make it impossible.
-15. **Constrain before voting** — Logit-level constrained decoding (1x cost) is the primary stability intervention. Multi-run voting (3-5x cost) is a fallback. The deterministic contract pipeline: constrain → canonicalize → validate → escalate.
-16. **Three surfaces, one truth** — Claims.md is the reasoning surface (AI-optimized). Display views are the visual surface (human-reading-optimized). Voice views are the auditory surface (human-listening-optimized). All represent the same knowledge. Views are derived from claims, never authoritative. If they disagree, claims win.
-17. **Renderer, not compositor** — When the AI presents knowledge to humans, it should render pre-built views, not compose content on the fly. This is faster, more consistent, and separates the reasoning task (understanding) from the presentation task (showing).
-18. **Composition over duplication** — Meeting and composite packs reference standing packs rather than duplicating their knowledge. A meeting pack is a lens — an agenda-shaped view over existing packs with meeting-specific additions. Knowledge lives once, in its canonical pack. Every piece of knowledge has exactly one canonical home — the standing pack where it is authored and maintained. Other packs may reference via see_also links or render content via composition. A pitch pack or meeting pack that independently re-defines a concept owned by a standing pack is a duplication violation. Test: if the standing pack's claim changes, do all other appearances automatically reflect it? If not, the knowledge is duplicated.
-19. **Archive, never delete** — Packs are archived, not deleted. Archived packs remain searchable, loadable, and in git history. Archival is the default lifecycle outcome for ephemeral packs; deletion requires explicit, deliberate action.
-20. **One view, one question** — Each display view answers one question a human would ask. The overview is a router (what, why, where-to-go), not a summary of everything. Split on meaning, never on arbitrary line counts. A view exceeding 80 lines almost always needs splitting; a view under 10 lines almost always needs merging. (Shneiderman: overview first, then details on demand.)
-21. **Reconcile before archive** — Ephemeral packs (meetings, conversations) contain knowledge that may not exist elsewhere. Before archiving, an intelligent reconciliation step verifies that all valuable claims have been promoted to standing packs. Orphan claims are flagged, never silently lost.
-22. **Knowledge is the source (pack-as-master)** — Knowledge packs are the canonical source of truth for their epistemic contents. Agent instruction files, operations (planning, tasks), and presentations (slides, documents) reference knowledge packs but are not knowledge themselves. Databases, caches, and search indices that store or project pack data are derived representations — operational infrastructure that serves packs, not the other way around. When a derived representation disagrees with the pack, the pack is correct. Any index can be dropped and rebuilt from packs. Packs can be stored in any medium (files, databases, caches) without changing their authority. Only knowledge is a knowledge pack. (See `spec/STORAGE.md`.)
-23. **Locale first, then surface** — Multilingual views are organized by locale, then by surface type: `views/uk/voice/briefing.md`, not `views/voice/uk/briefing.md`. Locale is the higher-order grouping.
-24. **Knowledge, not journal** — Claims state what is believed and why. Views render what something IS. Neither describes the process of arriving at the knowledge: who commissioned a finding, which meeting crystallized an insight, which tool generated a draft, which framework was applied. Process provenance belongs in evidence.md (as source documentation) or nowhere. A claim's confidence and evidence links carry its epistemic provenance. Narrative provenance ("a stakeholder asked for this", "crystallized during the Q1 review session", "generated by an LLM") leaks operational history into canonical knowledge. Test: remove all proper nouns of people, meetings, tools, and session dates from a claim's context prose — if the epistemic content is intact, the claim is clean.
-25. **Short-term memory, long-term memory** — Standing packs (permanent, seasonal) are long-term memory: organized by semantic domain, where things that are *about* the same subject cluster together regardless of when or how they were learned. Ephemeral packs are short-term memory: organized by *proximity of need*, where things needed together in a specific moment cluster together regardless of domain. These are different cognitive architectures serving different purposes — both legitimate, but with different lifespans. Novel knowledge created during short-term operations (meeting prep, research sprints) must consolidate into its long-term semantic home before the ephemeral pack archives. The ephemeral pack is the scaffold, not the building. Consolidation is not a safety net before archival — it is the primary purpose of the ephemeral lifecycle. (See `spec/LIFECYCLE.md` §1.1.)
+The 25 numbered principles that informed KP:1's choices have been moved to [RATIONALE.md §1](RATIONALE.md). They are reference material for understanding *why* the format is shaped the way it is; they are not themselves a conformance contract — the conformance contract lives in CORE.md, the JSON Schema, and the PEG grammar.
+
+The principles include the Voyager Principle (zero dependencies beyond text-processing), append-only claim lifecycle, three-surfaces-one-truth, locale-first organization, knowledge-not-journal, and the constitutional-core list of frozen syntax elements. See [RATIONALE.md §1](RATIONALE.md) for the full set with rationale.
 
 ---
 
@@ -1658,140 +1683,23 @@ When individual entities have enough depth, they warrant their own packs (the hu
 
 ## 17. Style Systems — Visual Rendering Rules
 
-### Purpose
+Style systems are external to KP:1. A pack references a style system by name in its PACK.yaml `style` field; the style system itself is not part of the Knowledge Pack format. The rationale for this separation, the recommended PACK.yaml `style` field shape, and a recommended style-system YAML format have been moved to [RATIONALE.md §2](RATIONALE.md).
 
-A style system is an external, versioned specification that tells a renderer how to visually present view content. Style systems are **NOT** part of the Knowledge Pack — they are referenced by packs and defined externally.
-
-### Why External
-
-- **Separation of concerns** — Knowledge is stable; presentation evolves independently
-- **Reusability** — One style system serves many packs across a product
-- **Voyager Principle preserved** — Packs work without a style system (markdown is self-rendering)
-- **Brand consistency** — All packs in a product share visual identity
-
-### PACK.yaml Reference
+### PACK.yaml Reference (kept here)
 
 ```yaml
 style: acme-professional          # Style system identifier
 ```
 
-A `null` or omitted `style` field means the views render as plain markdown — which is always valid.
-
-### Style System Contents
-
-A style system defines:
-
-| Component | Purpose | Example |
-|-----------|---------|---------|
-| Semantic markers | What `> [!metric]` etc. mean visually | Green badge with large number |
-| Table formatting | Column alignment, header styles | Zebra-striped, right-aligned numbers |
-| Typography | Heading hierarchy, emphasis | H1 for title, H2 for sections, bold for key terms |
-| Color semantics | What colors mean in context | Green = confirmed, amber = tentative, red = disputed |
-| Layout patterns | Structural arrangements | Card grid, sidebar + main, timeline |
-| Confidence rendering | How to display confidence levels | Color-coded bars, Sherman Kent labels |
-
-### The Rendering Stack
-
-```text
-claims.md  →  views/*.md  →  style system  →  rendered output
-(knowledge)   (content)      (presentation)   (platform-specific)
-```
-
-Each layer can exist independently:
-- Claims without views = AI can reason, can't display pre-built content
-- Views without style = renders as clean markdown (always works)
-- Views with style = renders with visual richness and consistency
-
-### Style System Format (Recommended)
-
-Style systems are defined as YAML files:
-
-```yaml
-# STYLE.yaml
-name: acme-professional
-version: 2026.03.21
-description: "Professional style system — data-rich, confidence-aware, clean typography"
-
-markers:
-  metric:
-    render: "highlighted-badge"
-    description: "Key metric — prominent display with large value"
-  highlight:
-    render: "callout-primary"
-    description: "Important insight — visually distinct callout"
-  risk:
-    render: "callout-warning"
-    description: "Risk indicator — amber/red callout"
-  status:
-    render: "status-pill"
-    description: "Current state — compact status indicator"
-  source:
-    render: "attribution-subtle"
-    description: "Source attribution — small, muted text"
-
-confidence:
-  display: "bar"                      # bar | label | badge | none
-  colors:
-    high: "#22c55e"                   # 0.85+
-    medium: "#f59e0b"                 # 0.50-0.84
-    low: "#ef4444"                    # <0.50
-
-tables:
-  header: "bold"
-  alignment: "auto"                   # auto-detect from content
-  numbers: "right-aligned"
-
-typography:
-  h1: "Pack title — large, bold"
-  h2: "Section — medium, with subtle divider"
-  h3: "Subsection — small caps or bold"
-```
-
-### Platform-Specific Renderers
-
-The style system is platform-neutral. Renderers interpret it for specific targets:
-
-| Renderer | Output |
-|----------|--------|
-| Canvas (OpenAI) | Rendered markdown with formatting hints |
-| HTML | CSS-styled web page |
-| PDF | Formatted document via reportlab/Typst |
-| Terminal | ANSI-colored markdown |
-| Slack | Slack-formatted blocks |
-
-The renderer is NOT part of the Knowledge Pack spec — it's part of the consuming platform. The style system bridges the gap between platform-neutral views and platform-specific rendering.
+A `null` or omitted `style` field means the views render as plain markdown — which is always valid. The structure of a style system, the recommended YAML schema, and the renderer-pipeline rationale are at [RATIONALE.md §2](RATIONALE.md).
 
 ---
 
-## 18. Cognitive Perception Layer (v0.6)
+## 18. Cognitive Perception Layer — `display` Block and `hint`
 
-Knowledge Packs serve three surfaces: reasoning (AI), display (visual), and voice (spoken). The reasoning surface is dense and optimized for inference. The display and voice surfaces are optimized for human perception.
+Knowledge Packs serve three surfaces: reasoning (AI), display (visual), and voice (spoken). The reasoning surface (`claims.md`) is dense and optimized for inference. The display and voice surfaces are optimized for human perception. The `display` block in PACK.yaml and the per-view `hint` field carry the structured metadata renderers need to support human perception across rendering contexts (web, mobile, terminal, voice, PDF, etc.).
 
-### The Primary Constraint: Cognitive Load
-
-**Cognitive load is the first and most important criterion for all human-facing fields.** Not aesthetics, not completeness, not technical accuracy — cognitive load. Every field that a human will see must be authored for someone who:
-
-- Has never seen this pack before
-- Has 5 seconds of attention
-- Does not know the domain jargon
-- Will leave immediately if they don't understand what they're looking at
-
-This means: no abbreviations that require context, no category labels that require domain knowledge, no technical metrics that require interpretation. Every human-facing field must be **self-explanatory at first read**.
-
-The reasoning surface (claims.md) is exempt — it optimizes for AI inference, not human perception. But the display surface, voice surface, and all `display` block fields must pass the cognitive load test: **would a stranger understand this in one reading?**
-
-This is the hardest part of building a Knowledge Pack. The underlying knowledge is expert-level. The display surface must be beginner-level. That translation — from expert knowledge to cognitively accessible language — is the core value of the cognitive perception layer. It is not a formatting step. It is an authoring act.
-
-### Perception Stages
-
-A human encountering a Knowledge Pack progresses through four stages. Each stage has a time budget. If the pack fails at any stage, the human disengages.
-
-1. **Recognize** (< 1 second) — What is this? Can I identify it in a list, on a tab, in a breadcrumb?
-2. **Comprehend** (< 3 seconds) — What is it about? What does it address?
-3. **Engage** (< 5 seconds) — Why should I care? What makes me want to read further?
-4. **Navigate** (< 10 seconds) — Which section should I open? What will I find there?
-
-These are cognitive requirements, not aesthetic choices. They hold regardless of whether the pack is rendered as a web page, a mobile card, a terminal table, a TV dashboard, or a PDF cover page. The fields below provide the structured metadata that any renderer needs to support human perception at each stage.
+The rationale for these fields — the four perception stages with timed budgets, why each field exists, the Stranger Test, the Good/Bad authoring tables — is in [RATIONALE.md §3](RATIONALE.md). This section specifies the fields themselves; RATIONALE.md §3 explains why.
 
 ### Manifest: `display` Block
 
@@ -1799,107 +1707,24 @@ The `display` block sits at the pack level in PACK.yaml. All fields are OPTIONAL
 
 ```yaml
 display:
-  short_title: "Solar Market"           # Condensed form for recognition in constrained contexts
-                                        #   (list items, tab labels, breadcrumbs, mobile headers)
-                                        #   Target: 2-4 words. Must be unambiguous without the full title.
-  abbreviation: "SEM"                   # 2-5 character identifier for the most constrained contexts
-                                        #   (badges, pill tags, keyboard shortcuts, voice references)
-                                        #   Must be pronounceable or a recognized acronym.
-  tagline: >                            # One sentence capturing what this pack IS — not what it contains.
-    Utility-scale solar market trends   #   Enables comprehension < 3 seconds.
-    and cost analysis                   #   Not a description of the pack format — a statement of its subject.
-  hook: >                               # The sentence that creates the desire to know more.
-    The cost decline is structural,     #   Enables engagement < 5 seconds.
-    not cyclical — and it has held      #   Not a summary — a provocation, a key insight, or a promise.
-    for 40 years.                       #   The best sentence in the entire pack.
+  short_title: "Solar Market"           # 2-4 words. Recognition in constrained contexts (lists, tabs, breadcrumbs, mobile headers).
+  abbreviation: "SEM"                   # 2-5 characters. Tightest contexts (badges, pills, keyboard shortcuts). Pronounceable or recognized acronym.
+  tagline: >                            # One sentence: what the subject IS. Comprehension < 3 seconds. Not pack format; subject statement.
+    Utility-scale solar market trends and cost analysis
+  hook: >                               # The single most compelling sentence in the pack. Provocation / insight / promise. Engagement < 5 seconds.
+    The cost decline is structural, not cyclical — and it has held for 40 years.
 ```
 
-The `tagline` tells you what this IS. The `hook` tells you why you should CARE.
-
-A tagline without a hook is an empty plate with a menu. The hook is the amuse-bouche — the thing that makes you stay and want the rest. Without it, no one navigates further.
-
-**What these fields are NOT:**
-- They are not marketing copy (that belongs in a website, not a spec)
-- They are not aesthetic choices (fonts, colors, layout are renderer decisions)
-- They are not summaries of the content (that's what views are for)
-
-They are **cognitive handles** — the minimum information a human brain needs to recognize, locate, engage with, and navigate this pack across any display context.
-
-### Authoring Guidelines
-
-Each field has a cognitive job. The guidelines below ensure that job is done regardless of who authors the pack or which renderer displays it.
-
-#### `short_title` (Recognition)
-
-**Why it exists:** A human scanning a list of 20 packs, or glancing at a tab bar, or hearing a voice assistant name a pack — they need to recognize THIS pack in under one second. The full title ("Utility-Scale Solar Energy Market Analysis and Cost Trajectories") takes too long. The abbreviation ("SEM") requires insider knowledge. The short title occupies the sweet spot: long enough to be unambiguous, short enough to be instant.
-
-The name a human would use to refer to this pack in conversation. 2-4 words. Must be unambiguous without the full title.
-
-| Good | Bad | Why |
-|------|-----|-----|
-| "Solar Market" | "Utility-Scale Solar Energy Market Analysis and Cost Trajectories" | Too long — the full title belongs in the H1, not here |
-| "Wind Outlook" | "Wind Energy Assessment" | "Assessment" is vague; "Outlook" implies forward-looking analysis |
-| "Battery Storage" | "battery-storage-economics-2026-03" | File names are not titles |
-
-#### `abbreviation` (Tight Contexts)
-
-**Why it exists:** Some display contexts have almost no space — a mobile breadcrumb, a badge next to a notification, a voice assistant referencing a pack mid-sentence. The abbreviation is the absolute minimum identifier. It sacrifices clarity for brevity, which is why it exists alongside `short_title`, not instead of it.
-
-2-5 characters. Must be pronounceable or a recognized acronym. Used in badges, breadcrumbs, tabs.
-
-| Good | Bad | Why |
-|------|-----|-----|
-| "SEM" | "USEMPV" | Not pronounceable |
-| "Wind" | "WE" | Ambiguous without context |
-
-#### `tagline` (Comprehension)
-
-**Why it exists:** After recognizing a pack by title, the next question is "what is this about?" The tagline answers that in a single breath. It's the bridge between the title (which names the thing) and the content (which explains it in full). Without a tagline, the human must open the pack and read before they can even assess relevance. The tagline prevents that wasted effort — it's a promise of what's inside, delivered before the reader commits.
-
-One sentence that tells a stranger what the subject IS. Not what the pack contains — what the subject is about. Should be readable aloud in under 5 seconds. Natural language, not a label.
-
-| Good | Bad | Why |
-|------|-----|-----|
-| "Utility-scale solar market trends and cost analysis" | "Executive summary with key metrics and status" | That describes the pack format, not the subject |
-| "Supply chain risks for global solar deployment" | "Solar risk overview pack" | Reads like a filename, not a sentence |
-| "Grid storage economics for renewable integration" | "Battery analysis pack" | The good version answers WHAT and WHY |
-
-#### `hook` (Engagement)
-
-**Why it exists:** Comprehension without engagement is a dead end. A person can understand what a pack is about and still not care. The hook exists because human attention is not given — it's earned. A tagline tells you what the plate is; the hook is the aroma that makes you want to eat. It's the most emotionally or intellectually compelling sentence in the entire pack, surfaced to the cover because burying it on page 3 means nobody gets there.
-
-The single most compelling sentence in the entire pack. A provocation, a surprising insight, or a promise that creates the desire to read further. If you had to convince someone to open this pack with one sentence, this is it.
-
-| Good | Bad | Why |
-|------|-----|-----|
-| "The real competitor is the status quo of neglect, not other platforms." | "This pack covers risks, timeline, and team." | That's a table of contents, not a hook |
-| "We're raising $1.5M to capture the 18-month window before incumbents wake up." | "Fundraising information for Q2 2026." | No urgency, no insight, no reason to care |
-
-If you can't find a hook, the pack may not have a clear thesis yet. That's a content problem, not a display problem.
-
-#### `hint` per view (Navigation)
-
-**Why it exists:** The cover shows sections, but a title alone ("Risks", "Timeline") is a label — it tells you the category, not the value. A human deciding where to click needs to know what they'll GET from opening that section, not what category it belongs to. The hint transforms a menu of labels into a menu of promises. Without it, navigation is a guessing game — the reader has to open sections speculatively. With it, they open with intent.
-
-One sentence per section that helps a human decide: should I open this? Describes the VALUE of the section, not its structure. Max ~15 words.
-
-| Good | Bad | Why |
-|------|-----|-----|
-| "Three risks that could block the Sep 2026 pilot" | "Risk register with 3 rows" | Structure is not value |
-| "6 months built, 5 months to launch" | "Timeline table" | The good version tells you the insight |
-| "What to say when Scott asks about AI safety" | "Technical Q&A section" | The good version tells you what you'll GET |
-
-#### The Stranger Test
-
-After authoring all display fields, read them in sequence:
-
-> **[short_title]** — [tagline]. [hook]. Sections: [hint 1], [hint 2], [hint 3].
-
-If a stranger reading this sequence can answer "what is this, why should I care, and where should I start?" — the fields pass. If not, rewrite.
+| Field | Type | Required | Purpose |
+|---|---|---|---|
+| `short_title` | string | optional | Recognition (Stage 1, < 1s). 2–4 words. |
+| `abbreviation` | string | optional | Tight-context label. 2–5 chars. |
+| `tagline` | string | optional | Comprehension (Stage 2, < 3s). One sentence: what the subject IS. |
+| `hook` | string | optional | Engagement (Stage 3, < 5s). The pack's most compelling single sentence. |
 
 ### View-Level: `hint` Field
 
-Each view entry in PACK.yaml may include a `hint` — a single sentence that helps a human decide whether to open this section.
+Each view entry in PACK.yaml may include a `hint` — a single sentence that helps a human decide whether to open this section. Max ~15 words.
 
 ```yaml
 views:
@@ -1912,24 +1737,17 @@ views:
 
 The `hint` differs from `purpose` in audience and intent:
 
-| Field | Audience | Intent | Example |
-|-------|----------|--------|---------|
-| `purpose` | AI | When to display this view | "Risk register — mentor supply, FERPA, faculty adoption" |
-| `display_as` | Human | Section label (recognition) | "Risks" |
-| `hint` | Human | Should I open this? (navigation) | "Three risks that could block the Sep 2026 pilot" |
+| Field | Audience | Intent |
+|-------|----------|--------|
+| `purpose` | AI | When to display this view |
+| `display_as` | Human | Section label (recognition) |
+| `hint` | Human | Should I open this? (navigation, Stage 4, < 10s) |
 
-**Hint authoring rules:**
-- One sentence, max ~15 words
-- Describes the **insight or value** of the section, not its structure
-- Must pass the navigation test: *does this help a human decide whether to open this section?*
-- "3 tables and 12 claims" fails — it describes structure, not value
-- "Three risks that could block the Sep 2026 pilot" passes — it describes what you'll learn
-
-When `hint` is absent, renderers may extract one from the view's markdown (first blockquote, first paragraph sentence). But extracted hints are approximations — pre-authored hints are always better.
+When `hint` is absent, renderers may extract one from the view's markdown (first blockquote, first paragraph sentence). Extracted hints are approximations — pre-authored hints are always better.
 
 ### Fallback Hierarchy
 
-Renderers should resolve display metadata in this order:
+Renderers MUST resolve display metadata in this order:
 
 | Need | Primary source | Fallback |
 |------|---------------|----------|
@@ -1940,25 +1758,35 @@ Renderers should resolve display metadata in this order:
 
 This hierarchy ensures packs work without display metadata (backward-compatible), while rewarding authors who provide it with better human perception.
 
+For the rationale behind each field — *why* `short_title` is 2–4 words rather than something else, what cognitive job each field does, the Stranger Test for verifying authored fields, and Good/Bad worked examples — see [RATIONALE.md §3](RATIONALE.md).
+
 ---
 
-## 19. Companion Specifications (v0.4)
+## 19. Companion Specifications
 
 The following topics are specified in companion documents within the `spec/` directory. Each extends the core spec without increasing the size of this document.
 
 | Document | Topic | Decisions |
 |----------|-------|-----------|
-| `spec/MULTILINGUAL.md` | Locale subdirectories, translation workflow, drift detection, status tracking | D1, D2 |
-| `spec/VOICE.md` | Voice view format, spoken delivery conventions, duration/pace metadata | D13 |
+| `spec/CORE.md` | The implementer surface — minimum required to be KP:1-conformant | — |
+| `spec/AUTHORING.md` | Producer-side decision rubrics (informative) — how to choose claim type, nature, contradiction qualifier, confidence value, depth, granularity | — |
+| `spec/RATIONALE.md` | Design principles, style systems rationale, cognitive perception rationale, relationship to existing standards (informative) | — |
+| `spec/MULTILINGUAL.md` | Locale subdirectories, translation workflow, drift detection, status tracking, evidentiary multilingual exception | D1, D2 |
+| `spec/VOICE.md` | Voice view format, spoken delivery conventions, duration/pace metadata, register axis | D13 |
 | `spec/COMPOSITION.md` | Meeting pack composition, agenda overlay, pre_load/on_demand, composition.yaml | D14 |
 | `spec/BUNDLE.md` | Export format (full bundle + clipboard), KP:1 markers, CLI commands | D11, D19 |
-| `spec/LIFECYCLE.md` | Pack types (ephemeral/seasonal/permanent), archival, intelligent reconciliation, visibility | D4, D15, D19 |
+| `spec/LIFECYCLE.md` | Pack types (ephemeral/seasonal/permanent), archival, supersession cascade, intelligent reconciliation, visibility | D4, D15, D19 |
 | `spec/NOTES.md` | AI note-taking metadata, disclosure vs consent, active vs passive modes | D16 |
 | `spec/CONSISTENCY.md` | Cross-pack patrol, claim contradiction detection, real-time alerting, confidence decay | D18 |
 | `spec/CONVENTIONS.md` | Linguistic conventions — American English, Merriam-Webster, 30-rule table, fallback hierarchy | D1 |
 | `spec/ORGANIZATION.md` | Nested pack categories, working set, migration strategy, repo structure | D3, D12 |
 | `spec/STORAGE.md` | Pack-as-master principle, serialization formats, index contract, storage independence | — |
 | `spec/DEFINITIONS.md` | Definition and policy document kinds, YAML schemas, codegen concept, migration guidance | — |
+| `spec/EXTENSIONS.md` | Producer-defined `extensions.*` blocks catalogue, canonical entity ID format | — |
+| `spec/ARCHIVE.md` | ZIP archive format, content hashing, integrity chain, signatures.yaml | — |
+| `spec/PLAYBACK.md` | Self-driving voice playback, PlaybackPlan, AudienceProfile (experimental) | — |
+| `spec/RECONCILIATION.md` | Cross-pack reconciliation protocol (stub — design deferred to v0.9 / v1.0) | — |
+| `spec/MAPPING.md` | RDF / JSON-LD / PROV-O / Nanopublications field-by-field translation (informative) | — |
 
 These documents are normative — they carry the same authority as this core spec. The core spec defines the format; companion specs define the ecosystem.
 
@@ -1966,15 +1794,7 @@ These documents are normative — they carry the same authority as this core spe
 
 ## 20. Relationship to Existing Standards
 
-| Standard | Relationship |
-|----------|-------------|
-| Agent instruction files (e.g., AGENTS.md) | Orthogonal — agent instruction files configure behavior, Knowledge Packs provide facts |
-| Agent Skills (SKILL.md) | Complementary — Skills declare `requires_knowledge` for pack dependencies |
-| MCP Resources | Knowledge Packs can be served as MCP resources at runtime |
-| llms.txt | Discovery — llms.txt could point to available Knowledge Packs |
-| Entity-Claim-Evidence (ECS) systems | Implementation pattern — ECS is an operational index; Knowledge Packs are the canonical source. See `spec/STORAGE.md` |
-| JSON-LD / RDF | Inspiration — semantic structure, but optimized for neural nets, not symbol processors |
-| Nanopublications | Spiritual ancestor — assertion + provenance, but in markdown, not RDF |
+The positioning of KP:1 against `AGENTS.md` / `llms.txt` / `SKILL.md` / MCP Resources / JSON-LD / RDF / Nanopublications has been moved to [RATIONALE.md §4](RATIONALE.md). For the field-by-field translation analysis between KP:1 and RDF / JSON-LD / PROV-O / Nanopublications, see [MAPPING.md](MAPPING.md).
 
 ---
 

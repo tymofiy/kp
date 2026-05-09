@@ -8,20 +8,21 @@
 
 The normative contract for Knowledge Pack version 1.
 
-## How to Read This
+## Three normative lanes
 
-**Start with [CORE.md](CORE.md).** It is the implementable Core specification
--- everything required to build a conformant KP:1 parser and validator. If you
-are implementing KP:1, CORE.md is sufficient.
+KP:1 carries normative weight across three documents, each with a distinct role. A conformant implementation reads the lanes relevant to the surfaces it implements: a parser need only consult CORE; a renderer that handles voice, locales, or sealed archives reads the relevant companions in addition.
 
-**[SPEC.md](SPEC.md)** is the full specification (~110 KB). It covers the
-same ground as CORE.md plus all companion topics in a single document. It
-predates CORE.md and contains additional discussion and rationale.
+**[CORE.md](CORE.md) — implementer surface.** The minimum required to be KP:1-conformant. CORE.md is intentionally narrow: just enough to build interoperable parsers and validators. If you are implementing KP:1, start here; CORE.md is sufficient to ship a conformant parser.
 
-**Companion documents** extend the Core with optional features:
+**[SPEC.md](SPEC.md) — full normative spec, rationale, and ecosystem.** The comprehensive document. SPEC.md predates CORE.md and covers the same ground plus rationale, ecosystem context, and historical decisions. Where CORE.md and SPEC.md appear to disagree on the implementable surface, CORE.md (the narrower, more recent extraction) is authoritative; SPEC.md provides the surrounding "why."
+
+**Companion documents — topic-authoritative for their domains.** Each companion (VOICE, MULTILINGUAL, ARCHIVE, COMPOSITION, EXTENSIONS, etc.) owns its topic. For matters within its domain, the companion is the normative authority — not merely an "extension" of CORE/SPEC. A producer or consumer that needs to handle locales correctly must read MULTILINGUAL.md; CORE.md alone is not sufficient.
+
+Companions do not weaken CORE: where CORE makes a claim, that claim holds. But for topics CORE explicitly punts to a companion (per CORE's `see [COMPANION]` cross-references), the companion carries the full normative weight on that topic.
 
 | Document | Topic |
 |----------|-------|
+| [AUTHORING.md](AUTHORING.md) | Producer-side decision rubrics — how to make sound choices when authoring |
 | [VOICE.md](VOICE.md) | Voice surfaces for rendering claims as prose |
 | [COMPOSITION.md](COMPOSITION.md) | Multi-pack composition and meetings |
 | [LIFECYCLE.md](LIFECYCLE.md) | Pack lifecycle management |
@@ -33,7 +34,13 @@ predates CORE.md and contains additional discussion and rationale.
 | [BUNDLE.md](BUNDLE.md) | Bundling and distribution |
 | [ARCHIVE.md](ARCHIVE.md) | ZIP archive, integrity chain, signatures |
 | [DEFINITIONS.md](DEFINITIONS.md) | Definition and policy document kinds |
+| [EXTENSIONS.md](EXTENSIONS.md) | Producer-defined `extensions.*` blocks catalogue |
 | [NOTES.md](NOTES.md) | AI note-taking integration |
+| [PLAYBACK.md](PLAYBACK.md) | Self-driving presentation playback (experimental) |
+| [RECONCILIATION.md](RECONCILIATION.md) | Cross-pack reconciliation protocol (stub — design deferred to v0.9 / v1.0) |
+| [RATIONALE.md](RATIONALE.md) | Rationale and positioning (informative — design principles, style systems, relationship to other standards) |
+
+> **AI agents:** see [`AGENTS.md`](../AGENTS.md) at the repo root for a task-indexed reading map (six canonical tasks: parse / author / reconcile / translate / compose / playback). It points you at the minimum required reading per task, so you don't have to load all ~9,400 lines of spec prose across the 22 spec/*.md files into your context window.
 
 ## Interoperability
 

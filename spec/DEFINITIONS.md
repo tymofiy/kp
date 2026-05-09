@@ -3,7 +3,7 @@
 
 # Definition & Policy Kinds — Knowledge Pack Companion Spec
 
-> **Parent:** SPEC.md v0.7, §5
+> **Parent:** SPEC.md, §5
 > **Date:** 2026-03-29
 > **Status:** Draft
 > **Editor:** Timothy Kompanchenko
@@ -13,7 +13,7 @@
 
 ## 1. Purpose
 
-This document specifies the `definition` and `policy` document kinds introduced in SPEC.md v0.7 §5. These kinds represent **deterministic domain knowledge** — structural facts about how a domain is organized (definitions) and behavioral rules for operating within that domain (policies). Unlike claims, which are probabilistic and evidence-backed, definitions and policies are authoritative declarations that constrain the vocabulary and behavior of the knowledge system.
+This document specifies the `definition` and `policy` document kinds introduced in SPEC.md §5. These kinds represent **deterministic domain knowledge** — structural facts about how a domain is organized (definitions) and behavioral rules for operating within that domain (policies). Unlike claims, which are probabilistic and evidence-backed, definitions and policies are authoritative declarations that constrain the vocabulary and behavior of the knowledge system.
 
 ---
 
@@ -42,6 +42,8 @@ An LLM reading a claims pack can reason about claims without definitions loaded.
 ---
 
 ## 3. Definition Schema
+
+> **See also:** entity *instances* (as opposed to entity *types* defined here) live in `extensions.entities` and use the canonical `ent_<type>_<6-hex>` ID format documented in [EXTENSIONS.md §3.1](EXTENSIONS.md). DEFINITIONS.md governs the *types* (vocabulary); EXTENSIONS.md §2.2 governs *instances* of those types attached to specific packs.
 
 ### File Location
 
@@ -210,6 +212,41 @@ Edge attributes are particularly important for:
 - **Qualified relations** — `role`, `capacity`, `authority` for participation
 
 **Graph modeling note:** A `provenance_chain` with edge attributes is equivalent to an event-based model where each ownership transition is a discrete event. The relation-with-attributes model is more compact for simple chains; for complex provenance with multiple parties per event, consider modeling `OwnershipEvent` as a separate entity type with dedicated relations. The right choice depends on domain complexity — start with edge attributes, promote to event entities when the edges become too heavy.
+
+### Consumer Pattern — `extensions.relations` in PACK.yaml
+
+The `relation_types` schema above defines the *vocabulary*. Producers in
+the Nova ecosystem write *instances* of relations under
+[`extensions.relations`](EXTENSIONS.md#23-extensionsrelations--typed-edges)
+in PACK.yaml, where each instance references entities declared under
+[`extensions.entities`](EXTENSIONS.md#22-extensionsentities--typed-entity-graph):
+
+```yaml
+# In PACK.yaml — instance of `provenance_chain` with edge_attributes
+extensions:
+  entities:
+    - id: ent_a_artwork_xyz
+      type: asset
+      canonical: "Untitled (1962)"
+    - id: ent_p_collector_a
+      type: person
+      canonical: "Sarah Whitfield"
+  relations:
+    - id: rel_001
+      from: ent_a_artwork_xyz
+      to: ent_p_collector_a
+      type: provenance_chain               # vocabulary above
+      since: "1989-04-12"                  # maps to start_date edge_attribute
+      until: "2003-11-08"                  # maps to end_date edge_attribute
+      attributes:
+        acquisition_method: auction        # enum from edge_attributes
+        sale_price: 425000                 # sensitive — audit-only surface
+        evidence_ids: [E007]
+```
+
+Edge attributes carrying `sensitive: true` (e.g. `sale_price`) MUST NOT
+appear in user-facing dossier prose; they surface in audit views only. See
+EXTENSIONS.md §3 for the cross-cutting discipline.
 
 ---
 
@@ -518,7 +555,7 @@ When a definition is deprecated, existing claims referencing it are not invalida
 2. **Tooling should warn, not reject.** When a claim references a deprecated entity type, attribute, or relation, emit a warning: "entity type `widget` deprecated since 2026-06-01 — consider updating to `gadget`."
 3. **`superseded_by` enables migration.** If the deprecated definition has `superseded_by: gadget`, tooling can suggest the replacement. Automated migration is an implementation choice, not a spec requirement.
 4. **Orphan detection.** A claim referencing an entity type that exists in NO definition pack (not deprecated, not active — simply absent) is an orphan. Tooling should flag orphans for review — they may indicate a missing dependency declaration or a data entry error.
-5. **Retroactive invalidation is forbidden.** Changing a definition must never silently invalidate existing claims. This follows from the append-only principle (SPEC.md §15, Principle 5): the past is preserved.
+5. **Retroactive invalidation is forbidden.** Changing a definition must never silently invalidate existing claims. This follows from the append-only principle ([RATIONALE.md §1, Principle 5](RATIONALE.md)): the past is preserved.
 
 ---
 

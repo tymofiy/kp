@@ -20,8 +20,8 @@
 > as structure. AI-first, human-accessible.
 
 **Editor:** Timothy Kompanchenko
-**Status:** Editor's Draft — `KP:1 Public Draft — 2026-04` (`v0.7-preview`)
-**See also:** [`spec/CORE.md`](spec/CORE.md), [`spec/SPEC.md`](spec/SPEC.md), [`GOVERNANCE.md`](GOVERNANCE.md), [`CONTRIBUTING.md`](CONTRIBUTING.md)
+**Status:** Editor's Draft — `KP:1 Public Draft — 2026-05` (`v0.8.0-preview`)
+**See also:** [`spec/CORE.md`](spec/CORE.md), [`spec/SPEC.md`](spec/SPEC.md), [`spec/AUTHORING.md`](spec/AUTHORING.md), [`AGENTS.md`](AGENTS.md) (AI-first routing), [`GOVERNANCE.md`](GOVERNANCE.md), [`CONTRIBUTING.md`](CONTRIBUTING.md)
 
 ## What is KP:1?
 
@@ -78,8 +78,8 @@ optional context with relations to other claims.
 | Directory | Purpose |
 |-----------|---------|
 | `spec/` | Normative specification -- [CORE.md](spec/CORE.md), [SPEC.md](spec/SPEC.md), and companion documents |
-| `conformance/` | PEG grammar, JSON Schema, and 11 test fixtures |
-| `examples/` | Two complete `.kpack` examples |
+| `conformance/` | PEG grammar, JSON Schema, and 15 test fixtures |
+| `examples/` | Four complete `.kpack` reference examples (validated by the conformance suite) |
 | `positioning/` | Public-facing positioning and design rationale |
 | `research/` | Benchmark design and prior art analysis |
 | `reference/` | Reference parser and tooling (planned) |
@@ -90,7 +90,7 @@ Top-level governance and policy files include `GOVERNANCE.md`, `CONTRIBUTING.md`
 
 ## Examples
 
-Two complete Knowledge Packs demonstrate the format:
+Four complete Knowledge Packs demonstrate the format:
 
 - **[Solar Energy Market](examples/solar-energy-market.kpack/)** -- Market
   analysis with cost trajectories, technology trends, and regional adoption.
@@ -102,6 +102,25 @@ Two complete Knowledge Packs demonstrate the format:
   the format's ability to describe its own uncertainties, tensions, and open
   questions about its own design.
 
+- **[Art Acquisition Decision](examples/art-acquisition-decision.kpack/)** --
+  A buyer-side decision-support pack for an anonymized mid-twentieth-century
+  European painting. Demonstrates the full repertoire of contradiction
+  qualifiers (`⊗`, `⊗!`, `⊗~`), supersession (`⊘`), all four claim types,
+  multiple confidence calibrations, judgment / prediction / meta natures,
+  and audience-specific views (buyer, counsel, voice briefing). The pack
+  walks the rubrics from [`spec/AUTHORING.md`](spec/AUTHORING.md) end-to-end
+  on a realistic decision-support scenario.
+
+- **[Auction House Consignment Review](examples/auction-house-consignment-review.kpack/)**
+  -- The consigner-side counterpart: an auction house declines a sculpture
+  consignment over a foundry-mark attribution dispute, with conditions for
+  reconsideration. Demonstrates the *decline* path (judgment-shaped
+  recommendation against acquisition), cross-pack `↔` references to
+  hypothetical reference packs, evidence diversity (consignor-supplied
+  documents reviewed against the house's specialist), and a different
+  audience-frame than the buyer-side pack (committee decision, specialist
+  notes, formal-register consignor decline letter, voice briefing).
+
 ## Conformance
 
 The [conformance suite](conformance/) provides formal validation tools:
@@ -110,18 +129,27 @@ The [conformance suite](conformance/) provides formal validation tools:
   definition of claims.md syntax
 - **JSON Schema** (`conformance/grammar/kp-pack.schema.json`) -- validation
   schema for PACK.yaml manifests
-- **11 test fixtures** -- 6 valid packs that must be accepted, 5 invalid packs
+- **15 test fixtures** -- 6 valid packs that must be accepted, 9 invalid packs
   that must be rejected with specific errors
-- **2 complete example packs** -- the kpacks in `examples/` are validated by
+- **4 complete example packs** -- the kpacks in `examples/` are validated by
   the runner as part of the suite, so the live examples are themselves
   conformance tests
 
-The runner (`conformance/run.py`) reports **13/13 passed** on a conformant
-implementation: 11 fixture tests + 2 example validations. A conformant
+The runner (`conformance/run.py`) reports **19/19 passed** on a conformant
+implementation: 15 fixture tests + 4 example validations. A conformant
 implementation parses all valid fixtures, rejects all invalid ones, validates
 PACK.yaml against the schema, validates `signatures.yaml` against its schema
-when present, and enforces semantic constraints SC-01 through SC-11. See
-[conformance/README.md](conformance/README.md) for details.
+when present, and enforces semantic constraints SC-01 through SC-12.
+
+Run from a fresh checkout:
+
+```bash
+pip install -r requirements.txt
+python3 conformance/run.py                       # full suite (19/19 expected)
+python3 conformance/run.py --pack path/to/x.kpack  # validate a single pack
+```
+
+See [conformance/README.md](conformance/README.md) for details.
 
 ## Interoperability
 
@@ -136,7 +164,7 @@ format's genuinely novel contributions.
 
 ## Status
 
-This is an **editor's draft** maintained by a single editor in a public repository. It is published as `KP:1 Public Draft — 2026-04` (git tag `v0.7-preview`, with subsequent preview revisions through v0.7.5 documented in [`spec/CHANGELOG.md`](spec/CHANGELOG.md)). It has a formal grammar, a JSON Schema, a conformance suite with 11 test fixtures, and two reference examples.
+This is an **editor's draft** maintained by a single editor in a public repository. It is published as `KP:1 Public Draft — 2026-05` (git tag `v0.8.0-preview`, with the v0.7.x preview series and the iterative v0.8.0 buildup documented in [`spec/CHANGELOG.md`](spec/CHANGELOG.md)). It has a formal grammar, a JSON Schema, a conformance suite with 15 test fixtures plus 4 reference examples (19/19 validated).
 
 The specification is **not final** and may change in any way at any time, including breaking changes. It is **not yet ratified** by any standards body. Compatibility commitments will arrive only with a non-draft version. See [`GOVERNANCE.md`](GOVERNANCE.md) for the full governance picture, including how decisions are made during the preview phase and what changes when the Knowledge Pack Foundation is incorporated.
 
@@ -153,9 +181,9 @@ See [`CONTRIBUTING.md`](CONTRIBUTING.md) for the contribution policy and [`GOVER
 
 ## How to Cite
 
-If you reference KP:1 in academic, technical, or evaluative work, please use the metadata in [`CITATION.cff`](CITATION.cff). The v0.7-preview release is published on Zenodo with DOI [`10.5281/zenodo.19445263`](https://doi.org/10.5281/zenodo.19445263). The recommended short form is:
+If you reference KP:1 in academic, technical, or evaluative work, please use the metadata in [`CITATION.cff`](CITATION.cff). The v0.7-preview release is published on Zenodo with DOI [`10.5281/zenodo.19445263`](https://doi.org/10.5281/zenodo.19445263); a v0.8.0-preview Zenodo deposit will follow this release. The recommended short form (using the latest preview tag) is:
 
-> Kompanchenko, T. (2026). *KP:1 — Knowledge Pack Format Specification* (Version 0.7-preview). Zenodo. https://doi.org/10.5281/zenodo.19445263
+> Kompanchenko, T. (2026). *KP:1 — Knowledge Pack Format Specification* (Version 0.8.0-preview). https://github.com/tymofiy/kp
 
 The editor and an acknowledgment of AI drafting assistance are also recorded in [`ACKNOWLEDGMENTS.md`](ACKNOWLEDGMENTS.md).
 

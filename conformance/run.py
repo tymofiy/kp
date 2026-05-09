@@ -7,10 +7,10 @@ Validates .kpack directories against the KP:1 spec.
 
 The PEG grammar in grammar/kp-claims.peg is the normative reference for
 KP:1 claim syntax. This runner validates equivalent regular-expression
-patterns for the v0.7-preview release; a PEG-driven parser using
-parsimonious or lark is planned for a future phase. JSON Schema
-validation and semantic constraints SC-01 through SC-11 are also
-enforced. See conformance/README.md for the grammar-vs-runner contract.
+patterns for v0.8.0-preview; a PEG-driven parser using parsimonious or
+lark is planned for a future phase. JSON Schema validation and semantic
+constraints SC-01 through SC-12 are also enforced. See
+conformance/README.md for the grammar-vs-runner contract.
 
 Dependencies: pyyaml, jsonschema (see requirements.txt)
 Usage: python3 conformance/run.py
@@ -57,6 +57,10 @@ INVALID_ORDER = [
     "confidence-overflow.kpack",
     "duplicate-ids.kpack",
     "missing-evidence-field.kpack",
+    "cyclic-supersession.kpack",
+    "dangling-relation-target.kpack",
+    "wrong-pack-name.kpack",
+    "prediction-too-confident.kpack",
 ]
 
 # Expected error categories for invalid fixtures.
@@ -67,10 +71,16 @@ INVALID_EXPECTED = {
     "confidence-overflow.kpack": "SC-01",
     "duplicate-ids.kpack": "SC-02",
     "missing-evidence-field.kpack": "parse",
+    "cyclic-supersession.kpack": "SC-04",
+    "dangling-relation-target.kpack": "SC-05",
+    "wrong-pack-name.kpack": "SC-07",
+    "prediction-too-confident.kpack": "SC-12",
 }
 EXAMPLE_ORDER = [
     "solar-energy-market.kpack",
     "kp-external-assessment.kpack",
+    "art-acquisition-decision.kpack",
+    "auction-house-consignment-review.kpack",
 ]
 
 VERBOSE_TYPE_MAP = {
@@ -129,7 +139,16 @@ class Err:
 # Compiled regexes used during claim parsing
 _CLAIM_START = re.compile(r"^- (?:\*\*)?(\[C[^\]]+\])(?:\*\*)?\s+(.+)")
 _CLAIM_ID = re.compile(r"\[(C\d+(?:-v\d+)?)\]")
-_REL_DENSE = re.compile(r"(\u2297~|\u2297!|\u2297|\u2192|\u2190|\u2298|\u2194|~)(C\d+(?:-v\d+)?)")
+_REL_DENSE = re.compile(
+    r"(\u2297~|\u2297!|\u2297|\u2192|\u2190|\u2298|\u2194|~)"
+    # Target: either a local claim ID (C\d+(?:-v\d+)?) or a cross-pack
+    # reference of the form pack_name#section_ref per CORE \u00a79 / AR-16.
+    # Pack name follows [a-z][a-z0-9.-]* (allows .kpack-style suffixes
+    # found in some maximal-fixture refs while preferring the
+    # AR-16 lowercase-hyphen convention). Section ref is freeform until
+    # the next delimiter (whitespace or comma) per CORE \u00a79.
+    r"(C\d+(?:-v\d+)?|[a-z][a-z0-9.-]*#[^\s,]+)"
+)
 _REL_VERBOSE = re.compile(
     r"(supports|contradicts:error|contradicts:tension|contradicts"
     r"|requires|refines|supersedes|see_also)\s+([\w#-]+)"
@@ -255,6 +274,7 @@ def validate_pack(pack_dir: Path) -> list[Err]:
     # Accumulators for semantic checks
     claim_ids: list[str] = []
     confidences: list[tuple[str, float, str]] = []  # (cid, value, original_str)
+    predictions_high_conf: list[tuple[str, float]] = []  # (cid, conf) where nature=prediction and conf>0.95 — SC-12
     ev_refs: list[tuple[str, str]] = []  # (cid, "E###")
     relations: list[tuple[str, str, str]] = []  # (source, symbol/name, target)
 
@@ -295,10 +315,18 @@ def validate_pack(pack_dir: Path) -> list[Err]:
                 errs.append(Err("parse", f"empty evidence ref list for {cid}"))
                 continue
 
+            conf_val: float | None = None
             try:
-                confidences.append((cid, float(conf_s), conf_s))
+                conf_val = float(conf_s)
+                confidences.append((cid, conf_val, conf_s))
             except ValueError:
                 errs.append(Err("parse", f"invalid confidence '{conf_s}' for {cid}"))
+
+            # Position 5 (index 5) is nature when present (judgment | prediction | meta)
+            if conf_val is not None and len(parts) >= 6:
+                nature_s = parts[5].strip()
+                if nature_s == "prediction" and conf_val > 0.95:
+                    predictions_high_conf.append((cid, conf_val))
 
             for ref in ev_s.split(","):
                 ref = ref.strip()
@@ -398,6 +426,10 @@ def validate_pack(pack_dir: Path) -> list[Err]:
         if tgt not in cid_set:
             errs.append(Err("SC-05", f"relation target {tgt} not found (from {src})"))
 
+    # SC-12: Predictions MUST have confidence ≤ 0.95
+    for cid, conf_val in predictions_high_conf:
+        errs.append(Err("SC-12", f"prediction {cid} has confidence {conf_val} > 0.95 (predictions have irreducible uncertainty; reserve 0.99+ for trivially-falsifiable claims)"))
+
     return errs
 
 
@@ -405,6 +437,25 @@ def validate_pack(pack_dir: Path) -> list[Err]:
 
 
 def main():
+    # `--pack PATH` validates a single pack directory and exits.
+    # The natural workflow for an external author validating their own pack.
+    if len(sys.argv) >= 2 and sys.argv[1] == "--pack":
+        if len(sys.argv) < 3:
+            print(f"{RED}usage: run.py --pack PATH{RESET}")
+            sys.exit(2)
+        pack_path = Path(sys.argv[2])
+        if not pack_path.is_dir():
+            print(f"{RED}Pack directory not found: {pack_path}{RESET}")
+            sys.exit(2)
+        errs = validate_pack(pack_path)
+        if not errs:
+            print(f"{GREEN}{BOLD}{pack_path}: PASS{RESET}")
+            sys.exit(0)
+        print(f"{RED}{BOLD}{pack_path}: FAIL{RESET}")
+        for e in errs:
+            print(f"  {e}")
+        sys.exit(1)
+
     print(f"\n{BOLD}KP:1 Conformance Test Runner{RESET}")
     print("=" * 29)
 

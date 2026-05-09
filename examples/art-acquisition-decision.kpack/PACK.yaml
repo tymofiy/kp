@@ -1,0 +1,52 @@
+name: art-acquisition-decision
+version: 2026.05.09
+domain: art/decision-support
+author: Timothy Kompanchenko (anonymized demo pack)
+description: >
+  Demonstration pack — a buyer-side decision-support pack for the acquisition
+  of a mid-twentieth-century European painting. Fully anonymized: gallery,
+  artist, work, prices, and parties are illustrative. Demonstrates the four
+  claim types (o/r/c/i), all three contradiction qualifiers (⊗, ⊗!, ⊗~),
+  supersession via ⊘, multiple confidence calibrations, judgment and
+  prediction natures, and the role of audience-specific views (buyer,
+  counsel, voice briefing).
+
+spec_uri: https://github.com/tymofiy/kp
+spec_version: v0.8.0-preview
+kind: claim
+
+confidence:
+  scale: simple
+  normalize: true
+
+license: CC-BY-4.0
+sensitivity: public
+visibility: public
+
+provenance:
+  author: Timothy Kompanchenko
+  role: individual
+
+display:
+  short_title: Art Acquisition Decision
+  abbreviation: AAD
+  tagline: Reference example — buyer-side decision-support pack
+
+views:
+  - name: overview
+    file: views/overview.md
+    purpose: Buyer-facing summary of the recommendation and its supporting claims
+    display_as: "Overview"
+  - name: counsel
+    file: views/counsel.md
+    purpose: Compliance/counsel-facing summary emphasizing risk and audit trail
+    display_as: "Counsel Review"
+  - name: briefing
+    file: views/voice/briefing.md
+    purpose: Voice briefing for the buyer (curatorial register)
+    display_as: "Voice Briefing"
+    voice: true
+    duration: ~90 seconds
+    pace: measured
+
+tier: standalone

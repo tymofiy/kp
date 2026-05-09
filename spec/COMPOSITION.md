@@ -6,8 +6,10 @@
 > **Status:** Draft
 > **Date:** 2026-03-22
 > **Editor:** Timothy Kompanchenko
-> **Parent:** [SPEC.md](SPEC.md) v0.4, Design Principle 18
+> **Parent:** [SPEC.md](SPEC.md); design rationale in [RATIONALE.md §1, Principle 18](RATIONALE.md).
 > **Implements:** Decision D14 (Meeting pack composition, agenda overlay, pre_load/on_demand)
+
+> **`kpack` CLI invocations in this document describe planned reference tooling.** Only `python3 conformance/run.py` ships today. See [SPEC.md §13](SPEC.md) and the contract-pointer stub at [`reference/kpack`](../reference/kpack) for status.
 
 ---
 
@@ -150,10 +152,11 @@ A composite pack's `claims.md` is intentionally minimal. It contains claims abou
 ### Example: Meeting Pack claims.md
 
 ```markdown
-<!-- KP:1 -- Knowledge Pack Format
-Claims: - [ID] assertion {confidence|type|evidence|date} context
+<!-- KP:1 — Knowledge Pack Format
+Claims: - [ID] assertion {confidence|type|evidence|date|depth|nature} context
+  Positions 5-6 optional. Verbose named-field syntax also accepted.
 Types: o=observed r=reported c=computed i=inferred
-Relations: ->supports *contradicts <-requires ~refines /supersedes <->see_also
+Relations: →supports ⊗contradicts ⊗!error ⊗~tension ←requires ~refines ⊘supersedes ↔see_also
 Files: evidence.md=sources history.md=past entities.md=graph composition.yaml=references
 -->
 ---
@@ -167,26 +170,26 @@ confidence: simple | normalized
 
 ## Meeting Context
 
-- [M001] Quarterly advisory meeting with Dr. Webb, scheduled March 24 2:00pm
+- [C001] Quarterly advisory meeting with Dr. Webb, scheduled March 24 2:00pm
   {0.99|o|E001|2026-03-22}
 
-- [M002] Last meeting was February 10 -- six weeks since last sync
+- [C002] Last meeting was February 10 -- six weeks since last sync
   {0.95|o|E002|2026-03-22} Longer-than-usual gap. Extra context on Q1 developments needed.
 
-- [M003] GridScale partnership timeline shifted from March to May
+- [C003] GridScale partnership timeline shifted from March to May
   {0.85|r|E003|2026-03-20} Webb may not be aware of the delay.
-  <->gridscale-partnership#timeline
+  ↔gridscale-partnership#timeline
 
-- [M004] Decision needed: GridScale co-development terms and due diligence scope
+- [C004] Decision needed: GridScale co-development terms and due diligence scope
   {0.90|i|E003|2026-03-22} Webb's input on deal structure before GridScale meeting.
-  <->gridscale-partnership
+  ↔gridscale-partnership
 
-- [M005] Polysilicon supply concentration is the outstanding strategic risk
+- [C005] Polysilicon supply concentration is the outstanding strategic risk
   {0.90|i|E004|2026-03-22} Webb has contacts at alternative suppliers -- ask about sourcing options.
-  <->supply-chain-diversification#risks
+  ↔supply-chain-diversification#risks
 ```
 
-Notice: every claim is about the meeting situation, not about the referenced domains. The `see_also` symbols point to where the domain knowledge lives. The AI loads those packs to become knowledgeable; the meeting claims tell it what to do with that knowledge in this context.
+Notice: every claim is about the meeting situation, not about the referenced domains. The `↔` (see_also) cross-pack references point to where the domain knowledge lives. The AI loads those packs to become knowledgeable; the meeting claims tell it what to do with that knowledge in this context.
 
 ---
 
@@ -580,9 +583,9 @@ For composite packs, `kpack lint` adds these checks:
 
 ## 10. Design Principles (Composition-Specific)
 
-These extend the core design principles in SPEC.md section 14.
+These extend the core design principles in [RATIONALE.md §1](RATIONALE.md).
 
-1. **Composition over duplication** (Principle 18). The foundational rule. Knowledge lives once. Composite packs are lenses, not copies.
+1. **Composition over duplication** ([RATIONALE.md §1, Principle 18](RATIONALE.md)). The foundational rule. Knowledge lives once. Composite packs are lenses, not copies.
 
 2. **Minimal claims.** A composite pack's claims.md should be the smallest file in the ecosystem. 5-10 claims about the composition context, not 40 claims restating domain knowledge.
 

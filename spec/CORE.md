@@ -3,10 +3,13 @@
 
 # KP:1 Core Specification
 
-> **Status:** Editor's Draft — `KP:1 Public Draft — 2026-04`
+> **Status:** Editor's Draft — `KP:1 Public Draft — 2026-05` (`v0.8.0-preview`)
 > **Editor:** Timothy Kompanchenko
-> **Date:** 2026-04-04
-> **Derived from:** SPEC.md v0.7, `conformance/grammar/kp-claims.peg`, `conformance/grammar/kp-pack.schema.json`
+> **Date:** 2026-05-09
+> **Derived from:** SPEC.md, `conformance/grammar/kp-claims.peg`, `conformance/grammar/kp-pack.schema.json`
+> **Lane:** Implementer surface — see [README.md](README.md) for the three-lane structure (CORE = implementer, SPEC = full normative + rationale, companions = topic-authoritative for their domains).
+
+> **If you are authoring a pack** (rather than implementing a parser/validator), read [`AUTHORING.md`](AUTHORING.md) first. CORE.md tells you what a syntactically valid pack looks like; AUTHORING.md tells you how to make epistemically sound choices when authoring one.
 
 ## 1. Introduction
 
@@ -25,7 +28,7 @@ This document covers:
 - Validation rules and semantic constraints
 - Conformance levels
 
-This document does **not** cover: voice surfaces (VOICE.md), composition/meetings (COMPOSITION.md), lifecycle management (LIFECYCLE.md), multilingual support (MULTILINGUAL.md), pack organization patterns (ORGANIZATION.md), consistency patrol (CONSISTENCY.md), naming conventions (CONVENTIONS.md), storage formats (STORAGE.md), bundling (BUNDLE.md), archive format and integrity (ARCHIVE.md), definition/policy document kinds (DEFINITIONS.md), or AI note-taking (NOTES.md). These are specified in companion documents within `spec/`.
+This document does **not** cover: producer-side decision rubrics ([AUTHORING.md](AUTHORING.md)), design-principles rationale and standards-comparison ([RATIONALE.md](RATIONALE.md)), voice surfaces ([VOICE.md](VOICE.md)), composition/meetings ([COMPOSITION.md](COMPOSITION.md)), lifecycle management ([LIFECYCLE.md](LIFECYCLE.md)), multilingual support ([MULTILINGUAL.md](MULTILINGUAL.md)), pack organization patterns ([ORGANIZATION.md](ORGANIZATION.md)), consistency patrol ([CONSISTENCY.md](CONSISTENCY.md)), naming conventions ([CONVENTIONS.md](CONVENTIONS.md)), storage formats ([STORAGE.md](STORAGE.md)), bundling ([BUNDLE.md](BUNDLE.md)), archive format and integrity ([ARCHIVE.md](ARCHIVE.md)), definition/policy document kinds ([DEFINITIONS.md](DEFINITIONS.md)), AI note-taking ([NOTES.md](NOTES.md)), the producer-defined `extensions.*` catalogue ([EXTENSIONS.md](EXTENSIONS.md)), self-driving voice playback ([PLAYBACK.md](PLAYBACK.md), experimental), cross-pack reconciliation ([RECONCILIATION.md](RECONCILIATION.md), stub), or RDF/JSON-LD/PROV-O mapping ([MAPPING.md](MAPPING.md), informative). These are specified in companion documents within `spec/`. Cold AI agents should start from [`AGENTS.md`](../AGENTS.md) at the repo root for a task-indexed reading map.
 
 ### Terminology
 
@@ -52,14 +55,16 @@ A Knowledge Pack is a directory. The `.kpack/` suffix is RECOMMENDED but not req
 ├── claims.md          # REQUIRED — current claims
 ├── evidence.md        # RECOMMENDED — backing sources
 ├── history.md         # OPTIONAL — superseded/retracted claims
-├── entities.md        # OPTIONAL — entity definitions
-├── validation.yaml    # OPTIONAL — test questions
+├── entities.md        # DEPRECATED (since v0.7.4) — use extensions.entities; see EXTENSIONS.md
+├── validation.yaml    # OPTIONAL — test questions (schema in SPEC.md §10)
 ├── signatures.yaml    # OPTIONAL — cryptographic integrity (see ARCHIVE.md)
 └── views/             # OPTIONAL — pre-rendered display content
     └── overview.md
 ```
 
 Implementations MUST require `PACK.yaml` and `claims.md`. All other files are OPTIONAL for conformance.
+
+> **Composition-pack exception.** When a pack contains a `composition.yaml` file, the pack is a *composition pack* (meeting-prep, briefing, presentation, etc. — see [COMPOSITION.md](COMPOSITION.md)). Composition packs MAY omit `evidence.md` and MAY have narrative-only `claims.md` (claims about the composition context itself, not dense claim bullets), per [SPEC.md §2 "Composition-pack File Requirements"](SPEC.md). Conformance runners detect composition packs by the presence of `composition.yaml` and apply this relaxation; non-composition packs follow the standard rule.
 
 ---
 
@@ -82,6 +87,8 @@ PACK.yaml is a YAML file declaring pack identity and configuration. The normativ
 |-------|------|-------------|
 | `kind` | enum | `claim` (default), `definition`, `policy`, `mixed` |
 | `description` | string | Human-readable summary |
+| `spec_uri` | URL | Onboarding pointer to the KP:1 specification this pack conforms to. Informational, not a runtime parse dependency. Default published location: `https://github.com/tymofiy/kp`. See "Spec Onboarding Pointer" below. |
+| `spec_version` | string | Version label of the KP:1 spec this pack conforms to (typically a tag, e.g., `v0.8.0-preview`). Pairs with `spec_uri` to pin against a specific revision. |
 | `confidence` | object | `scale` (string, required within object), `normalize` (boolean), `labels` (object, for custom scales) |
 | `freshness` | date | Last substantive review date |
 | `license` | string | Reuse terms (e.g., `CC-BY-4.0`) |
@@ -95,8 +102,37 @@ PACK.yaml is a YAML file declaring pack identity and configuration. The normativ
 | `views` | array | View declarations with `name`, `file`, `purpose`, `display_as` (all required), `hint` (optional). Voice views add `voice` (boolean), `duration` (string, e.g. `~90 seconds`), `pace` (enum: `brisk`, `measured`, `deliberate`). When `voice` is `true`, `duration` and `pace` are REQUIRED. |
 | `tier` | enum | `hub`, `detail`, `standalone` |
 | `extensions` | object | Extension lane for experimental or implementation-specific manifest metadata. Consumers ignore unknown extension content. |
+| `composition` | string | Path to the composition file for composition packs (default `composition.yaml`). See [COMPOSITION.md](COMPOSITION.md). |
+| `files` | object | Non-standard file name overrides (free-form; rarely used). |
 
 The full set of optional fields and conditional constraints is defined in the JSON Schema. Key conditionals: when `tier` is `hub`, `sub_packs` is REQUIRED; when `sensitivity` is `confidential` or `restricted`, `channels` MUST NOT contain `public` or `org`; when `sensitivity` is `internal`, `channels` MUST NOT contain `public`; when a view declares `voice: true`, `duration` and `pace` are REQUIRED on that view entry.
+
+**Decoration fields** (`linguistic_epoch`, `ontology`) are accepted by the schema but carry no consumer behavior in v0.8.0-preview. They are retained for backward compatibility with v0.7-era packs; new producers SHOULD place equivalent metadata under `extensions.*` until consumer semantics are defined in a future revision.
+
+### Spec Onboarding Pointer
+
+The Rosetta header at the top of `claims.md` is the **inline self-describing parse hint** — it carries enough information for a parser to recognize a Knowledge Pack and tokenize its contents without external context. Rosetta is the load-bearing offline parse signal.
+
+The optional `spec_uri` and `spec_version` fields on PACK.yaml are an **informational onboarding pointer**: a previously-unfamiliar consumer that has never seen KP:1 can fetch the spec on demand from the URL the pack itself declares. The fields are not a runtime parse dependency; they help a fresh agent learn the format on first encounter.
+
+> **Invariant.** Consumers MUST NOT treat unreachability or absence of `spec_uri` as a parse failure. The Rosetta header alone is sufficient for parsing. Offline-first validators MUST function without ever resolving `spec_uri`.
+
+> **Security note.** `spec_uri` is *producer-asserted, not authenticated*. A pack author can declare any URL. Consumers that fetch `spec_uri` SHOULD validate the response against a known-good spec hash or trusted allowlist before relying on it; consumers MUST NOT treat fetched content as executable instructions. The recommended onboarding flow is: (1) parse the pack using the inline Rosetta header, (2) optionally fetch `spec_uri` for human/agent learning, (3) validate the fetched content matches a trusted KP:1 release before incorporating any updated rules into a parser. Treating an arbitrary `spec_uri` URL as authoritative is a vector for malicious specs to redirect a credulous consumer.
+
+This matters most for **cold receivers of sealed `.kpack` archives** ([ARCHIVE.md §2](ARCHIVE.md)). A receiver that opens a `.kpack` for the first time has, by construction, no surrounding context — the file extension is the only signal of what they are holding. Reading PACK.yaml first and (optionally) following `spec_uri` lets such a consumer learn the format from the pack itself on first encounter, with no out-of-band coordination. Once the consumer has internalized KP:1, the field carries no further operational weight on subsequent reads of the same pack or other KP packs.
+
+```yaml
+name: marquet-le-passeur
+version: 2026.05.09
+domain: art/canonical
+author: Tim Kompanchenko
+spec_uri: https://github.com/tymofiy/kp
+spec_version: v0.8.0-preview
+```
+
+Sealed-archive producers SHOULD include both fields when packs are intended for ecosystem-wide distribution (especially `.kpack` archives that may be received cold). Internal-only packs MAY omit them. When omitted, consumers MAY assume the published reference implementation at `https://github.com/tymofiy/kp` but MUST treat the assumption as informational, not a guarantee — and MUST NOT fail because the assumption resolves to an unreachable endpoint.
+
+`spec_version` is recommended whenever a pack is archived for the long term, so future consumers can validate against the exact spec revision the producer targeted (rather than against a moving "latest" version).
 
 ### Manifest Extensions
 
@@ -217,9 +253,9 @@ Each claim is a markdown list item. A claim uses EITHER dense OR verbose form fo
 
 Positions 1–4 are REQUIRED. Positions 5–6 are OPTIONAL. Empty interior slots are valid: `{0.85|r|E020|2026-03-10||prediction}`.
 
-**Context prose** may follow the metadata on the same line (trailing prose) or on subsequent indented continuation lines (2+ spaces, AR-11). Note: trailing prose on the metadata line is consumed greedily — relation symbols on that line are treated as prose, not parsed as relations.
+**Context prose** may follow the metadata on the same line (trailing prose) or on subsequent indented continuation lines (2+ spaces, AR-11).
 
-**Relations** appear on subsequent continuation lines (not the metadata line) using symbol syntax:
+**Relations** MAY appear immediately after the closing `}` on the metadata line (and continue across subsequent continuation lines) OR start on a subsequent continuation line. Where present on the metadata line, relations are matched first; remaining trailing text after the matched relations is consumed as prose. Relation symbols inside narrative prose elsewhere on the metadata line are not parsed as relations (the parser matches relations starting at the position immediately after `}`, then treats remaining text as prose). Relations use symbol syntax:
 
 ```text
 →C002, ⊗~C003
@@ -417,7 +453,13 @@ Description prose.
 | `captured` | Yes | ISO date when evidence was obtained |
 | `source` | Yes | URI, file path, or description of the source |
 
-Optional fields: `SHA-256` / `sha-256`, `Notes` / `notes`, `Prepared` / `prepared`. Field names are case-insensitive in validation (AR-07).
+Optional fields:
+
+- `reliability` — NATO Admiralty source reliability tier. Single uppercase letter `A`–`F`. `A` = completely reliable, `F` = reliability cannot be judged.
+- `credibility` — NATO Admiralty information credibility for this specific fact. Single digit `1`–`6`. `1` = confirmed by other independent sources, `6` = credibility cannot be judged. Orthogonal to `reliability`: an `A`-tier source can carry a `6`-credibility statement when uncorroborated.
+- `SHA-256` / `sha-256`, `Notes` / `notes`, `Prepared` / `prepared`.
+
+Field names are case-insensitive in validation (AR-07). The combined `reliability` + `credibility` pair (e.g. `A1`, `B2`, `F6`) is the standard intelligence-tradecraft Admiralty grade and renderers MAY surface it as such.
 
 Evidence IDs use the pattern `E` + one or more digits (AR-02). IDs are stable — once assigned, an ID always refers to the same source material.
 
@@ -429,7 +471,7 @@ Views are pre-rendered GFM (GitHub-Flavored Markdown) documents for human consum
 
 ### Rules
 
-1. Views contain **no knowledge that is not in claims.md**. If a view states a fact, a corresponding claim MUST exist.
+1. Views contain **no knowledge that is not in claims.md**. If a view states a fact, a corresponding claim SHOULD exist. (As of v0.8.0-preview, this is editorial discipline — the conformance runner does not detect "view-laundering" patterns where a view introduces unsupported assertions. Authors are responsible; see [AUTHORING.md §11](AUTHORING.md) anti-pattern #4.)
 2. Views are **derived** from claims. If a view disagrees with claims.md, claims.md is authoritative.
 3. Each view is independently displayable — no cross-view dependencies.
 4. Views SHOULD NOT contain claim notation (`{0.95|i|E001}` metadata). They contain readable prose.
@@ -467,6 +509,7 @@ These constraints MUST be validated after parsing succeeds. They are not express
 | SC-09 | Frontmatter domain MUST match PACK.yaml `domain` field |
 | SC-10 | Frontmatter scale name MUST match PACK.yaml `confidence.scale` |
 | SC-11 | Verbose type names MUST map to their single-letter equivalents: observed=o, reported=r, computed=c, inferred=i |
+| SC-12 | When `nature` is `prediction`, confidence MUST be ≤ 0.95. Predictions about future states have irreducible uncertainty; the 0.99+ band is reserved for trivially-falsifiable claims per [AUTHORING.md §5](AUTHORING.md). |
 
 ### Formal Grammar
 
@@ -483,7 +526,7 @@ All three checks MUST pass:
 | Check | Scope | Criteria |
 |-------|-------|----------|
 | Syntactic | claims.md | Document matches PEG grammar |
-| Semantic | claims.md + evidence.md | All constraints SC-01 through SC-11 pass |
+| Semantic | claims.md + evidence.md | All constraints SC-01 through SC-12 pass |
 | Schema | PACK.yaml | Validates against JSON Schema |
 
 ### Permissive Level
@@ -492,7 +535,7 @@ All three checks MUST pass:
 |-------|-------|----------|
 | Syntactic | claims.md | Document matches PEG grammar (MUST pass) |
 | Semantic (errors) | claims.md | SC-01 through SC-06 MUST pass |
-| Semantic (warnings) | cross-file | SC-07 through SC-11 produce warnings, not errors |
+| Semantic (warnings) | cross-file | SC-07 through SC-12 produce warnings, not errors |
 | Schema | PACK.yaml | Required fields validate; optional field types produce warnings |
 
 The distinction serves tooling: editors operate in permissive mode during drafting, switching to strict for publishing.
@@ -566,17 +609,17 @@ The following normative decisions resolve ambiguities identified during grammar 
 | AR-01 | Claim ID is `C[0-9]+(-v[0-9]+)?`. Zero-padding conventional, not required. |
 | AR-02 | Evidence ID is `E[0-9]+`. Same padding rules as claim IDs. |
 | AR-03 | Bold wrapping (`**[C001]**`) is optional syntactic sugar. No semantic meaning. |
-| AR-04 | Relations appear on continuation lines (2+ spaces). May trail prose or start a line. |
+| AR-04 | Relations MAY appear immediately after the closing `}` on the metadata line, and/or on subsequent continuation lines (2+ spaces). On the metadata line, relations are matched first (immediately after `}`); any text after the matched relations is consumed as prose. Relations may trail prose or start a line on continuation lines. |
 | AR-05 | Verbose relation names are a closed enum of 8 values. |
 | AR-06 | Evidence `type` is open vocabulary. Unknown types MUST be accepted. |
 | AR-07 | Both blockquote and list evidence formats are valid. Field names are case-insensitive. |
 | AR-08 | Frontmatter is KP-specific compact format, NOT arbitrary YAML. |
 | AR-09 | Entity annotation: `[entity_type]` or `[entity_type|alias1,alias2]` at end of H1. Entity type is `[a-z0-9-]+`; aliases are `[A-Za-z0-9_-]+`. |
-| AR-10 | Tilde `~` is a relation only when immediately followed by a valid claim ID reference (`C` + digits or cross-pack ref). |
+| AR-10 | Tilde `~` is a relation only when immediately followed by a valid claim ID reference (`C` + digits or cross-pack ref). Examples: `~C002` is the *refines* relation; `~refines` (the legend token in the Rosetta header) and `~the manuscript` (mid-prose tilde) are prose, not relations. |
 | AR-11 | Continuation lines use 2+ spaces of indentation. |
 | AR-12 | Claim ID gaps are permitted. Uniqueness is the only constraint (SC-02). |
 | AR-13 | A claim uses EITHER dense OR verbose metadata. No mixing within a single claim. |
-| AR-14 | `signatures.yaml` schema defined in ARCHIVE.md. `composition.yaml` schema deferred to Phase C2. |
+| AR-14 | `signatures.yaml` schema defined in ARCHIVE.md. `composition.yaml` schema is published at `conformance/grammar/kp-composition.schema.json` (informative); the conformance runner detects composition packs by `composition.yaml` presence (per [SPEC.md §2](SPEC.md), [COMPOSITION.md](COMPOSITION.md)) but does not currently validate them against the published schema. Producers MAY validate independently. |
 | AR-15 | `tier` is optional. When `hub`, `sub_packs` is required. |
 | AR-16 | Cross-pack references: `pack_name#section_ref`. `#` is the separator. |
 
@@ -586,15 +629,21 @@ The following normative decisions resolve ambiguities identified during grammar 
 
 | Document | Covers | When you need it |
 |----------|--------|-----------------|
-| VOICE.md | Voice surface format and spoken delivery conventions | Building voice/audio interfaces |
-| COMPOSITION.md | Meeting packs, composite packs, agenda overlays | Composing packs from multiple sources |
-| LIFECYCLE.md | Ephemeral/seasonal/permanent packs, archival, reconciliation | Managing pack lifecycles |
-| MULTILINGUAL.md | Locale subdirectories, translation workflow | Supporting multiple languages |
+| AUTHORING.md | Producer-side decision rubrics — claim type, nature, contradiction qualifier, confidence calibration, granularity, content routing | Authoring a pack from source material (informative) |
+| VOICE.md | Voice surface format, spoken delivery conventions, register axis | Building voice/audio interfaces |
+| COMPOSITION.md | Meeting packs, composite packs, agenda overlays, `composition.yaml` | Composing packs from multiple sources |
+| LIFECYCLE.md | Ephemeral/seasonal/permanent packs, archival, supersession cascade, reconciliation | Managing pack lifecycles |
+| MULTILINGUAL.md | Locale subdirectories, translation workflow, register sub-distinctions, evidentiary multilingual exception | Supporting multiple languages |
 | ORGANIZATION.md | Hub/detail hierarchy, working sets, repo structure | Organizing large pack collections |
 | CONSISTENCY.md | Cross-pack patrol, contradiction detection, confidence decay | Maintaining consistency across packs |
 | CONVENTIONS.md | Linguistic conventions, naming style | Standardizing prose style |
 | STORAGE.md | Pack-as-master, serialization, index contract | Storing packs in databases/caches |
 | BUNDLE.md | Export formats, clipboard format, sharing | Exporting and sharing packs |
 | ARCHIVE.md | ZIP archive, content hashing, integrity chain, signatures.yaml | Transporting packs between systems |
-| DEFINITIONS.md | Definition/policy YAML schemas, codegen | Building ontology layers |
+| DEFINITIONS.md | Definition/policy YAML schemas, entity types, codegen | Building ontology layers |
+| EXTENSIONS.md | Producer-defined `extensions.*` blocks catalogue, canonical entity ID format | Adding `extensions.*` payloads or interpreting them |
 | NOTES.md | AI note-taking metadata, disclosure, consent | Recording meetings with AI |
+| PLAYBACK.md | Self-driving voice playback, PlaybackPlan, AudienceProfile (experimental) | Building voice presentation runtimes |
+| RECONCILIATION.md | Cross-pack reconciliation protocol (stub — design deferred to v0.9 / v1.0) | Multi-pack drift detection (design pending) |
+| MAPPING.md | RDF / JSON-LD / PROV-O / Nanopublications field-by-field translation (informative) | Interoperability with semantic-web standards |
+| RATIONALE.md | Design principles, style systems rationale, cognitive perception rationale, relationship to existing standards (informative) | Understanding *why* the format is shaped the way it is |

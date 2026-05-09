@@ -6,8 +6,9 @@
 > **Status:** Draft
 > **Date:** 2026-03-22
 > **Editor:** Timothy Kompanchenko
-> **Parent:** [SPEC.md](SPEC.md) v0.4
 > **Decisions:** D4 (meeting pack lifecycle), D15 (archive-never-delete), D19 (reconcile-before-archive)
+
+> **`kpack` CLI invocations in this document describe planned reference tooling.** Only `python3 conformance/run.py` ships today. See [SPEC.md §13](SPEC.md) and the contract-pointer stub at [`reference/kpack`](../reference/kpack) for status.
 
 ---
 
@@ -254,43 +255,43 @@ Claims reviewed: 8
 
 ─── Reconciled ─────────────────────────────────────
 
-[M001] Dr. Webb advises three utility-scale solar developers
+[C001] Dr. Webb advises three utility-scale solar developers
   → MATCHED in contacts/marcus-webb.kpack [C003]
     "Webb advises SolarFirst, GridScale, and Helios Energy"
 
-[M002] GridScale's pipeline exceeds 2 GW across four states
+[C002] GridScale's pipeline exceeds 2 GW across four states
   → MATCHED in research/gridscale-partnership.kpack [C004]
     "GridScale: 2.1 GW pipeline — Texas, Arizona, Nevada, Colorado"
 
-[M003] Perovskite durability results from Oxford PV were positive
+[C003] Perovskite durability results from Oxford PV were positive
   → MATCHED in research/perovskite-assessment.kpack [C015]
     "Oxford PV Q1 2026 field test: <5% degradation at 18 months"
 
-[M004] Webb suggested connecting us with Helios Energy's CTO
+[C004] Webb suggested connecting us with Helios Energy's CTO
   → MATCHED in research/solar-energy-market.kpack [C046]
     "Warm intro to Helios Energy CTO via Webb (pending)"
 
-[M005] Webb's advisory clients include three thin-film manufacturers
+[C005] Webb's advisory clients include three thin-film manufacturers
   → MATCHED in contacts/marcus-webb.kpack [C007]
     "Advisory clients: NanoSolar, ThinFilm Corp, FlexPV (thin-film)"
 
 ─── Promoted (during post-meeting review) ──────────
 
-[M006] Webb wants to see a live comparison of bifacial vs monofacial yield data
+[C006] Webb wants to see a live comparison of bifacial vs monofacial yield data
   → PROMOTED to research/solar-energy-market.kpack [C047]
     "Bifacial vs monofacial field yield comparison requested by Webb (prepare by Apr 5)"
 
 ─── Orphan (not found in any standing pack) ────────
 
-⚠️  [M007] Webb mentioned IRA incentive reclassification expected Q3
+⚠️  [C007] Webb mentioned IRA incentive reclassification expected Q3
     2026 — may affect GridScale's project economics
-    {0.70|r|EM003|2026-03-22}
+    {0.70|r|E003|2026-03-22}
     NOT FOUND in any standing pack.
     Suggested target: research/regulatory-landscape.kpack § IRA Incentives
 
-⚠️  [M008] GridScale is considering a dedicated perovskite pilot
+⚠️  [C008] GridScale is considering a dedicated perovskite pilot
     project, timeline late 2027
-    {0.60|r|EM004|2026-03-22}
+    {0.60|r|E004|2026-03-22}
     NOT FOUND in any standing pack.
     Suggested target: research/gridscale-partnership.kpack § Technology Pilots
 
@@ -350,9 +351,68 @@ kpack restore meetings/webb-advisory-2026-03-22.kpack/
 # Moves from _archive/ back to active directory
 ```
 
+> The `kpack` commands above describe planned reference tooling. As of v0.8.0-preview, the only command that ships in this repository is `python3 conformance/run.py`. See [SPEC.md §13 Tooling](SPEC.md) for status.
+
 ---
 
-## 6. Visibility
+## 6. Claim Supersession Cascade
+
+When a claim is superseded with `⊘`, the original moves to `history.md` and a successor claim takes its slot in `claims.md`. Other claims in the same pack may have linked to the superseded claim — typically via `→supports` (this claim provides evidence for the parent), `←requires` (this claim depends on the parent's truth), or `~refines` (this claim adds detail to the parent).
+
+The cascade rule:
+
+> **Rule (L1).** When a claim is superseded with `⊘`, every dependent claim that links to it via `→supports`, `←requires`, or `~refines` MUST be reviewed by the editor for whether it still stands under the new parent. Dependent claims are NOT automatically invalidated. The editor decides whether each dependent claim still holds, requires its own supersession, or requires only its relation to be re-pointed at the successor.
+
+This is the conservative default. It treats the parser as authoritative for syntax and the editor as authoritative for epistemic state.
+
+### Why not auto-invalidate
+
+A stricter rule — automatically marking every `←requires` dependent as invalid when its parent is superseded — was considered and rejected for v0.8.0-preview. The reasons:
+
+1. **Many supersessions narrow rather than negate.** A successor claim that refines the parent (e.g., from "the work is dated 1957" to "the work is dated 1962") may leave most dependent claims standing under the new parent's truth. Auto-invalidation would force unnecessary supersession of claims that remain accurate.
+
+2. **The graph topology is the editor's responsibility.** Whether a dependent's relation is still meaningful under the new parent is an epistemic call, not a structural one. The format gives the editor the primitives (`⊘`, `~`, supersession in `history.md`); the editor composes them.
+
+3. **The parser stays simple.** A parser that auto-invalidates a transitive closure across multiple files would need graph-traversal semantics that the current PEG grammar deliberately avoids. The supersession cascade rule lives at the editorial layer, not the parsing layer.
+
+### Worked example
+
+Suppose `claims.md` contains:
+
+```text
+- [C001] The work is dated 1957 in the auction-house specialist's report.
+  {0.83|r|E001|2025-11-15|investigated}
+
+- [C002] X-ray fluorescence is consistent with the artist's documented palette for the 1955-1959 period.
+  {0.87|o|E002|2025-12-04|investigated} →C001
+
+- [C003] Comparable lots dated 1955-1959 sold in 2024-2025 at €820,000-€1,180,000.
+  {0.99|c|E003|2026-05-09} ←C001
+```
+
+Now C001 is superseded by C001-v2 (dated 1962, after a catalog raisonné review):
+
+```text
+- [C001-v2] The work is dated 1962 in the catalog raisonné.
+  {0.91|r|E004|2020-04-30|exhaustive|judgment} ⊘C001
+```
+
+Per Rule L1, the editor reviews C002 and C003:
+
+- **C002** said XRF was consistent with the 1955-1959 palette. Under C001-v2 (dating 1962), this claim is no longer supportive of the parent — it asserts the wrong period. The editor supersedes C002 with C002-v2 reflecting the 1960-1965 palette consistency, OR re-points the relation if XRF is consistent with both periods.
+- **C003** cited 1955-1959 comparables. Under C001-v2, the comparable set is wrong; C003's predicate ("comparables sold in 2024-2025 at...") becomes a non-sequitur unless the comparable set is updated. The editor either supersedes C003 with a 1960-1965 comparable set or re-points to a different supporting frame.
+
+The cascade decisions are recorded in `history.md` alongside the supersession entry for C001.
+
+### Cross-pack supersession
+
+Supersession is local to a pack. A claim in pack A superseded with `⊘` does not propagate to claims in pack B that referenced the original via `↔` (cross-pack see-also). Cross-pack effects are a [`RECONCILIATION.md`](RECONCILIATION.md) concern (currently a stub; full design deferred to v0.9 / v1.0).
+
+The conservative reading for v0.8.0-preview: a cross-pack `↔` reference is a navigational pointer, not a binding dependency. Pack B's claim with `↔packA#section` does not require pack A to be reconciled before pack B is published. If pack A's referenced claim is superseded, pack B's `↔` continues to point at the same heading; the heading typically contains the successor claim by then.
+
+---
+
+## 7. Visibility
 
 Visibility controls who can access a pack and how it behaves during bundling and sharing operations.
 
@@ -401,7 +461,7 @@ Public packs have no access restrictions. They can be bundled, published, distri
 
 ---
 
-## 7. Lifecycle Transitions
+## 8. Lifecycle Transitions
 
 ```text
                     ┌──────────────────────────────┐
@@ -466,7 +526,7 @@ A permanent pack may be manually archived if the domain itself becomes irrelevan
 
 ---
 
-## 8. KNOWLEDGE.yaml Integration
+## 9. KNOWLEDGE.yaml Integration
 
 The root `KNOWLEDGE.yaml` index tracks lifecycle and archive status:
 
@@ -494,13 +554,13 @@ packs:
 
 ---
 
-## 9. Design Principles
+## 10. Design Principles
 
 These principles are normative. Tooling that implements lifecycle management MUST adhere to them.
 
-1. **Archive, never delete.** (Principle 19 from SPEC.md.) Deletion requires explicit, deliberate action and should be exceptional. Archival is the default lifecycle outcome.
+1. **Archive, never delete.** ([RATIONALE.md §1, Principle 19](RATIONALE.md).) Deletion requires explicit, deliberate action and should be exceptional. Archival is the default lifecycle outcome.
 
-2. **Reconcile before archive.** (Principle 20 from SPEC.md.) Every claim in an ephemeral pack represents knowledge that someone thought was worth capturing. Before burying it in an archive, verify it landed somewhere permanent. Orphan claims are the system catching what humans miss.
+2. **Reconcile before archive.** ([RATIONALE.md §1, Principle 21](RATIONALE.md).) Every claim in an ephemeral pack represents knowledge that someone thought was worth capturing. Before burying it in an archive, verify it landed somewhere permanent. Orphan claims are the system catching what humans miss.
 
 3. **Close the loop explicitly.** The reconciliation report is not a formality -- it is the mechanism that makes archival psychologically safe. Users trust the system because it proves nothing was lost, not because it promises nothing was lost.
 

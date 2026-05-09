@@ -2,13 +2,20 @@ cff-version: 1.2.0
 message: "If you reference KP:1 in academic or technical work, please cite as below."
 title: "KP:1 — Knowledge Pack Format Specification"
 abstract: >
-  KP:1 is a text-native specification for representing epistemic state
-  (beliefs, confidence, evidence, contradictions) in AI workflows. It is
-  designed for inspectability and portability with a strict core and
-  explicit extension profiles.
+  KP:1 is a text-native specification for representing epistemic state —
+  claims with confidence, evidence, contradictions, and the trace of how
+  beliefs evolved — designed for AI inspectability and portability across
+  systems. The format defines a strict normative core (CORE.md, JSON
+  Schema, PEG grammar) plus a set of topic-authoritative companions for
+  voice surfaces, multilingual support, archival, composition, and
+  extension blocks. Distinguishing features include typed contradiction
+  qualifiers (⊗, ⊗!, ⊗~), a Voyager-Principle Rosetta header for
+  zero-dependency parsing, supersession semantics with append-only
+  history, and a three-surface architecture (claims for AI reasoning,
+  display views for visual reading, voice views for spoken delivery).
 type: software
-version: "0.7-preview"
-date-released: "2026-04-06"
+version: "0.8.0-preview"
+date-released: "2026-05-09"
 authors:
   - family-names: "Kompanchenko"
     given-names: "Timothy"
@@ -18,14 +25,29 @@ license-url: "https://creativecommons.org/licenses/by/4.0/"
 repository-code: "https://github.com/tymofiy/kp"
 keywords:
   - knowledge representation
+  - knowledge pack
   - epistemic state
   - AI specification
-  - confidence
-  - evidence
+  - confidence calibration
+  - evidence reference
+  - contradiction qualifiers
+  - claim grammar
+  - PEG grammar
+  - JSON Schema
+  - RFC 2119
+  - Sherman Kent confidence scale
+  - Rosetta header
+  - Voyager Principle
+  - text-native format
 identifiers:
   - type: doi
     value: "10.5281/zenodo.19445263"
-    description: "Zenodo DOI for the v0.7-preview release"
+    description: >
+      Zenodo DOI for the v0.7-preview release (the previous public preview).
+      The v0.8.0-preview release described by this CITATION file will be
+      deposited to Zenodo as a separate DOI under the same concept-DOI
+      umbrella; until that deposit is published, this DOI references the
+      predecessor release.
   - type: other
     value: "USPTO 99747548"
     description: "United States trademark application for KP:1 (Class 9, intent-to-use, filed 2026-04-06)"
