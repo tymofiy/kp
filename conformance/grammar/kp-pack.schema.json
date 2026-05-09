@@ -110,8 +110,8 @@
       "properties": {
         "short_title": {
           "type": "string",
-          "maxLength": 30,
-          "description": "2-4 words for constrained display contexts."
+          "maxLength": 60,
+          "description": "Short display label for constrained contexts (sidebar rows, chips). Canonical names of orgs/people may exceed 30 chars; UI is responsible for ellipsis at smaller widths."
         },
         "abbreviation": {
           "type": "string",
@@ -141,7 +141,7 @@
         },
         "role": {
           "type": "string",
-          "enum": ["manufacturer", "independent", "regulator", "academic", "individual"],
+          "enum": ["manufacturer", "independent", "regulator", "academic", "individual", "co-author"],
           "description": "Author's relationship to the subject matter."
         },
         "reviewed_by": {

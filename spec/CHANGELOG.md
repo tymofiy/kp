@@ -5,6 +5,34 @@
 
 ---
 
+## v0.7.7.1 — 2026-05-09
+
+**Schema-only conformance relaxations.**
+
+Schema-side fixes for two classes of conformance failures surfaced in
+the 2026-04-30 ecosystem audit. No core spec or companion-document
+changes; pure schema bumps.
+
+### Changed
+- **`display.short_title` `maxLength` 30 → 60** — Real canonical names of
+  organisations and people overflow 30 chars (e.g., "LVMH Moët Hennessy
+  Louis Vuitton", "Ministry of Culture and Strategic Communications of
+  Ukraine"). The field's intent (constrained display contexts) is preserved
+  — UI ellipsis at smaller widths is the rendering layer's job, not the
+  schema's. Description updated to reflect the wider envelope and the
+  rendering-layer responsibility.
+- **`role` enum gained `"co-author"`** — Authorship role for packs
+  co-authored by humans and AI (substrate authoring with parallel
+  cross-model sessions). Existing roles unchanged.
+
+### Compatibility
+- **Monotonic relaxation, no breaking changes.** Pre-v0.7.7.1 packs
+  continue to validate (anything that fit the 30-char `short_title` cap
+  still fits the 60-char cap; the new `role` value is additive). Producers
+  MAY now emit `short_title` up to 60 chars and `role: "co-author"`.
+
+---
+
 ## v0.7.7 — 2026-04-28
 
 **Extensions catalogue + `entities.md` deprecation.**
