@@ -1,0 +1,62 @@
+name: auction-house-consignment-review
+version: 2026.05.09
+domain: art/decision-support
+author: Reference Implementation
+description: >
+  Demonstration pack — the consigner-side counterpart to
+  art-acquisition-decision.kpack. An auction house reviews a sculpture
+  offered for consignment by a private seller; an attribution dispute
+  surfaces during specialist review. The pack records the institution's
+  decline decision and the conditions under which the consignment could
+  be reconsidered. Fully anonymized: the house, sculptor, work,
+  consignor, and prices are illustrative.
+
+  Demonstrates aspects complementary to art-acquisition-decision: the
+  decline path (judgment-shaped recommendation against acquisition),
+  cross-pack references (↔), evidence diversity (consignor-supplied
+  documents reviewed against the house's own specialist work), and
+  audience-specific views including a consignor-facing decline letter.
+
+spec_uri: https://github.com/tymofiy/kp
+spec_version: v0.8.0-preview
+kind: claim
+
+confidence:
+  scale: simple
+  normalize: true
+
+license: CC-BY-4.0
+sensitivity: public
+visibility: public
+
+provenance:
+  author: Reference Implementation
+  role: individual
+
+display:
+  short_title: Auction House Consignment Review
+  abbreviation: AHCR
+  tagline: Reference example — consigner-side decline decision pack
+
+views:
+  - name: decision
+    file: views/decision.md
+    purpose: Committee-facing decision summary
+    display_as: page
+  - name: specialist
+    file: views/specialist.md
+    purpose: Specialist's working notes
+    display_as: page
+  - name: consignor-letter
+    file: views/consignor-letter.md
+    purpose: Consignor-facing decline letter (formal register)
+    display_as: page
+  - name: briefing
+    file: views/voice/briefing.md
+    purpose: Voice briefing for the committee chair
+    display_as: voice
+    voice: true
+    duration: ~75 seconds
+    pace: measured
+
+tier: standalone

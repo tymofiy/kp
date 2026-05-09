@@ -72,6 +72,7 @@ EXAMPLE_ORDER = [
     "solar-energy-market.kpack",
     "kp-external-assessment.kpack",
     "art-acquisition-decision.kpack",
+    "auction-house-consignment-review.kpack",
 ]
 
 VERBOSE_TYPE_MAP = {

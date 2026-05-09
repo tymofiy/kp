@@ -111,6 +111,16 @@ Two complete Knowledge Packs demonstrate the format:
   walks the rubrics from [`spec/AUTHORING.md`](spec/AUTHORING.md) end-to-end
   on a realistic decision-support scenario.
 
+- **[Auction House Consignment Review](examples/auction-house-consignment-review.kpack/)**
+  -- The consigner-side counterpart: an auction house declines a sculpture
+  consignment over a foundry-mark attribution dispute, with conditions for
+  reconsideration. Demonstrates the *decline* path (judgment-shaped
+  recommendation against acquisition), cross-pack `↔` references to
+  hypothetical reference packs, evidence diversity (consignor-supplied
+  documents reviewed against the house's specialist), and a different
+  audience-frame than the buyer-side pack (committee decision, specialist
+  notes, formal-register consignor decline letter, voice briefing).
+
 ## Conformance
 
 The [conformance suite](conformance/) provides formal validation tools:
@@ -121,12 +131,12 @@ The [conformance suite](conformance/) provides formal validation tools:
   schema for PACK.yaml manifests
 - **11 test fixtures** -- 6 valid packs that must be accepted, 5 invalid packs
   that must be rejected with specific errors
-- **3 complete example packs** -- the kpacks in `examples/` are validated by
+- **4 complete example packs** -- the kpacks in `examples/` are validated by
   the runner as part of the suite, so the live examples are themselves
   conformance tests
 
-The runner (`conformance/run.py`) reports **14/14 passed** on a conformant
-implementation: 11 fixture tests + 3 example validations. A conformant
+The runner (`conformance/run.py`) reports **15/15 passed** on a conformant
+implementation: 11 fixture tests + 4 example validations. A conformant
 implementation parses all valid fixtures, rejects all invalid ones, validates
 PACK.yaml against the schema, validates `signatures.yaml` against its schema
 when present, and enforces semantic constraints SC-01 through SC-11.
@@ -153,7 +163,7 @@ format's genuinely novel contributions.
 
 ## Status
 
-This is an **editor's draft** maintained by a single editor in a public repository. It is published as `KP:1 Public Draft — 2026-05` (git tag `v0.8.0-preview`, with the v0.7.x preview series and the iterative v0.8.0 buildup documented in [`spec/CHANGELOG.md`](spec/CHANGELOG.md)). It has a formal grammar, a JSON Schema, a conformance suite with 11 test fixtures plus 3 reference examples (14/14 validated).
+This is an **editor's draft** maintained by a single editor in a public repository. It is published as `KP:1 Public Draft — 2026-05` (git tag `v0.8.0-preview`, with the v0.7.x preview series and the iterative v0.8.0 buildup documented in [`spec/CHANGELOG.md`](spec/CHANGELOG.md)). It has a formal grammar, a JSON Schema, a conformance suite with 11 test fixtures plus 4 reference examples (15/15 validated).
 
 The specification is **not final** and may change in any way at any time, including breaking changes. It is **not yet ratified** by any standards body. Compatibility commitments will arrive only with a non-draft version. See [`GOVERNANCE.md`](GOVERNANCE.md) for the full governance picture, including how decisions are made during the preview phase and what changes when the Knowledge Pack Foundation is incorporated.
 
