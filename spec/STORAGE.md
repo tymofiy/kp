@@ -272,7 +272,7 @@ Accumulating (Redis)  →  Materialized (Postgres/File)  →  Archived/Promoted
 1. **In-flight packs use compact serialization** in Redis. Claims are appended as they're extracted.
 2. **Session end triggers materialization.** The conversation-kpack materializer produces the full pack (all serialization formats).
 3. **Materialized packs are indexed.** The index updates to include the new pack's claims.
-4. **Ephemeral lifecycle.** Session packs have `lifecycle.type: ephemeral` with `archive_after_days` set. Before archival, the reconciliation step (SPEC.md Principle 20) ensures valuable claims are promoted to standing packs.
+4. **Ephemeral lifecycle.** Session packs have `lifecycle.type: ephemeral` with `archive_after_days` set. Before archival, the reconciliation step ([RATIONALE.md §1, Principle 21](RATIONALE.md)) ensures valuable claims are promoted to standing packs.
 
 ### Restart Capsules
 

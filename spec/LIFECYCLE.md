@@ -556,9 +556,9 @@ packs:
 
 These principles are normative. Tooling that implements lifecycle management MUST adhere to them.
 
-1. **Archive, never delete.** (Principle 19 from SPEC.md.) Deletion requires explicit, deliberate action and should be exceptional. Archival is the default lifecycle outcome.
+1. **Archive, never delete.** ([RATIONALE.md §1, Principle 19](RATIONALE.md).) Deletion requires explicit, deliberate action and should be exceptional. Archival is the default lifecycle outcome.
 
-2. **Reconcile before archive.** (Principle 20 from SPEC.md.) Every claim in an ephemeral pack represents knowledge that someone thought was worth capturing. Before burying it in an archive, verify it landed somewhere permanent. Orphan claims are the system catching what humans miss.
+2. **Reconcile before archive.** ([RATIONALE.md §1, Principle 21](RATIONALE.md).) Every claim in an ephemeral pack represents knowledge that someone thought was worth capturing. Before burying it in an archive, verify it landed somewhere permanent. Orphan claims are the system catching what humans miss.
 
 3. **Close the loop explicitly.** The reconciliation report is not a formality -- it is the mechanism that makes archival psychologically safe. Users trust the system because it proves nothing was lost, not because it promises nothing was lost.
 

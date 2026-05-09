@@ -1,0 +1,157 @@
+#!/usr/bin/env python3
+# SPDX-License-Identifier: Apache-2.0
+# SPDX-FileCopyrightText: 2026 Timothy Kompanchenko
+"""kpack — reference CLI stub.
+
+This is a planned-tooling stub. The KP:1 specification (SPEC.md §13)
+describes a `kpack` command-line tool that does not yet ship in this
+repository. This stub exists so that a fresh agent or human reader who
+runs `kpack <subcommand>` gets a clear pointer to the spec section that
+will eventually define that command's contract, instead of `command not
+found` and a guessing game.
+
+The only command that currently runs in this repository is
+`python3 conformance/run.py`. Every other `kpack <subcommand>` is a
+contract to be implemented; this stub names the contract.
+
+Usage:
+    kpack <subcommand>          # prints the spec section for that subcommand
+    kpack                       # lists all known subcommands and their spec sections
+    kpack --version             # prints the spec version this stub matches
+"""
+
+import sys
+
+VERSION = "v0.8.0-preview"
+
+COMMAND_REGISTRY = {
+    "lint": (
+        "spec/SPEC.md §13 Tooling",
+        "Validate a pack's structure, references, and semantic constraints. "
+        "Today, run `python3 conformance/run.py` after copying your pack into "
+        "examples/, or import `validate_pack` from conformance/run.py.",
+    ),
+    "test": (
+        "spec/SPEC.md §10 validation.yaml — Test Questions",
+        "Run validation.yaml test questions against an LLM. The schema for "
+        "validation.yaml lives in §10; the runner is planned.",
+    ),
+    "export": (
+        "spec/BUNDLE.md",
+        "Export a pack as a single bundled markdown artifact for sharing "
+        "with humans, AI chat windows, or systems that cannot read directories. "
+        "Defined in BUNDLE.md.",
+    ),
+    "render": (
+        "spec/SPEC.md §16 Views — Pre-Rendered Display Content",
+        "Generate or regenerate views (display and voice) from claims.md. "
+        "Per Principle 17 (RATIONALE.md §1), the AI renders pre-built views "
+        "rather than composing on the fly.",
+    ),
+    "translate": (
+        "spec/MULTILINGUAL.md §7 Translation Workflow",
+        "Translate views (NOT claims.md) into a target locale. Claims remain "
+        "American English per MULTILINGUAL.md §2 P1.",
+    ),
+    "bundle": (
+        "spec/BUNDLE.md",
+        "Bundle a pack as a markdown artifact. Same surface as `export` "
+        "with intent-disambiguating flags. Defined in BUNDLE.md.",
+    ),
+    "archive": (
+        "spec/ARCHIVE.md",
+        "Seal a pack as a `.kpack` archive (ZIP container with content hash "
+        "and signatures.yaml). Sealed archives participate in the integrity "
+        "chain. Defined in ARCHIVE.md.",
+    ),
+    "new": (
+        "spec/CORE.md §2 Pack Structure (planned scaffold)",
+        "Scaffold a new pack from a template. Templates are not specified in "
+        "v0.8.0-preview; see ORGANIZATION.md for repository layout patterns.",
+    ),
+    "reconcile": (
+        "spec/RECONCILIATION.md (stub — design deferred to v0.9 / v1.0)",
+        "Cross-pack reconciliation: surface drift, orphan claims, and "
+        "supersession recommendations across packs. The full design is "
+        "deferred per RECONCILIATION.md.",
+    ),
+    "compose": (
+        "spec/COMPOSITION.md",
+        "Build a composite pack (meeting, briefing, presentation) that "
+        "references standing packs. Defined in COMPOSITION.md.",
+    ),
+    "patrol": (
+        "spec/CONSISTENCY.md",
+        "Cross-pack consistency patrol: claim contradiction detection, "
+        "real-time alerting, confidence decay. Defined in CONSISTENCY.md.",
+    ),
+    "promote": (
+        "spec/LIFECYCLE.md §4 Consolidation & Reconciliation",
+        "Promote a claim from an ephemeral pack to a standing pack. "
+        "Part of the reconcile-before-archive flow per Principle 21 "
+        "(RATIONALE.md §1).",
+    ),
+    "restore": (
+        "spec/LIFECYCLE.md §3 Archival",
+        "Restore a pack from the archive directory back to active. "
+        "Defined in LIFECYCLE.md.",
+    ),
+    "play": (
+        "spec/PLAYBACK.md (experimental)",
+        "Drive a self-driving voice presentation of a pack via a "
+        "PlaybackPlan. Defined in PLAYBACK.md.",
+    ),
+}
+
+
+def print_banner() -> None:
+    print(f"kpack — KP:1 reference CLI stub ({VERSION})")
+    print()
+    print("This is a contract-pointer, not a runnable tool.")
+    print("The only command that ships today is: python3 conformance/run.py")
+    print()
+
+
+def print_command_list() -> None:
+    print("Subcommands and the spec sections that define them:")
+    print()
+    width = max(len(c) for c in COMMAND_REGISTRY) + 2
+    for cmd, (anchor, _) in COMMAND_REGISTRY.items():
+        print(f"  {cmd:<{width}} → {anchor}")
+    print()
+    print("Run  kpack <subcommand>  for a one-paragraph summary.")
+
+
+def print_command_detail(cmd: str) -> int:
+    if cmd not in COMMAND_REGISTRY:
+        print(f"kpack: unknown subcommand '{cmd}'", file=sys.stderr)
+        print()
+        print("Known subcommands:", ", ".join(sorted(COMMAND_REGISTRY)))
+        return 2
+    anchor, summary = COMMAND_REGISTRY[cmd]
+    print(f"kpack {cmd}")
+    print(f"  Spec contract: {anchor}")
+    print()
+    print(f"  {summary}")
+    print()
+    print("  This command is not yet implemented in this repository. The")
+    print("  contract above is the authority; an implementation is planned.")
+    return 0
+
+
+def main(argv: list[str]) -> int:
+    if len(argv) == 1:
+        print_banner()
+        print_command_list()
+        return 0
+    if argv[1] in ("-v", "--version"):
+        print(VERSION)
+        return 0
+    if argv[1] in ("-h", "--help"):
+        print(__doc__)
+        return 0
+    return print_command_detail(argv[1])
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv))

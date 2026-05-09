@@ -168,15 +168,15 @@ Suppressions expire. Knowledge changes; a suppression valid today may mask a rea
 
 Run before committing any pack. Six checks, in order:
 
-1. **Knowledge-process separation (Principle 24).** Remove all names of people, meetings, tools, sessions, and dates from every claim's context prose. If the epistemic content is intact, the claim is clean. If removing a name destroys the meaning, the claim is about process, not knowledge.
+1. **Knowledge-process separation** ([RATIONALE.md §1, Principle 24](RATIONALE.md)). Remove all names of people, meetings, tools, sessions, and dates from every claim's context prose. If the epistemic content is intact, the claim is clean. If removing a name destroys the meaning, the claim is about process, not knowledge.
 
-2. **No process language in views (Principle 24).** Views describe what something IS. Grep for: "redesign", "pivot", "shifted from", "session", tool names. Zero hits required.
+2. **No process language in views** ([RATIONALE.md §1, Principle 24](RATIONALE.md)). Views describe what something IS. Grep for: "redesign", "pivot", "shifted from", "session", tool names. Zero hits required.
 
-3. **Canonical ownership (Principle 18).** Every concept is defined in exactly one pack. If a claim restates content from another pack, it must carry an explicit derivation marker ("Pitch rendering. Canonical: pack#claim") and a `see_also` link to the canonical home.
+3. **Canonical ownership** ([RATIONALE.md §1, Principle 18](RATIONALE.md)). Every concept is defined in exactly one pack. If a claim restates content from another pack, it must carry an explicit derivation marker ("Pitch rendering. Canonical: pack#claim") and a `see_also` link to the canonical home.
 
 4. **Meeting/pitch composition.** Meeting and pitch pack claims contain only meeting- or pitch-specific context. Standing knowledge (product architecture, competitive positioning, technical details) is cross-referenced to standing packs, not independently defined.
 
-5. **Display block stranger test (§17 in SPEC.md).** Can someone who has never heard of this product understand the tagline and hook in one reading? No insider jargon, no acronyms requiring context, no process language, no version numbers.
+5. **Display block stranger test** ([RATIONALE.md §4 "The Stranger Test"](RATIONALE.md)). Can someone who has never heard of this product understand the tagline and hook in one reading? No insider jargon, no acronyms requiring context, no process language, no version numbers.
 
 6. **Hub routing, not restating.** Hub pack overview claims summarize and route to detail packs via `see_also` links. If a hub claim contains >3 sentences of detail about a concept that lives in a detail sub-pack, move the detail down.
 

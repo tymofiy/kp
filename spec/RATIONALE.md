@@ -180,9 +180,113 @@ For the field-by-field translation analysis between KP:1 and RDF / JSON-LD / PRO
 
 ---
 
-## Status of §18 (Cognitive Perception Layer)
+## 4. Cognitive Perception Layer
 
-[SPEC.md §18](SPEC.md) is intentionally retained in SPEC.md for v0.8.0-preview because its content is hybrid — partly normative (the `display` block field semantics, the fallback hierarchy) and partly rationale (the perception stages, the Stranger Test, the Why-it-exists boxes). A future pass may bifurcate §18 with the normative `display` field specification consolidated into §3 of SPEC.md (PACK.yaml manifest) and the rationale moved to a new RATIONALE.md §4. That work is deferred so the bifurcation pattern can ship without destabilizing §18's hybrid content.
+The `display` block in PACK.yaml and the per-view `hint` field exist because human perception of a pack happens in measurable stages, with measurable time budgets, that any renderer needs to support. The normative spec for these fields lives in [SPEC.md §18](SPEC.md) and [SPEC.md §3](SPEC.md) (manifest); the rationale for **why each field exists, what cognitive job it does, and how to author it well** lives here.
+
+### The Primary Constraint: Cognitive Load
+
+**Cognitive load is the first and most important criterion for all human-facing fields.** Not aesthetics, not completeness, not technical accuracy — cognitive load. Every field that a human will see must be authored for someone who:
+
+- Has never seen this pack before
+- Has 5 seconds of attention
+- Does not know the domain jargon
+- Will leave immediately if they don't understand what they're looking at
+
+This means: no abbreviations that require context, no category labels that require domain knowledge, no technical metrics that require interpretation. Every human-facing field must be **self-explanatory at first read**.
+
+The reasoning surface (claims.md) is exempt — it optimizes for AI inference, not human perception. But the display surface, voice surface, and all `display` block fields must pass the cognitive load test: **would a stranger understand this in one reading?**
+
+This is the hardest part of building a Knowledge Pack. The underlying knowledge is expert-level. The display surface must be beginner-level. That translation — from expert knowledge to cognitively accessible language — is the core value of the cognitive perception layer. It is not a formatting step. It is an authoring act.
+
+### Perception Stages
+
+A human encountering a Knowledge Pack progresses through four stages. Each stage has a time budget. If the pack fails at any stage, the human disengages.
+
+1. **Recognize** (< 1 second) — What is this? Can I identify it in a list, on a tab, in a breadcrumb?
+2. **Comprehend** (< 3 seconds) — What is it about? What does it address?
+3. **Engage** (< 5 seconds) — Why should I care? What makes me want to read further?
+4. **Navigate** (< 10 seconds) — Which section should I open? What will I find there?
+
+These are cognitive requirements, not aesthetic choices. They hold regardless of whether the pack is rendered as a web page, a mobile card, a terminal table, a TV dashboard, or a PDF cover page. The fields the SPEC defines provide the structured metadata that any renderer needs to support human perception at each stage.
+
+### Why each `display` field exists
+
+#### `short_title` (Recognition)
+
+A human scanning a list of 20 packs, or glancing at a tab bar, or hearing a voice assistant name a pack — they need to recognize THIS pack in under one second. The full title ("Utility-Scale Solar Energy Market Analysis and Cost Trajectories") takes too long. The abbreviation ("SEM") requires insider knowledge. The short title occupies the sweet spot: long enough to be unambiguous, short enough to be instant.
+
+The name a human would use to refer to this pack in conversation. 2-4 words. Must be unambiguous without the full title.
+
+| Good | Bad | Why |
+|------|-----|-----|
+| "Solar Market" | "Utility-Scale Solar Energy Market Analysis and Cost Trajectories" | Too long — the full title belongs in the H1, not here |
+| "Wind Outlook" | "Wind Energy Assessment" | "Assessment" is vague; "Outlook" implies forward-looking analysis |
+| "Battery Storage" | "battery-storage-economics-2026-03" | File names are not titles |
+
+#### `abbreviation` (Tight Contexts)
+
+Some display contexts have almost no space — a mobile breadcrumb, a badge next to a notification, a voice assistant referencing a pack mid-sentence. The abbreviation is the absolute minimum identifier. It sacrifices clarity for brevity, which is why it exists alongside `short_title`, not instead of it.
+
+2-5 characters. Must be pronounceable or a recognized acronym. Used in badges, breadcrumbs, tabs.
+
+| Good | Bad | Why |
+|------|-----|-----|
+| "SEM" | "USEMPV" | Not pronounceable |
+| "Wind" | "WE" | Ambiguous without context |
+
+#### `tagline` (Comprehension)
+
+After recognizing a pack by title, the next question is "what is this about?" The tagline answers that in a single breath. It's the bridge between the title (which names the thing) and the content (which explains it in full). Without a tagline, the human must open the pack and read before they can even assess relevance. The tagline prevents that wasted effort — it's a promise of what's inside, delivered before the reader commits.
+
+One sentence that tells a stranger what the subject IS. Not what the pack contains — what the subject is about. Should be readable aloud in under 5 seconds. Natural language, not a label.
+
+| Good | Bad | Why |
+|------|-----|-----|
+| "Utility-scale solar market trends and cost analysis" | "Executive summary with key metrics and status" | That describes the pack format, not the subject |
+| "Supply chain risks for global solar deployment" | "Solar risk overview pack" | Reads like a filename, not a sentence |
+| "Grid storage economics for renewable integration" | "Battery analysis pack" | The good version answers WHAT and WHY |
+
+#### `hook` (Engagement)
+
+Comprehension without engagement is a dead end. A person can understand what a pack is about and still not care. The hook exists because human attention is not given — it's earned. A tagline tells you what the plate is; the hook is the aroma that makes you want to eat. It's the most emotionally or intellectually compelling sentence in the entire pack, surfaced to the cover because burying it on page 3 means nobody gets there.
+
+The single most compelling sentence in the entire pack. A provocation, a surprising insight, or a promise that creates the desire to read further. If you had to convince someone to open this pack with one sentence, this is it.
+
+| Good | Bad | Why |
+|------|-----|-----|
+| "The real competitor is the status quo of neglect, not other platforms." | "This pack covers risks, timeline, and team." | That's a table of contents, not a hook |
+| "We're raising 1.5M euro to capture the 18-month window before incumbents wake up." | "Fundraising information for Q2 2026." | No urgency, no insight, no reason to care |
+
+If you can't find a hook, the pack may not have a clear thesis yet. That's a content problem, not a display problem.
+
+#### `hint` per view (Navigation)
+
+The cover shows sections, but a title alone ("Risks", "Timeline") is a label — it tells you the category, not the value. A human deciding where to click needs to know what they'll GET from opening that section, not what category it belongs to. The hint transforms a menu of labels into a menu of promises. Without it, navigation is a guessing game — the reader has to open sections speculatively. With it, they open with intent.
+
+One sentence per section that helps a human decide: should I open this? Describes the VALUE of the section, not its structure. Max ~15 words.
+
+| Good | Bad | Why |
+|------|-----|-----|
+| "Three risks that could block the Sep 2026 pilot" | "Risk register with 3 rows" | Structure is not value |
+| "6 months built, 5 months to launch" | "Timeline table" | The good version tells you the insight |
+| "What to say when Scott asks about AI safety" | "Technical Q&A section" | The good version tells you what you'll GET |
+
+### The Stranger Test
+
+After authoring all display fields, read them in sequence:
+
+> **[short_title]** — [tagline]. [hook]. Sections: [hint 1], [hint 2], [hint 3].
+
+If a stranger reading this sequence can answer "what is this, why should I care, and where should I start?" — the fields pass. If not, rewrite.
+
+### What these fields are NOT
+
+- They are not marketing copy (that belongs in a website, not a spec).
+- They are not aesthetic choices (fonts, colors, layout are renderer decisions).
+- They are not summaries of the content (that's what views are for).
+
+They are **cognitive handles** — the minimum information a human brain needs to recognize, locate, engage with, and navigate this pack across any display context.
 
 ---
 

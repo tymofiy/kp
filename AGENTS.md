@@ -111,7 +111,7 @@ The KP:1 specification is an **editor's draft**. The substantive format (claim g
 - [`spec/RECONCILIATION.md`](spec/RECONCILIATION.md) — concept-only stub. Full design deferred to v0.9 / v1.0 contingent on observing real cross-pack drift in ≥3 packs.
 - [`spec/PLAYBACK.md`](spec/PLAYBACK.md) — experimental. Schema may evolve before v0.9.
 
-The CLI tool sketches in `spec/SPEC.md` §13 (`kpack render`, `kpack reconcile`, `kpack lint`, etc.) describe **planned reference tooling**. The only command that exists today is `python3 conformance/run.py`. References to `kpack <command>` should be read as "the eventual reference tool will offer this command" — they are not currently runnable.
+The CLI tool sketches in `spec/SPEC.md` §13 (`kpack render`, `kpack reconcile`, `kpack lint`, etc.) describe **planned reference tooling**. The only command that exists today is `python3 conformance/run.py`. A contract-pointer stub at [`reference/kpack`](reference/kpack) tells you which spec section defines each subcommand's contract — run `./reference/kpack <subcommand>` to find out where to look. References to `kpack <command>` in the spec should be read as "the eventual reference tool will offer this command" — they are not currently runnable.
 
 ---
 

@@ -791,7 +791,7 @@ dependencies:
 
 The `kind: definition` field on a dependency entry signals that this pack provides vocabulary constraints (not epistemic content). When this dependency is loaded, tooling can validate claims against the ontology. When it's absent, claims remain self-contained — the Voyager Principle is preserved.
 
-**Deprecation handling:** When a definition pack deprecates an entity type, claim packs referencing that type are not invalidated. The claim's `since` date establishes when it was made. Tooling should warn ("entity type `X` deprecated since 2026-06-01") but not reject. Claims are historical assertions — retroactive invalidation by ontology changes would violate the append-only principle (§15, Principle 5).
+**Deprecation handling:** When a definition pack deprecates an entity type, claim packs referencing that type are not invalidated. The claim's `since` date establishes when it was made. Tooling should warn ("entity type `X` deprecated since 2026-06-01") but not reject. Claims are historical assertions — retroactive invalidation by ontology changes would violate the append-only principle ([RATIONALE.md §1, Principle 5](RATIONALE.md)).
 
 ### Cross-Pack Reference Semantics (Future Work)
 
@@ -1297,14 +1297,14 @@ A conversation flow using navigation:
 
 > **Status of the `kpack` CLI (as of v0.8.0-preview):** the commands listed
 > in this section describe **planned reference tooling**, not commands that
-> ship in this repository today. The only command that exists in `kp` today
-> is `python3 conformance/run.py` (the conformance suite). Commands like
-> `kpack lint`, `kpack render`, `kpack reconcile`, `kpack translate`,
-> `kpack bundle`, etc. describe the contract a future reference tool will
-> implement. They are not currently executable. Producers can implement
-> these contracts independently against [CORE.md](CORE.md), the JSON Schema,
-> and [AUTHORING.md](AUTHORING.md). Tracking and an early implementation
-> live in [`reference/`](../reference/) (placeholder).
+> ship in this repository today. The only fully-implemented command is
+> `python3 conformance/run.py` (the conformance suite). A contract-pointer
+> stub at [`reference/kpack`](../reference/kpack) prints which spec section
+> defines each subcommand's contract — run `./reference/kpack` (or `./reference/kpack <subcommand>`)
+> to see where to look. Commands like `kpack lint`, `kpack render`,
+> `kpack reconcile`, etc. describe the contract a future reference tool will
+> implement. Producers can implement these contracts independently against
+> [CORE.md](CORE.md), the JSON Schema, and [AUTHORING.md](AUTHORING.md).
 
 ### MVP Commands
 
@@ -1683,35 +1683,11 @@ A `null` or omitted `style` field means the views render as plain markdown — w
 
 ---
 
-## 18. Cognitive Perception Layer
+## 18. Cognitive Perception Layer — `display` Block and `hint`
 
-Knowledge Packs serve three surfaces: reasoning (AI), display (visual), and voice (spoken). The reasoning surface is dense and optimized for inference. The display and voice surfaces are optimized for human perception.
+Knowledge Packs serve three surfaces: reasoning (AI), display (visual), and voice (spoken). The reasoning surface (`claims.md`) is dense and optimized for inference. The display and voice surfaces are optimized for human perception. The `display` block in PACK.yaml and the per-view `hint` field carry the structured metadata renderers need to support human perception across rendering contexts (web, mobile, terminal, voice, PDF, etc.).
 
-### The Primary Constraint: Cognitive Load
-
-**Cognitive load is the first and most important criterion for all human-facing fields.** Not aesthetics, not completeness, not technical accuracy — cognitive load. Every field that a human will see must be authored for someone who:
-
-- Has never seen this pack before
-- Has 5 seconds of attention
-- Does not know the domain jargon
-- Will leave immediately if they don't understand what they're looking at
-
-This means: no abbreviations that require context, no category labels that require domain knowledge, no technical metrics that require interpretation. Every human-facing field must be **self-explanatory at first read**.
-
-The reasoning surface (claims.md) is exempt — it optimizes for AI inference, not human perception. But the display surface, voice surface, and all `display` block fields must pass the cognitive load test: **would a stranger understand this in one reading?**
-
-This is the hardest part of building a Knowledge Pack. The underlying knowledge is expert-level. The display surface must be beginner-level. That translation — from expert knowledge to cognitively accessible language — is the core value of the cognitive perception layer. It is not a formatting step. It is an authoring act.
-
-### Perception Stages
-
-A human encountering a Knowledge Pack progresses through four stages. Each stage has a time budget. If the pack fails at any stage, the human disengages.
-
-1. **Recognize** (< 1 second) — What is this? Can I identify it in a list, on a tab, in a breadcrumb?
-2. **Comprehend** (< 3 seconds) — What is it about? What does it address?
-3. **Engage** (< 5 seconds) — Why should I care? What makes me want to read further?
-4. **Navigate** (< 10 seconds) — Which section should I open? What will I find there?
-
-These are cognitive requirements, not aesthetic choices. They hold regardless of whether the pack is rendered as a web page, a mobile card, a terminal table, a TV dashboard, or a PDF cover page. The fields below provide the structured metadata that any renderer needs to support human perception at each stage.
+The rationale for these fields — the four perception stages with timed budgets, why each field exists, the Stranger Test, the Good/Bad authoring tables — is in [RATIONALE.md §4](RATIONALE.md). This section specifies the fields themselves; RATIONALE.md §4 explains why.
 
 ### Manifest: `display` Block
 
@@ -1719,107 +1695,24 @@ The `display` block sits at the pack level in PACK.yaml. All fields are OPTIONAL
 
 ```yaml
 display:
-  short_title: "Solar Market"           # Condensed form for recognition in constrained contexts
-                                        #   (list items, tab labels, breadcrumbs, mobile headers)
-                                        #   Target: 2-4 words. Must be unambiguous without the full title.
-  abbreviation: "SEM"                   # 2-5 character identifier for the most constrained contexts
-                                        #   (badges, pill tags, keyboard shortcuts, voice references)
-                                        #   Must be pronounceable or a recognized acronym.
-  tagline: >                            # One sentence capturing what this pack IS — not what it contains.
-    Utility-scale solar market trends   #   Enables comprehension < 3 seconds.
-    and cost analysis                   #   Not a description of the pack format — a statement of its subject.
-  hook: >                               # The sentence that creates the desire to know more.
-    The cost decline is structural,     #   Enables engagement < 5 seconds.
-    not cyclical — and it has held      #   Not a summary — a provocation, a key insight, or a promise.
-    for 40 years.                       #   The best sentence in the entire pack.
+  short_title: "Solar Market"           # 2-4 words. Recognition in constrained contexts (lists, tabs, breadcrumbs, mobile headers).
+  abbreviation: "SEM"                   # 2-5 characters. Tightest contexts (badges, pills, keyboard shortcuts). Pronounceable or recognized acronym.
+  tagline: >                            # One sentence: what the subject IS. Comprehension < 3 seconds. Not pack format; subject statement.
+    Utility-scale solar market trends and cost analysis
+  hook: >                               # The single most compelling sentence in the pack. Provocation / insight / promise. Engagement < 5 seconds.
+    The cost decline is structural, not cyclical — and it has held for 40 years.
 ```
 
-The `tagline` tells you what this IS. The `hook` tells you why you should CARE.
-
-A tagline without a hook is an empty plate with a menu. The hook is the amuse-bouche — the thing that makes you stay and want the rest. Without it, no one navigates further.
-
-**What these fields are NOT:**
-- They are not marketing copy (that belongs in a website, not a spec)
-- They are not aesthetic choices (fonts, colors, layout are renderer decisions)
-- They are not summaries of the content (that's what views are for)
-
-They are **cognitive handles** — the minimum information a human brain needs to recognize, locate, engage with, and navigate this pack across any display context.
-
-### Authoring Guidelines
-
-Each field has a cognitive job. The guidelines below ensure that job is done regardless of who authors the pack or which renderer displays it.
-
-#### `short_title` (Recognition)
-
-**Why it exists:** A human scanning a list of 20 packs, or glancing at a tab bar, or hearing a voice assistant name a pack — they need to recognize THIS pack in under one second. The full title ("Utility-Scale Solar Energy Market Analysis and Cost Trajectories") takes too long. The abbreviation ("SEM") requires insider knowledge. The short title occupies the sweet spot: long enough to be unambiguous, short enough to be instant.
-
-The name a human would use to refer to this pack in conversation. 2-4 words. Must be unambiguous without the full title.
-
-| Good | Bad | Why |
-|------|-----|-----|
-| "Solar Market" | "Utility-Scale Solar Energy Market Analysis and Cost Trajectories" | Too long — the full title belongs in the H1, not here |
-| "Wind Outlook" | "Wind Energy Assessment" | "Assessment" is vague; "Outlook" implies forward-looking analysis |
-| "Battery Storage" | "battery-storage-economics-2026-03" | File names are not titles |
-
-#### `abbreviation` (Tight Contexts)
-
-**Why it exists:** Some display contexts have almost no space — a mobile breadcrumb, a badge next to a notification, a voice assistant referencing a pack mid-sentence. The abbreviation is the absolute minimum identifier. It sacrifices clarity for brevity, which is why it exists alongside `short_title`, not instead of it.
-
-2-5 characters. Must be pronounceable or a recognized acronym. Used in badges, breadcrumbs, tabs.
-
-| Good | Bad | Why |
-|------|-----|-----|
-| "SEM" | "USEMPV" | Not pronounceable |
-| "Wind" | "WE" | Ambiguous without context |
-
-#### `tagline` (Comprehension)
-
-**Why it exists:** After recognizing a pack by title, the next question is "what is this about?" The tagline answers that in a single breath. It's the bridge between the title (which names the thing) and the content (which explains it in full). Without a tagline, the human must open the pack and read before they can even assess relevance. The tagline prevents that wasted effort — it's a promise of what's inside, delivered before the reader commits.
-
-One sentence that tells a stranger what the subject IS. Not what the pack contains — what the subject is about. Should be readable aloud in under 5 seconds. Natural language, not a label.
-
-| Good | Bad | Why |
-|------|-----|-----|
-| "Utility-scale solar market trends and cost analysis" | "Executive summary with key metrics and status" | That describes the pack format, not the subject |
-| "Supply chain risks for global solar deployment" | "Solar risk overview pack" | Reads like a filename, not a sentence |
-| "Grid storage economics for renewable integration" | "Battery analysis pack" | The good version answers WHAT and WHY |
-
-#### `hook` (Engagement)
-
-**Why it exists:** Comprehension without engagement is a dead end. A person can understand what a pack is about and still not care. The hook exists because human attention is not given — it's earned. A tagline tells you what the plate is; the hook is the aroma that makes you want to eat. It's the most emotionally or intellectually compelling sentence in the entire pack, surfaced to the cover because burying it on page 3 means nobody gets there.
-
-The single most compelling sentence in the entire pack. A provocation, a surprising insight, or a promise that creates the desire to read further. If you had to convince someone to open this pack with one sentence, this is it.
-
-| Good | Bad | Why |
-|------|-----|-----|
-| "The real competitor is the status quo of neglect, not other platforms." | "This pack covers risks, timeline, and team." | That's a table of contents, not a hook |
-| "We're raising $1.5M to capture the 18-month window before incumbents wake up." | "Fundraising information for Q2 2026." | No urgency, no insight, no reason to care |
-
-If you can't find a hook, the pack may not have a clear thesis yet. That's a content problem, not a display problem.
-
-#### `hint` per view (Navigation)
-
-**Why it exists:** The cover shows sections, but a title alone ("Risks", "Timeline") is a label — it tells you the category, not the value. A human deciding where to click needs to know what they'll GET from opening that section, not what category it belongs to. The hint transforms a menu of labels into a menu of promises. Without it, navigation is a guessing game — the reader has to open sections speculatively. With it, they open with intent.
-
-One sentence per section that helps a human decide: should I open this? Describes the VALUE of the section, not its structure. Max ~15 words.
-
-| Good | Bad | Why |
-|------|-----|-----|
-| "Three risks that could block the Sep 2026 pilot" | "Risk register with 3 rows" | Structure is not value |
-| "6 months built, 5 months to launch" | "Timeline table" | The good version tells you the insight |
-| "What to say when Scott asks about AI safety" | "Technical Q&A section" | The good version tells you what you'll GET |
-
-#### The Stranger Test
-
-After authoring all display fields, read them in sequence:
-
-> **[short_title]** — [tagline]. [hook]. Sections: [hint 1], [hint 2], [hint 3].
-
-If a stranger reading this sequence can answer "what is this, why should I care, and where should I start?" — the fields pass. If not, rewrite.
+| Field | Type | Required | Purpose |
+|---|---|---|---|
+| `short_title` | string | optional | Recognition (Stage 1, < 1s). 2–4 words. |
+| `abbreviation` | string | optional | Tight-context label. 2–5 chars. |
+| `tagline` | string | optional | Comprehension (Stage 2, < 3s). One sentence: what the subject IS. |
+| `hook` | string | optional | Engagement (Stage 3, < 5s). The pack's most compelling single sentence. |
 
 ### View-Level: `hint` Field
 
-Each view entry in PACK.yaml may include a `hint` — a single sentence that helps a human decide whether to open this section.
+Each view entry in PACK.yaml may include a `hint` — a single sentence that helps a human decide whether to open this section. Max ~15 words.
 
 ```yaml
 views:
@@ -1832,24 +1725,17 @@ views:
 
 The `hint` differs from `purpose` in audience and intent:
 
-| Field | Audience | Intent | Example |
-|-------|----------|--------|---------|
-| `purpose` | AI | When to display this view | "Risk register — mentor supply, FERPA, faculty adoption" |
-| `display_as` | Human | Section label (recognition) | "Risks" |
-| `hint` | Human | Should I open this? (navigation) | "Three risks that could block the Sep 2026 pilot" |
+| Field | Audience | Intent |
+|-------|----------|--------|
+| `purpose` | AI | When to display this view |
+| `display_as` | Human | Section label (recognition) |
+| `hint` | Human | Should I open this? (navigation, Stage 4, < 10s) |
 
-**Hint authoring rules:**
-- One sentence, max ~15 words
-- Describes the **insight or value** of the section, not its structure
-- Must pass the navigation test: *does this help a human decide whether to open this section?*
-- "3 tables and 12 claims" fails — it describes structure, not value
-- "Three risks that could block the Sep 2026 pilot" passes — it describes what you'll learn
-
-When `hint` is absent, renderers may extract one from the view's markdown (first blockquote, first paragraph sentence). But extracted hints are approximations — pre-authored hints are always better.
+When `hint` is absent, renderers may extract one from the view's markdown (first blockquote, first paragraph sentence). Extracted hints are approximations — pre-authored hints are always better.
 
 ### Fallback Hierarchy
 
-Renderers should resolve display metadata in this order:
+Renderers MUST resolve display metadata in this order:
 
 | Need | Primary source | Fallback |
 |------|---------------|----------|
@@ -1859,6 +1745,8 @@ Renderers should resolve display metadata in this order:
 | Section hint | `hint` | First blockquote or paragraph from view |
 
 This hierarchy ensures packs work without display metadata (backward-compatible), while rewarding authors who provide it with better human perception.
+
+For the rationale behind each field — *why* `short_title` is 2–4 words rather than something else, what cognitive job each field does, the Stranger Test for verifying authored fields, and Good/Bad worked examples — see [RATIONALE.md §4](RATIONALE.md).
 
 ---
 

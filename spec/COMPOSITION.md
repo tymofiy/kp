@@ -583,7 +583,7 @@ For composite packs, `kpack lint` adds these checks:
 
 These extend the core design principles in SPEC.md section 14.
 
-1. **Composition over duplication** (Principle 18). The foundational rule. Knowledge lives once. Composite packs are lenses, not copies.
+1. **Composition over duplication** ([RATIONALE.md §1, Principle 18](RATIONALE.md)). The foundational rule. Knowledge lives once. Composite packs are lenses, not copies.
 
 2. **Minimal claims.** A composite pack's claims.md should be the smallest file in the ecosystem. 5-10 claims about the composition context, not 40 claims restating domain knowledge.
 
