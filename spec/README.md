@@ -35,6 +35,8 @@ Companions do not weaken CORE: where CORE makes a claim, that claim holds. But f
 | [DEFINITIONS.md](DEFINITIONS.md) | Definition and policy document kinds |
 | [EXTENSIONS.md](EXTENSIONS.md) | Producer-defined `extensions.*` blocks catalogue |
 | [NOTES.md](NOTES.md) | AI note-taking integration |
+| [PLAYBACK.md](PLAYBACK.md) | Self-driving presentation playback (experimental) |
+| [RECONCILIATION.md](RECONCILIATION.md) | Cross-pack reconciliation protocol (stub — design deferred to v0.9 / v1.0) |
 
 ## Interoperability
 
