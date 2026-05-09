@@ -363,11 +363,36 @@ These are not specified in this version but inform the design:
 
 ---
 
+## 13. Evidentiary multilingual exception (normative)
+
+Principle [P1](#2-core-principles) — *claims are always English* — is the default rule for KP:1 packs. There is one normative exception, codified here so it cannot be misread as a relaxation of P1.
+
+When a pack's underlying evidence is **inherently multilingual and evidentiary** — handwritten witness statements in Russian or Ukrainian, foreign-language press reports, recorded interviews, court records, or any source whose canonicalization to English would lose evidentiary fidelity — the pack MAY carry the original-language transcripts as audit trail. The English claim remains the single normative assertion.
+
+**Sanctioned location.** Original-language transcripts MUST live in [`extensions.translations`](EXTENSIONS.md#28-extensionstranslations--evidentiary-multilingual-transcripts) (per `EXTENSIONS.md §2.8`). They MUST NOT be promoted to `claims.md`, MUST NOT appear as parallel claim text, and MUST NOT trigger a "co-canonical" reading. The translations block is evidence-shaped, not claim-shaped:
+
+- The English claim in `claims.md` is the assertion.
+- The original-language transcript in `extensions.translations` is the audit trail backing it.
+- Disagreement between them is resolved in favor of `claims.md` per [P2](#2-core-principles); the translation may be flagged as needing review, but the claim is what the pack asserts.
+
+**Producer responsibility.** When a producer chooses this path, the pack SHOULD also include an explicit narrative-prose acknowledgment in `evidence.md` that the underlying source material is non-English, naming the language(s). This makes the pack's evidentiary character legible to readers without requiring them to inspect the manifest.
+
+**Scope limit.** This exception exists for *evidentiary multilingual domains* — content where the original language is the source of truth and the English claim is a derived translation. It does NOT extend to:
+
+- Convenience translations of internally-authored prose (those belong in `views/{locale}/`).
+- Co-canonical multilingual claims (rejected in v0.8.0 per Decision Log D1; revisit only if a new pack class genuinely warrants it).
+- Bilingual reasoning surfaces (also rejected in D1).
+
+**Inaugural producer.** The Mariupol corpus (kilimanjaro-intake's handwritten-inventory pipeline). Witness statements were authored in Russian and Ukrainian; English claims are derived. The transcripts in `extensions.translations.{ru,uk}` are the audit trail; the English `claims.md` is what the pack asserts.
+
+---
+
 ## 12. Decision Log
 
 | # | Decision | Alternatives Considered | Rationale |
 |---|----------|------------------------|-----------|
 | D1 | Canonical language is American English; claims are never bilingual | Bilingual claims, per-claim language tags | Complexity explosion. Claims are the reasoning surface — one language keeps them unambiguous. Translations belong at the view layer. |
+| D1a | Evidentiary multilingual exception: original-language transcripts MAY ship in `extensions.translations` for evidentiary domains where canonicalization to English loses fidelity (Mariupol witness statements, foreign-language court records, recorded interviews) | Co-canonical claims (rejected per D1), per-claim language tags (rejected per D1), prose-only acknowledgment in evidence.md without structured carrier | The sanctioned `extensions.translations` block (EXTENSIONS.md §2.8) keeps transcripts machine-readable for audit while preserving D1's "claims are English" rule. The English claim remains the assertion; the transcript is evidence-shaped. See §13. |
 | D2 | Translation storage uses locale subdirectories (`views/{locale}/`) | Filename suffixes (`overview.uk.md`), flat directories | Subdirectories are cleaner for discovery (`ls views/uk/`), removal (`rm -rf views/uk/`), and grep. Filename suffixes create visual clutter and complicate glob patterns. |
 | D2a | Locale before surface type (`views/uk/voice/`) | Surface before locale (`views/voice/uk/`) | Locale is the higher-order grouping. A locale is a complete translation; a surface type is a rendering format. You add/remove entire locales, rarely individual surface types within a locale. |
 | D2b | Short language code for directory names (`uk`, `de`) | Full BCP 47 tag (`uk-UA`, `de-DE`) | Directories are for humans too. Short codes are sufficient for disambiguation in practice. Full tags remain in PACK.yaml metadata. |
