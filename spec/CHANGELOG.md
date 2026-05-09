@@ -5,6 +5,66 @@
 
 ---
 
+## v0.7.7 — 2026-04-28
+
+**Extensions catalogue + `entities.md` deprecation.**
+
+The KP:1 manifest root remains closed; the `extensions` lane (added in v0.7.4)
+is the sanctioned compatibility surface for producer-defined metadata. This
+release catalogues the producer-defined extension blocks that the Nova
+ecosystem uses today and retires the never-fully-realized `entities.md`
+companion file in favour of the typed `extensions.entities` block.
+
+### Added
+- **EXTENSIONS.md** (NEW companion document) — informative catalogue of
+  producer-defined extension blocks under `extensions.*` in active use across
+  the Nova ecosystem. Documents `extensions.ai_brief` (the v0.7.4 example),
+  `extensions.entities` (typed entity graph), `extensions.relations` (typed
+  edges between entities, mirroring the relation_types vocabulary in
+  DEFINITIONS.md §3), `extensions.intent` + `extensions.intent_schema_version`
+  + `extensions.intent_derivation` (decision-frame layer), `extensions.playbook`
+  (runtime trace of playbook execution), `extensions.workspace` (Decision
+  Workspace bookkeeping), and `extensions.research` (free-text research
+  metadata). Cross-cutting sections cover canonical entity ID minting
+  (`ent_<type>_<6-hex>`), the recommended `external_ids` vocabulary, and the
+  per-claim `extensions.entity_refs` / `extensions.relation_refs` annotation.
+  Migration notes cover `entities.md` → `extensions.entities` and free-text
+  `anchor_subject` → typed entities.
+- **README.md companion table entry** for EXTENSIONS.md.
+
+### Changed
+- **DEFINITIONS.md §3** — relation_types example block prose extended with a
+  pointer to the `extensions.relations` consumer pattern. The vocabulary
+  itself is unchanged; the addition documents that producers now write
+  relation instances under `extensions.relations` in PACK.yaml rather than
+  in a separate file.
+- **SPEC.md §7 (entities.md)** — section retitled "Deprecated: entities.md"
+  with a deprecation banner pointing to `extensions.entities` as the
+  successor. The full prior content is preserved for legacy reference.
+
+### Deprecated
+- **`entities.md`** — used in only five packs out of ~770 and never landed as
+  a practical primitive. Producers MUST NOT emit `entities.md` in new packs.
+  Equivalent and richer information now lives under `extensions.entities`
+  (typed entity records with stable Nova IDs and external-ID vocabulary)
+  and `extensions.relations` (typed edges with optional temporal and
+  attribute data per DEFINITIONS.md §3). A one-shot migration script
+  (`scripts/migrate-entities-md-to-extensions.mjs`, shipped with kp-forge)
+  rewrites legacy packs into the new shape.
+
+### Compatibility
+- **No core schema change.** The manifest root is unchanged. Producers and
+  consumers continue to round-trip pre-v0.7.7 packs without modification.
+- **Consumers MUST ignore unknown extension content** per the extensions
+  lane contract (CORE.md §1.1, SPEC.md §3.2). Pre-existing producers and
+  consumers that do not understand the new blocks continue to function;
+  the new blocks are additive.
+- **Legacy `entities.md` packs continue to validate** against the v0.7.7
+  conformance runner. The deprecation is a producer-side guidance, not a
+  validation removal.
+
+---
+
 ## v0.7.6 — 2026-04-19
 
 **Documented optional Admiralty grading fields on evidence.**
