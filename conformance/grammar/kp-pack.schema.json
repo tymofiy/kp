@@ -27,6 +27,15 @@
       "minLength": 1,
       "description": "Maintainer name."
     },
+    "spec_uri": {
+      "type": "string",
+      "format": "uri",
+      "description": "Optional URL pointing to the KP:1 specification this pack conforms to. Enables cold consumers (especially recipients of sealed .kpack archives) to fetch the spec on demand. Default published location: https://github.com/tymofiy/kp."
+    },
+    "spec_version": {
+      "type": "string",
+      "description": "Optional version label of the KP:1 spec this pack conforms to. Typically a tag like 'v0.8.0-preview'. Pairs with spec_uri to pin against a specific revision of the spec for archival packs."
+    },
     "kind": {
       "type": "string",
       "enum": ["claim", "definition", "policy", "mixed"],

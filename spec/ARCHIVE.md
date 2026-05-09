@@ -101,6 +101,17 @@ Archives are ZIP files and carry the same security risks as any ZIP container. I
 
 An export archive is a valid ZIP containing a valid pack. It is not sealed and does not participate in the integrity chain. Tools that expect sealed archives MUST reject export archives with a clear error rather than silently skipping verification.
 
+### Format discoverability
+
+A receiver that encounters a `.kpack` archive cold — with no surrounding context, no documentation, no prior exposure to KP:1 — should be able to learn the format from the archive itself. Two pack-internal mechanisms support this:
+
+1. **Rosetta header.** The first line of `claims.md` is a self-describing HTML comment naming the spec version and tokenization legend ([CORE.md §4](CORE.md#claims-md--rosetta-header)). It is enough to recognize a pack and parse it.
+2. **`spec_uri` / `spec_version` (optional manifest fields).** Producers MAY declare a discovery URL on PACK.yaml pointing to the full KP:1 specification ([CORE.md §3 "Spec Discovery"](CORE.md#spec-discovery)). When present, the receiver can fetch the spec from the URL the pack itself names, with no out-of-band lookup.
+
+Consumers SHOULD read PACK.yaml first and follow `spec_uri` (when declared) to access the normative spec for the pack's declared `spec_version`. When `spec_uri` is absent, consumers MAY assume the published reference implementation at `https://github.com/tymofiy/kp` but MUST treat the assumption as informational, not a guarantee.
+
+This makes a sealed `.kpack` archive **self-explaining**: the file extension identifies the format family, the Rosetta header identifies the version, and the manifest discovery fields point at the full spec. A previously-unfamiliar receiver can parse, validate, and reason about the pack without any prior agreement with the producer.
+
 ---
 
 ## 3. Content Hash
