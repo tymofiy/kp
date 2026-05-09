@@ -3,7 +3,6 @@
 
 # Voice Views — Knowledge Pack Companion Spec
 
-> **Parent:** SPEC.md v0.7
 > **Date:** 2026-04-12
 > **Status:** Draft
 > **Decisions:** D13 (voice view format), D22 (locale-before-surface ordering)

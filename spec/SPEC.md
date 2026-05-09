@@ -91,6 +91,15 @@ confidence: { scale: simple, normalize: true }
 
 3. Write `claims.md`:
 ```markdown
+<!-- KP:1 — Knowledge Pack Format
+Claims: - [ID] assertion {confidence|type|evidence|date|depth|nature} context
+  Positions 5-6 optional. Verbose named-field syntax also accepted.
+Types: o=observed r=reported c=computed i=inferred
+Depth: assumed | investigated | exhaustive (optional, position 5)
+Nature: judgment | prediction | meta (optional, position 6; omitted=factual)
+Relations: →supports ⊗contradicts ⊗!error ⊗~tension ←requires ~refines ⊘supersedes ↔see_also
+Files: evidence.md=sources history.md=past entities.md=graph
+-->
 ---
 pack: my-project | v: 2026.03.19 | domain: technology/saas
 confidence: simple | normalized
@@ -109,6 +118,8 @@ confidence: simple | normalized
   {0.85|i|E002,E003|2026-02-15} 40% misclassification reduction vs.
   competitors' rule-based systems (12-account A/B test). →C001
 ```
+
+The HTML comment at the top is the **Rosetta header** ([CORE.md §4](CORE.md#4-claimsmd--rosetta-header) — required, self-describing). It lets a previously-unfamiliar consumer recognize a Knowledge Pack and tokenize its contents without external context.
 
 4. Write `evidence.md`:
 ```markdown
@@ -1294,7 +1305,7 @@ kpack render [path]            # Generate/regenerate views from claims
 kpack render [path] --view X   # Regenerate a specific view
 ```
 
-### Extended Commands (v0.4)
+### Extended Commands
 
 ```bash
 # Pack creation
@@ -1776,7 +1787,7 @@ The renderer is NOT part of the Knowledge Pack spec — it's part of the consumi
 
 ---
 
-## 18. Cognitive Perception Layer (v0.6)
+## 18. Cognitive Perception Layer
 
 Knowledge Packs serve three surfaces: reasoning (AI), display (visual), and voice (spoken). The reasoning surface is dense and optimized for inference. The display and voice surfaces are optimized for human perception.
 
@@ -1955,7 +1966,7 @@ This hierarchy ensures packs work without display metadata (backward-compatible)
 
 ---
 
-## 19. Companion Specifications (v0.4)
+## 19. Companion Specifications
 
 The following topics are specified in companion documents within the `spec/` directory. Each extends the core spec without increasing the size of this document.
 

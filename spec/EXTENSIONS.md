@@ -6,7 +6,7 @@
 > **Status:** Draft
 > **Date:** 2026-04-28
 > **Editor:** Timothy Kompanchenko
-> **Parent:** [SPEC.md](SPEC.md) §3.2, [CORE.md](CORE.md) §1.1
+> **Parent:** [SPEC.md](SPEC.md) §3.2, [CORE.md](CORE.md) §3
 
 ---
 
@@ -15,7 +15,7 @@
 KP:1 keeps the manifest root closed: fields not defined by the schema are
 invalid. Experimental or implementation-specific metadata MUST live under
 the optional `extensions` object instead of appearing as new top-level keys
-([CORE.md §1.1 "Manifest Extensions"](CORE.md#manifest-extensions),
+([CORE.md §3 "Manifest Extensions"](CORE.md#manifest-extensions),
 [SPEC.md §3.2](SPEC.md)).
 
 This document is the catalogue of **producer-defined** extension blocks in
@@ -263,10 +263,10 @@ audit-trail reconstruction can map transcript → evidence → claim. When
 multiple transcripts back the same evidence record, locales sit side-by-side
 under the same `translations` block keyed by BCP-47 locale.
 
-**Cross-reference.** See [MULTILINGUAL.md §13](MULTILINGUAL.md) (forthcoming
-in v0.8.0 via WS-M4) for the normative exception this block carries — it is
-the sanctioned location for non-canonical-language text whose
-canonicalization-to-English would lose evidentiary fidelity.
+**Cross-reference.** See [MULTILINGUAL.md §12](MULTILINGUAL.md) for the
+normative exception this block carries — it is the sanctioned location for
+non-canonical-language text whose canonicalization-to-English would lose
+evidentiary fidelity.
 
 **Compatibility.** Consumers that do not understand the block MUST ignore
 it. The English claim remains valid and complete on its own; the

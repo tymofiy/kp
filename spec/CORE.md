@@ -6,7 +6,7 @@
 > **Status:** Editor's Draft — `KP:1 Public Draft — 2026-04`
 > **Editor:** Timothy Kompanchenko
 > **Date:** 2026-04-04
-> **Derived from:** SPEC.md v0.7, `conformance/grammar/kp-claims.peg`, `conformance/grammar/kp-pack.schema.json`
+> **Derived from:** SPEC.md, `conformance/grammar/kp-claims.peg`, `conformance/grammar/kp-pack.schema.json`
 > **Lane:** Implementer surface — see [README.md](README.md) for the three-lane structure (CORE = implementer, SPEC = full normative + rationale, companions = topic-authoritative for their domains).
 
 ## 1. Introduction

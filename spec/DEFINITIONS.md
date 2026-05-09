@@ -3,7 +3,7 @@
 
 # Definition & Policy Kinds — Knowledge Pack Companion Spec
 
-> **Parent:** SPEC.md v0.7, §5
+> **Parent:** SPEC.md, §5
 > **Date:** 2026-03-29
 > **Status:** Draft
 > **Editor:** Timothy Kompanchenko
@@ -13,7 +13,7 @@
 
 ## 1. Purpose
 
-This document specifies the `definition` and `policy` document kinds introduced in SPEC.md v0.7 §5. These kinds represent **deterministic domain knowledge** — structural facts about how a domain is organized (definitions) and behavioral rules for operating within that domain (policies). Unlike claims, which are probabilistic and evidence-backed, definitions and policies are authoritative declarations that constrain the vocabulary and behavior of the knowledge system.
+This document specifies the `definition` and `policy` document kinds introduced in SPEC.md §5. These kinds represent **deterministic domain knowledge** — structural facts about how a domain is organized (definitions) and behavioral rules for operating within that domain (policies). Unlike claims, which are probabilistic and evidence-backed, definitions and policies are authoritative declarations that constrain the vocabulary and behavior of the knowledge system.
 
 ---
 

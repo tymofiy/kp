@@ -3,7 +3,7 @@
 
 # KP:1 Mapping to RDF/JSON-LD/PROV
 
-> **Status:** Reference document
+> **Status:** Draft (informative — not normative for KP:1 conformance)
 > **Date:** 2026-04-04
 > **Audience:** Semantic Web practitioners evaluating KP:1 interoperability
 >

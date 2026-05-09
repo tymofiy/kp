@@ -3,7 +3,6 @@
 
 # Archive Format — Knowledge Pack Companion Spec
 
-> **Parent:** SPEC.md v0.7
 > **Date:** 2026-04-12
 > **Status:** Draft
 > **Resolves:** AR-14 (signatures.yaml schema deferred to Phase C2)

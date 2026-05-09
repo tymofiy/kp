@@ -363,7 +363,7 @@ These are not specified in this version but inform the design:
 
 ---
 
-## 13. Evidentiary multilingual exception (normative)
+## 12. Evidentiary multilingual exception (normative)
 
 Principle [P1](#2-core-principles) — *claims are always English* — is the default rule for KP:1 packs. There is one normative exception, codified here so it cannot be misread as a relaxation of P1.
 
@@ -383,16 +383,16 @@ When a pack's underlying evidence is **inherently multilingual and evidentiary**
 - Co-canonical multilingual claims (rejected in v0.8.0 per Decision Log D1; revisit only if a new pack class genuinely warrants it).
 - Bilingual reasoning surfaces (also rejected in D1).
 
-**Inaugural producer.** The Mariupol corpus (kilimanjaro-intake's handwritten-inventory pipeline). Witness statements were authored in Russian and Ukrainian; English claims are derived. The transcripts in `extensions.translations.{ru,uk}` are the audit trail; the English `claims.md` is what the pack asserts.
+**Inaugural producer.** Witness statements collected in the field were authored in Russian and Ukrainian; English claims are derived from them. The transcripts in `extensions.translations.{ru,uk}` are the audit trail; the English `claims.md` is what the pack asserts.
 
 ---
 
-## 12. Decision Log
+## 13. Decision Log
 
 | # | Decision | Alternatives Considered | Rationale |
 |---|----------|------------------------|-----------|
 | D1 | Canonical language is American English; claims are never bilingual | Bilingual claims, per-claim language tags | Complexity explosion. Claims are the reasoning surface — one language keeps them unambiguous. Translations belong at the view layer. |
-| D1a | Evidentiary multilingual exception: original-language transcripts MAY ship in `extensions.translations` for evidentiary domains where canonicalization to English loses fidelity (Mariupol witness statements, foreign-language court records, recorded interviews) | Co-canonical claims (rejected per D1), per-claim language tags (rejected per D1), prose-only acknowledgment in evidence.md without structured carrier | The sanctioned `extensions.translations` block (EXTENSIONS.md §2.8) keeps transcripts machine-readable for audit while preserving D1's "claims are English" rule. The English claim remains the assertion; the transcript is evidence-shaped. See §13. |
+| D1a | Evidentiary multilingual exception: original-language transcripts MAY ship in `extensions.translations` for evidentiary domains where canonicalization to English loses fidelity (witness statements collected in the field, foreign-language court records, recorded interviews) | Co-canonical claims (rejected per D1), per-claim language tags (rejected per D1), prose-only acknowledgment in evidence.md without structured carrier | The sanctioned `extensions.translations` block (EXTENSIONS.md §2.8) keeps transcripts machine-readable for audit while preserving D1's "claims are English" rule. The English claim remains the assertion; the transcript is evidence-shaped. See §12. |
 | D2 | Translation storage uses locale subdirectories (`views/{locale}/`) | Filename suffixes (`overview.uk.md`), flat directories | Subdirectories are cleaner for discovery (`ls views/uk/`), removal (`rm -rf views/uk/`), and grep. Filename suffixes create visual clutter and complicate glob patterns. |
 | D2a | Locale before surface type (`views/uk/voice/`) | Surface before locale (`views/voice/uk/`) | Locale is the higher-order grouping. A locale is a complete translation; a surface type is a rendering format. You add/remove entire locales, rarely individual surface types within a locale. |
 | D2b | Short language code for directory names (`uk`, `de`) | Full BCP 47 tag (`uk-UA`, `de-DE`) | Directories are for humans too. Short codes are sufficient for disambiguation in practice. Full tags remain in PACK.yaml metadata. |

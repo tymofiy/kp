@@ -6,7 +6,6 @@
 > **Status:** Draft
 > **Date:** 2026-03-22
 > **Editor:** Timothy Kompanchenko
-> **Parent:** [SPEC.md](SPEC.md) v0.4
 > **Decisions:** D4 (meeting pack lifecycle), D15 (archive-never-delete), D19 (reconcile-before-archive)
 
 ---
@@ -254,43 +253,43 @@ Claims reviewed: 8
 
 ─── Reconciled ─────────────────────────────────────
 
-[M001] Dr. Webb advises three utility-scale solar developers
+[C001] Dr. Webb advises three utility-scale solar developers
   → MATCHED in contacts/marcus-webb.kpack [C003]
     "Webb advises SolarFirst, GridScale, and Helios Energy"
 
-[M002] GridScale's pipeline exceeds 2 GW across four states
+[C002] GridScale's pipeline exceeds 2 GW across four states
   → MATCHED in research/gridscale-partnership.kpack [C004]
     "GridScale: 2.1 GW pipeline — Texas, Arizona, Nevada, Colorado"
 
-[M003] Perovskite durability results from Oxford PV were positive
+[C003] Perovskite durability results from Oxford PV were positive
   → MATCHED in research/perovskite-assessment.kpack [C015]
     "Oxford PV Q1 2026 field test: <5% degradation at 18 months"
 
-[M004] Webb suggested connecting us with Helios Energy's CTO
+[C004] Webb suggested connecting us with Helios Energy's CTO
   → MATCHED in research/solar-energy-market.kpack [C046]
     "Warm intro to Helios Energy CTO via Webb (pending)"
 
-[M005] Webb's advisory clients include three thin-film manufacturers
+[C005] Webb's advisory clients include three thin-film manufacturers
   → MATCHED in contacts/marcus-webb.kpack [C007]
     "Advisory clients: NanoSolar, ThinFilm Corp, FlexPV (thin-film)"
 
 ─── Promoted (during post-meeting review) ──────────
 
-[M006] Webb wants to see a live comparison of bifacial vs monofacial yield data
+[C006] Webb wants to see a live comparison of bifacial vs monofacial yield data
   → PROMOTED to research/solar-energy-market.kpack [C047]
     "Bifacial vs monofacial field yield comparison requested by Webb (prepare by Apr 5)"
 
 ─── Orphan (not found in any standing pack) ────────
 
-⚠️  [M007] Webb mentioned IRA incentive reclassification expected Q3
+⚠️  [C007] Webb mentioned IRA incentive reclassification expected Q3
     2026 — may affect GridScale's project economics
-    {0.70|r|EM003|2026-03-22}
+    {0.70|r|E003|2026-03-22}
     NOT FOUND in any standing pack.
     Suggested target: research/regulatory-landscape.kpack § IRA Incentives
 
-⚠️  [M008] GridScale is considering a dedicated perovskite pilot
+⚠️  [C008] GridScale is considering a dedicated perovskite pilot
     project, timeline late 2027
-    {0.60|r|EM004|2026-03-22}
+    {0.60|r|E004|2026-03-22}
     NOT FOUND in any standing pack.
     Suggested target: research/gridscale-partnership.kpack § Technology Pilots
 

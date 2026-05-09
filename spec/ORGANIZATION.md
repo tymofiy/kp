@@ -16,16 +16,25 @@ A knowledge pack workspace separates the format specification, the pack content,
 ```text
 your-knowledge-repo/
 ├── spec/                           # THE FORMAT — defines what a pack is
-│   ├── SPEC.md                     # Core specification
-│   ├── MULTILINGUAL.md             # Locale conventions
+│   ├── CORE.md                     # Implementer surface (parser/validator contract)
+│   ├── SPEC.md                     # Full normative spec + rationale + ecosystem
+│   ├── README.md                   # Lane overview (CORE / SPEC / companions)
 │   ├── VOICE.md                    # Voice view format
 │   ├── COMPOSITION.md              # Meeting pack composition
-│   ├── BUNDLE.md                   # Export/sharing format
-│   ├── LIFECYCLE.md                # Archival, reconciliation, visibility
-│   ├── NOTES.md                    # AI note-taking metadata
-│   ├── CONSISTENCY.md              # Cross-pack consistency checking
+│   ├── LIFECYCLE.md                # Pack lifecycle management
+│   ├── MULTILINGUAL.md             # Locale conventions
+│   ├── ORGANIZATION.md             # This file (pack categories and repo layout)
+│   ├── CONSISTENCY.md              # Cross-pack consistency patrol
 │   ├── CONVENTIONS.md              # Linguistic conventions
-│   ├── ORGANIZATION.md             # This file
+│   ├── STORAGE.md                  # Storage formats and serialization
+│   ├── BUNDLE.md                   # Export/sharing format
+│   ├── ARCHIVE.md                  # ZIP archive, integrity chain, signatures
+│   ├── DEFINITIONS.md              # Definition and policy document kinds
+│   ├── EXTENSIONS.md               # Producer-defined `extensions.*` blocks catalogue
+│   ├── NOTES.md                    # AI note-taking metadata
+│   ├── PLAYBACK.md                 # Self-driving presentation playback (experimental)
+│   ├── RECONCILIATION.md           # Cross-pack reconciliation (stub — design deferred)
+│   ├── MAPPING.md                  # Mapping to RDF/JSON-LD/PROV-O (informative)
 │   └── CHANGELOG.md                # Version history
 │
 ├── packs/                          # THE CONTENT — actual knowledge packs

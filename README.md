@@ -120,8 +120,16 @@ The runner (`conformance/run.py`) reports **13/13 passed** on a conformant
 implementation: 11 fixture tests + 2 example validations. A conformant
 implementation parses all valid fixtures, rejects all invalid ones, validates
 PACK.yaml against the schema, validates `signatures.yaml` against its schema
-when present, and enforces semantic constraints SC-01 through SC-11. See
-[conformance/README.md](conformance/README.md) for details.
+when present, and enforces semantic constraints SC-01 through SC-11.
+
+Run from a fresh checkout:
+
+```bash
+pip install -r conformance/requirements.txt
+python3 conformance/run.py
+```
+
+See [conformance/README.md](conformance/README.md) for details.
 
 ## Interoperability
 
@@ -136,7 +144,7 @@ format's genuinely novel contributions.
 
 ## Status
 
-This is an **editor's draft** maintained by a single editor in a public repository. It is published as `KP:1 Public Draft — 2026-05` (git tag `v0.8.0-preview`, with the v0.7.x preview series and the iterative v0.8.0 buildup documented in [`spec/CHANGELOG.md`](spec/CHANGELOG.md)). It has a formal grammar, a JSON Schema, a conformance suite with 13 test fixtures, and reference examples.
+This is an **editor's draft** maintained by a single editor in a public repository. It is published as `KP:1 Public Draft — 2026-05` (git tag `v0.8.0-preview`, with the v0.7.x preview series and the iterative v0.8.0 buildup documented in [`spec/CHANGELOG.md`](spec/CHANGELOG.md)). It has a formal grammar, a JSON Schema, a conformance suite with 11 test fixtures plus 2 reference examples (13/13 validated).
 
 The specification is **not final** and may change in any way at any time, including breaking changes. It is **not yet ratified** by any standards body. Compatibility commitments will arrive only with a non-draft version. See [`GOVERNANCE.md`](GOVERNANCE.md) for the full governance picture, including how decisions are made during the preview phase and what changes when the Knowledge Pack Foundation is incorporated.
 
