@@ -14,8 +14,8 @@ abstract: >
   history, and a three-surface architecture (claims for AI reasoning,
   display views for visual reading, voice views for spoken delivery).
 type: software
-version: "0.8.0-preview"
-date-released: "2026-05-09"
+version: "0.8.1-preview"
+date-released: "2026-05-10"
 authors:
   - family-names: "Kompanchenko"
     given-names: "Timothy"
@@ -41,17 +41,17 @@ keywords:
   - text-native format
 identifiers:
   - type: doi
-    value: "10.5281/zenodo.20100689"
-    description: >
-      Zenodo DOI for the v0.8.0-preview release (the release described by this
-      CITATION file).
-  - type: doi
     value: "10.5281/zenodo.19445262"
     description: >
       Zenodo concept DOI for KP:1 across all versions. This DOI is evergreen
       and always resolves to the most recently published version on Zenodo.
       Use this identifier when citing the format generically rather than a
       specific snapshot.
+  - type: doi
+    value: "10.5281/zenodo.20100689"
+    description: >
+      Zenodo DOI for the v0.8.0-preview release (the previous citable
+      snapshot).
   - type: doi
     value: "10.5281/zenodo.19445263"
     description: >

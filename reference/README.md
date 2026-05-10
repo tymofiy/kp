@@ -17,7 +17,7 @@ Must pass the conformance suite. Cannot redefine the spec.
 
 ```bash
 $ ./kpack
-kpack — KP:1 reference CLI stub (v0.8.0-preview)
+kpack — KP:1 reference CLI stub (v0.8.1-preview)
 
 This is a contract-pointer, not a runnable tool.
 The only command that ships today is: python3 conformance/run.py

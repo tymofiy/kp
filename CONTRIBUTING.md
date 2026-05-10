@@ -5,7 +5,7 @@
 
 Thank you for your interest in KP:1. This document explains how to contribute during the **public draft preview phase**, before the Knowledge Pack Foundation is incorporated.
 
-> **Status:** KP:1 is currently an editor's draft (`v0.7-preview` / `KP:1 Public Draft — 2026-04`). The contribution model described here is provisional and will change when the Foundation is formed and a contributor agreement is in place. See [GOVERNANCE.md](GOVERNANCE.md) for the full governance picture.
+> **Status:** KP:1 is currently an editor's draft (`v0.8.1-preview` / `KP:1 Public Draft — 2026-05`). The contribution model described here is provisional and will change when the Foundation is formed and a contributor agreement is in place. See [GOVERNANCE.md](GOVERNANCE.md) for the full governance picture.
 
 ## What kinds of contributions we want right now
 

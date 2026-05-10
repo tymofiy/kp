@@ -485,7 +485,7 @@ These are the "look-fine but degraded" patterns to actively avoid:
 2. **Atomic Dust.** Hundreds of tiny `o` claims with no relations and no `c` / `i` claims building on them. → No reasoning structure; the pack is data, not knowledge.
 3. **Confidence Hallucination.** Every claim at 0.95 or 1.0. → Self-rating, not calibration. Re-distribute against actual evidence depth.
 4. **View Laundering.** A polished `views/overview.md` that contains assertions absent from `claims.md`. → The view is making up knowledge. Move assertions to claims or remove from view.
-5. **Self-Referential Evidence.** A claim cites `E001`; the `E001` entry's `source` field is "see C001" (the same claim). → Circular justification with no external grounding. The evidence-claim chain must terminate at something outside the pack (a document, a measurement, an interview, a database snapshot). If the source field can only be filled by pointing back at a claim ID, the claim has no real evidence and should either be marked `nature: judgment` or removed. Note: as of v0.8.0-preview, this pattern is editorial-only — the runner does not detect circular evidence; AUTHORING.md flags it.
+5. **Self-Referential Evidence.** A claim cites `E001`; the `E001` entry's `source` field is "see C001" (the same claim). → Circular justification with no external grounding. The evidence-claim chain must terminate at something outside the pack (a document, a measurement, an interview, a database snapshot). If the source field can only be filled by pointing back at a claim ID, the claim has no real evidence and should either be marked `nature: judgment` or removed. Note: as of v0.8.1-preview, this pattern is editorial-only — the runner does not detect circular evidence; AUTHORING.md flags it.
 6. **Future-Date Confidence Inflation.** A claim with `nature: prediction` and `since:` set to a future date carries confidence 0.99+ — the runner now rejects this via SC-12 (predictions MUST have confidence ≤ 0.95). The pattern existed in v0.7 and was caught only editorially; v0.8.0-preview makes it a normative semantic constraint. If you genuinely believe a future-state claim at 0.99+, you are either wrong about confidence or wrong about it being a prediction.
 
 If your pack has any of these patterns, conformance may pass (depending on the pattern — SC-12 catches #6) and the pack may still be epistemically degraded. The format protects against syntactic errors and a small set of named semantic ones; only the author can protect against the rest.
@@ -542,7 +542,7 @@ A pack like this is what the rubrics aim to produce. It is testably grounded, ca
 
 CORE.md is **normative** for syntax. AUTHORING.md is **informative** for judgment. Where they appear to disagree, CORE.md wins on the implementable surface — but if a pack passes CORE.md and violates AUTHORING.md, the pack is syntactically valid and epistemically degraded.
 
-A future revision of the spec may promote some of the rubrics here to enforced semantic constraints (`SC-12` and beyond). For v0.8.0-preview, AUTHORING.md is the producer-side contract; the conformance suite does not check against it.
+A future revision of the spec may promote some of the rubrics here to enforced semantic constraints (`SC-12` and beyond). For v0.8.1-preview, AUTHORING.md is the producer-side contract; the conformance suite does not check against it.
 
 ---
 

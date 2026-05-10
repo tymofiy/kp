@@ -34,7 +34,7 @@
     },
     "spec_version": {
       "type": "string",
-      "description": "Optional version label of the KP:1 spec this pack conforms to. Typically a tag like 'v0.8.0-preview'. Pairs with spec_uri to pin against a specific revision of the spec for archival packs."
+      "description": "Optional version label of the KP:1 spec this pack conforms to. Typically a tag like 'v0.8.1-preview'. Pairs with spec_uri to pin against a specific revision of the spec for archival packs."
     },
     "kind": {
       "type": "string",
@@ -337,6 +337,15 @@
             "type": "string",
             "enum": ["brisk", "measured", "deliberate"],
             "description": "Delivery pace hint for spoken delivery."
+          },
+          "register": {
+            "type": "string",
+            "enum": ["plain", "curatorial", "technical", "investor"],
+            "description": "Voice register — diction and emphasis profile. See VOICE.md §4.1."
+          },
+          "sub_register": {
+            "type": "string",
+            "description": "Locale-specific register sub-distinction (e.g. uk-halychyna, fr-quebec). Informational free-form per MULTILINGUAL.md §3.3 — not a normative enum."
           }
         },
         "if": {

@@ -7,7 +7,7 @@ Validates .kpack directories against the KP:1 spec.
 
 The PEG grammar in grammar/kp-claims.peg is the normative reference for
 KP:1 claim syntax. This runner validates equivalent regular-expression
-patterns for v0.8.0-preview; a PEG-driven parser using parsimonious or
+patterns for v0.8.1-preview; a PEG-driven parser using parsimonious or
 lark is planned for a future phase. JSON Schema validation and semantic
 constraints SC-01 through SC-12 are also enforced. See
 conformance/README.md for the grammar-vs-runner contract.

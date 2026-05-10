@@ -209,11 +209,11 @@ The contract is enforceable at the application layer; PLAYBACK does not specify 
 
 ## 9. Status and stability
 
-This entire companion is **experimental** for v0.8.0-preview. Producers MAY emit `PlaybackPlan` artifacts and consumers SHOULD treat them as advisory.
+This entire companion is **experimental** for v0.8.1-preview. Producers MAY emit `PlaybackPlan` artifacts and consumers SHOULD treat them as advisory.
 
-### Stable for v0.8.0-preview
+### Stable for v0.8.1-preview
 
-The following are committed for the v0.8.0-preview tag and will not change without a deprecation cycle:
+The following are committed for the v0.8.1-preview tag and will not change without a deprecation cycle:
 
 - The top-level `PlaybackPlan` shape (`pack_id`, `audience_profile`, `duration_tier`, `phases[]`, `resume_policy`, `handoff_policy`).
 - `AudienceProfile` field set (`familiarity`, `duration_tier`, `purpose`, `domain_lens`, `register`, `inferred`) and the enum values for the four required fields.
@@ -230,7 +230,7 @@ The schema may evolve based on observed behavior:
 - `handoff_policy.inactivity_seconds` defaults will be tuned empirically.
 - The `register` field's interaction with [VOICE.md §4.1](VOICE.md) may need clarification once both fields ship in real packs.
 
-Producers MAY emit `PlaybackPlan` artifacts in v0.8.0-preview packs as advisory metadata; consumers SHOULD treat them as informational and tolerant of schema drift.
+Producers MAY emit `PlaybackPlan` artifacts in v0.8.1-preview packs as advisory metadata; consumers SHOULD treat them as informational and tolerant of schema drift.
 
 The status will graduate from experimental to active after at least three real packs ship with playback plans and at least two distinct renderers have demonstrated successful end-to-end narration against the plans.
 
