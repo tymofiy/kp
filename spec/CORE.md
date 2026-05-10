@@ -3,9 +3,9 @@
 
 # KP:1 Core Specification
 
-> **Status:** Editor's Draft — `KP:1 Public Draft — 2026-05` (`v0.8.0-preview`)
+> **Status:** Editor's Draft — `KP:1 Public Draft — 2026-05` (`v0.8.1-preview`)
 > **Editor:** Timothy Kompanchenko
-> **Date:** 2026-05-09
+> **Date:** 2026-05-10
 > **Derived from:** SPEC.md, `conformance/grammar/kp-claims.peg`, `conformance/grammar/kp-pack.schema.json`
 > **Lane:** Implementer surface — see [README.md](README.md) for the three-lane structure (CORE = implementer, SPEC = full normative + rationale, companions = topic-authoritative for their domains).
 
@@ -88,7 +88,7 @@ PACK.yaml is a YAML file declaring pack identity and configuration. The normativ
 | `kind` | enum | `claim` (default), `definition`, `policy`, `mixed` |
 | `description` | string | Human-readable summary |
 | `spec_uri` | URL | Onboarding pointer to the KP:1 specification this pack conforms to. Informational, not a runtime parse dependency. Default published location: `https://github.com/tymofiy/kp`. See "Spec Onboarding Pointer" below. |
-| `spec_version` | string | Version label of the KP:1 spec this pack conforms to (typically a tag, e.g., `v0.8.0-preview`). Pairs with `spec_uri` to pin against a specific revision. |
+| `spec_version` | string | Version label of the KP:1 spec this pack conforms to (typically a tag, e.g., `v0.8.1-preview`). Pairs with `spec_uri` to pin against a specific revision. |
 | `confidence` | object | `scale` (string, required within object), `normalize` (boolean), `labels` (object, for custom scales) |
 | `freshness` | date | Last substantive review date |
 | `license` | string | Reuse terms (e.g., `CC-BY-4.0`) |
@@ -107,7 +107,7 @@ PACK.yaml is a YAML file declaring pack identity and configuration. The normativ
 
 The full set of optional fields and conditional constraints is defined in the JSON Schema. Key conditionals: when `tier` is `hub`, `sub_packs` is REQUIRED; when `sensitivity` is `confidential` or `restricted`, `channels` MUST NOT contain `public` or `org`; when `sensitivity` is `internal`, `channels` MUST NOT contain `public`; when a view declares `voice: true`, `duration` and `pace` are REQUIRED on that view entry.
 
-**Decoration fields** (`linguistic_epoch`, `ontology`) are accepted by the schema but carry no consumer behavior in v0.8.0-preview. They are retained for backward compatibility with v0.7-era packs; new producers SHOULD place equivalent metadata under `extensions.*` until consumer semantics are defined in a future revision.
+**Decoration fields** (`linguistic_epoch`, `ontology`) are accepted by the schema but carry no consumer behavior in v0.8.1-preview. They are retained for backward compatibility with v0.7-era packs; new producers SHOULD place equivalent metadata under `extensions.*` until consumer semantics are defined in a future revision.
 
 ### Spec Onboarding Pointer
 
@@ -127,7 +127,7 @@ version: 2026.05.09
 domain: art/canonical
 author: Tim Kompanchenko
 spec_uri: https://github.com/tymofiy/kp
-spec_version: v0.8.0-preview
+spec_version: v0.8.1-preview
 ```
 
 Sealed-archive producers SHOULD include both fields when packs are intended for ecosystem-wide distribution (especially `.kpack` archives that may be received cold). Internal-only packs MAY omit them. When omitted, consumers MAY assume the published reference implementation at `https://github.com/tymofiy/kp` but MUST treat the assumption as informational, not a guarantee — and MUST NOT fail because the assumption resolves to an unreachable endpoint.
@@ -471,7 +471,7 @@ Views are pre-rendered GFM (GitHub-Flavored Markdown) documents for human consum
 
 ### Rules
 
-1. Views contain **no knowledge that is not in claims.md**. If a view states a fact, a corresponding claim SHOULD exist. (As of v0.8.0-preview, this is editorial discipline — the conformance runner does not detect "view-laundering" patterns where a view introduces unsupported assertions. Authors are responsible; see [AUTHORING.md §11](AUTHORING.md) anti-pattern #4.)
+1. Views contain **no knowledge that is not in claims.md**. If a view states a fact, a corresponding claim SHOULD exist. (As of v0.8.1-preview, this is editorial discipline — the conformance runner does not detect "view-laundering" patterns where a view introduces unsupported assertions. Authors are responsible; see [AUTHORING.md §11](AUTHORING.md) anti-pattern #4.)
 2. Views are **derived** from claims. If a view disagrees with claims.md, claims.md is authoritative.
 3. Each view is independently displayable — no cross-view dependencies.
 4. Views SHOULD NOT contain claim notation (`{0.95|i|E001}` metadata). They contain readable prose.

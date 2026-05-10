@@ -12,7 +12,7 @@ description: >
   counsel, voice briefing).
 
 spec_uri: https://github.com/tymofiy/kp
-spec_version: v0.8.0-preview
+spec_version: v0.8.1-preview
 kind: claim
 
 confidence:

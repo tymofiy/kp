@@ -5,6 +5,54 @@
 
 ---
 
+## v0.8.1-preview — 2026-05-10
+
+**Voice-view register metadata promoted into the conformance schema.**
+
+This patch preview makes the `register` / `sub_register` voice-view metadata
+surface explicit in `PACK.yaml` validation, matching the companion-spec
+language introduced in v0.8.0-preview. It is a monotonic schema addition:
+existing v0.8.0-preview packs continue to validate unchanged.
+
+### Added
+
+- **`views[].register`** (`conformance/grammar/kp-pack.schema.json`) —
+  optional voice-view diction/emphasis profile. Accepted values are the four
+  VOICE.md primary registers: `plain`, `curatorial`, `technical`, and
+  `investor`.
+- **`views[].sub_register`** (`conformance/grammar/kp-pack.schema.json`) —
+  optional free-form locale-specific refinement such as `uk-halychyna` or
+  `fr-quebec`. This remains informational, not a closed normative enum.
+- **Maximal conformance fixture coverage** —
+  `conformance/fixtures/valid/maximal.kpack/PACK.yaml` now exercises
+  `register: investor` and `sub_register: uk-halychyna` on a voice view.
+- **`scripts/check_links.py`** — a small local-link checker for Markdown
+  files, intentionally separate from the conformance runner.
+
+### Changed
+
+- Current release/status markers are refreshed from `v0.8.0-preview` to
+  `v0.8.1-preview` across the README, CITATION metadata, current CORE/SPEC
+  headers, conformance fixture docs, and the reference `kpack` stub.
+- `CONTRIBUTING.md` now names the current preview tag as `v0.8.1-preview`.
+
+### Compatibility
+
+- **No breaking schema change.** Both new fields are optional and live inside
+  existing view declarations. Packs valid under v0.8.0-preview remain valid
+  under v0.8.1-preview.
+- The `register` enum is intentionally limited to the four primary VOICE.md
+  registers; `sub_register` stays free-form so locale-specific practice can
+  evolve without forcing a schema bump for every dialectal distinction.
+
+### Notes
+
+- The Zenodo concept DOI remains the generic citation target for the current
+  KP:1 preview line. The v0.8.0-preview snapshot DOI remains available as the
+  previous citable snapshot.
+
+---
+
 ## v0.8.0-preview — 2026-05-09
 
 **Three-lane normative architecture, EXTENSIONS validation, spec self-discovery, AI-first packaging (AGENTS.md + AUTHORING.md), and companion-doc readiness for v0.8.0.**
@@ -90,7 +138,7 @@ Conformance after these additions: 19/19 (was 13/13 at v0.8.0-preview ship; new 
 
 A last consistency pass before tagging surfaced and resolved the following nits. None substantive; all cosmetic-class.
 
-- **CHANGELOG.md broken relative links** — `[RATIONALE.md §N](spec/RATIONALE.md)` and `[MAPPING.md](spec/MAPPING.md)` resolved to `spec/spec/...` from inside the spec/ directory. Stripped the redundant `spec/` prefix; LIFECYCLE.md, MAPPING.md, RATIONALE.md links from CHANGELOG now resolve to siblings. Also fixed a typo: §17 Style Systems was mislabeled `§15 Style Systems` in the bifurcation bullet.
+- **CHANGELOG.md broken relative links** — `RATIONALE.md` and `MAPPING.md` links had incorrectly pointed through a redundant `spec/` prefix, resolving to `spec/spec/...` from inside the spec/ directory. Stripped the redundant prefix; LIFECYCLE.md, MAPPING.md, RATIONALE.md links from CHANGELOG now resolve to siblings. Also fixed a typo: §17 Style Systems was mislabeled `§15 Style Systems` in the bifurcation bullet.
 - **`spec/CORE.md` SC table ordering** — SC-12 was sorted between SC-04 and SC-05 by mistake; moved to the end of the table after SC-11 so the table reads in numerical order.
 - **`examples/README.md` install command path** — `pip install -r ../conformance/requirements.txt` referenced a nonexistent file; corrected to `../requirements.txt` (the actual location at the repo root).
 - **`examples/INDEX.md` --pack example path** — `python3 conformance/run.py --pack solar-energy-market.kpack` would fail from the repo root because the pack lives at `examples/solar-energy-market.kpack`; corrected the example.

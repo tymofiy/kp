@@ -22,7 +22,7 @@ Usage:
 
 import sys
 
-VERSION = "v0.8.0-preview"
+VERSION = "v0.8.1-preview"
 
 COMMAND_REGISTRY = {
     "lint": (
@@ -67,7 +67,7 @@ COMMAND_REGISTRY = {
     "new": (
         "spec/CORE.md §2 Pack Structure (planned scaffold)",
         "Scaffold a new pack from a template. Templates are not specified in "
-        "v0.8.0-preview; see ORGANIZATION.md for repository layout patterns.",
+        "v0.8.1-preview; see ORGANIZATION.md for repository layout patterns.",
     ),
     "reconcile": (
         "spec/RECONCILIATION.md (stub — design deferred to v0.9 / v1.0)",

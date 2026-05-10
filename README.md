@@ -20,7 +20,7 @@
 > as structure. AI-first, human-accessible.
 
 **Editor:** Timothy Kompanchenko
-**Status:** Editor's Draft — `KP:1 Public Draft — 2026-05` (`v0.8.0-preview`)
+**Status:** Editor's Draft — `KP:1 Public Draft — 2026-05` (`v0.8.1-preview`)
 **Cite:** [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.19445262.svg)](https://doi.org/10.5281/zenodo.19445262) (concept DOI — always resolves to latest version)
 **See also:** [`spec/CORE.md`](spec/CORE.md), [`spec/SPEC.md`](spec/SPEC.md), [`spec/AUTHORING.md`](spec/AUTHORING.md), [`AGENTS.md`](AGENTS.md) (AI-first routing), [`GOVERNANCE.md`](GOVERNANCE.md), [`CONTRIBUTING.md`](CONTRIBUTING.md)
 
@@ -165,7 +165,7 @@ format's genuinely novel contributions.
 
 ## Status
 
-This is an **editor's draft** maintained by a single editor in a public repository. It is published as `KP:1 Public Draft — 2026-05` (git tag `v0.8.0-preview`, with the v0.7.x preview series and the iterative v0.8.0 buildup documented in [`spec/CHANGELOG.md`](spec/CHANGELOG.md)). It has a formal grammar, a JSON Schema, a conformance suite with 15 test fixtures plus 4 reference examples (19/19 validated).
+This is an **editor's draft** maintained by a single editor in a public repository. It is published as `KP:1 Public Draft — 2026-05` (current git tag `v0.8.1-preview`, with the v0.7.x preview series and the iterative v0.8.x preview line documented in [`spec/CHANGELOG.md`](spec/CHANGELOG.md)). It has a formal grammar, a JSON Schema, a conformance suite with 15 test fixtures plus 4 reference examples (19/19 validated).
 
 The specification is **not final** and may change in any way at any time, including breaking changes. It is **not yet ratified** by any standards body. Compatibility commitments will arrive only with a non-draft version. See [`GOVERNANCE.md`](GOVERNANCE.md) for the full governance picture, including how decisions are made during the preview phase and what changes when the Knowledge Pack Foundation is incorporated.
 
@@ -182,11 +182,11 @@ See [`CONTRIBUTING.md`](CONTRIBUTING.md) for the contribution policy and [`GOVER
 
 ## How to Cite
 
-If you reference KP:1 in academic, technical, or evaluative work, please use the metadata in [`CITATION.cff`](CITATION.cff). The v0.8.0-preview release is published on Zenodo with DOI [`10.5281/zenodo.20100689`](https://doi.org/10.5281/zenodo.20100689). The Zenodo **concept DOI** [`10.5281/zenodo.19445262`](https://doi.org/10.5281/zenodo.19445262) always resolves to the most recently published version. The v0.7-preview predecessor release remains available at DOI [`10.5281/zenodo.19445263`](https://doi.org/10.5281/zenodo.19445263).
+If you reference KP:1 in academic, technical, or evaluative work, please use the metadata in [`CITATION.cff`](CITATION.cff). The Zenodo **concept DOI** [`10.5281/zenodo.19445262`](https://doi.org/10.5281/zenodo.19445262) always resolves to the most recently published version. The v0.8.0-preview snapshot remains available at DOI [`10.5281/zenodo.20100689`](https://doi.org/10.5281/zenodo.20100689), and the v0.7-preview predecessor release remains available at DOI [`10.5281/zenodo.19445263`](https://doi.org/10.5281/zenodo.19445263).
 
-The recommended short form (using the v0.8.0-preview snapshot DOI) is:
+The recommended short form (using the concept DOI for the current preview) is:
 
-> Kompanchenko, T. (2026). *KP:1 — Knowledge Pack Format Specification* (Version 0.8.0-preview). Zenodo. <https://doi.org/10.5281/zenodo.20100689>
+> Kompanchenko, T. (2026). *KP:1 — Knowledge Pack Format Specification* (Version 0.8.1-preview). Zenodo. <https://doi.org/10.5281/zenodo.19445262>
 
 The editor and an acknowledgment of AI drafting assistance are also recorded in [`ACKNOWLEDGMENTS.md`](ACKNOWLEDGMENTS.md).
 

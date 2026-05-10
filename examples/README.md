@@ -5,7 +5,7 @@
 
 > **Status:** Four reference examples — two carryover from v0.7, two new in v0.8.0-preview.
 
-Curated sample Knowledge Packs that demonstrate the format. Every example pack is validated by `python3 conformance/run.py` as part of the conformance suite (19/19 passing as of v0.8.0-preview).
+Curated sample Knowledge Packs that demonstrate the format. Every example pack is validated by `python3 conformance/run.py` as part of the conformance suite (19/19 passing as of v0.8.1-preview).
 
 ## Examples
 

@@ -351,7 +351,7 @@ kpack restore meetings/webb-advisory-2026-03-22.kpack/
 # Moves from _archive/ back to active directory
 ```
 
-> The `kpack` commands above describe planned reference tooling. As of v0.8.0-preview, the only command that ships in this repository is `python3 conformance/run.py`. See [SPEC.md §13 Tooling](SPEC.md) for status.
+> The `kpack` commands above describe planned reference tooling. As of v0.8.1-preview, the only command that ships in this repository is `python3 conformance/run.py`. See [SPEC.md §13 Tooling](SPEC.md) for status.
 
 ---
 
@@ -367,7 +367,7 @@ This is the conservative default. It treats the parser as authoritative for synt
 
 ### Why not auto-invalidate
 
-A stricter rule — automatically marking every `←requires` dependent as invalid when its parent is superseded — was considered and rejected for v0.8.0-preview. The reasons:
+A stricter rule — automatically marking every `←requires` dependent as invalid when its parent is superseded — was considered and rejected for the v0.8 preview line. The reasons:
 
 1. **Many supersessions narrow rather than negate.** A successor claim that refines the parent (e.g., from "the work is dated 1957" to "the work is dated 1962") may leave most dependent claims standing under the new parent's truth. Auto-invalidation would force unnecessary supersession of claims that remain accurate.
 
@@ -408,7 +408,7 @@ The cascade decisions are recorded in `history.md` alongside the supersession en
 
 Supersession is local to a pack. A claim in pack A superseded with `⊘` does not propagate to claims in pack B that referenced the original via `↔` (cross-pack see-also). Cross-pack effects are a [`RECONCILIATION.md`](RECONCILIATION.md) concern (currently a stub; full design deferred to v0.9 / v1.0).
 
-The conservative reading for v0.8.0-preview: a cross-pack `↔` reference is a navigational pointer, not a binding dependency. Pack B's claim with `↔packA#section` does not require pack A to be reconciled before pack B is published. If pack A's referenced claim is superseded, pack B's `↔` continues to point at the same heading; the heading typically contains the successor claim by then.
+The conservative reading for v0.8.1-preview: a cross-pack `↔` reference is a navigational pointer, not a binding dependency. Pack B's claim with `↔packA#section` does not require pack A to be reconciled before pack B is published. If pack A's referenced claim is superseded, pack B's `↔` continues to point at the same heading; the heading typically contains the successor claim by then.
 
 ---
 

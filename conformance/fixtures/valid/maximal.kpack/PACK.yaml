@@ -84,3 +84,5 @@ views:
     voice: true
     duration: "~45 seconds"
     pace: measured
+    register: investor
+    sub_register: uk-halychyna
