@@ -209,14 +209,14 @@ changes; pure schema bumps.
 
 The KP:1 manifest root remains closed; the `extensions` lane (added in v0.7.4)
 is the sanctioned compatibility surface for producer-defined metadata. This
-release catalogues the producer-defined extension blocks that the Nova
-ecosystem uses today and retires the never-fully-realized `entities.md`
+release catalogues the producer-defined extension blocks that the
+reference implementation uses today and retires the never-fully-realized `entities.md`
 companion file in favour of the typed `extensions.entities` block.
 
 ### Added
 - **EXTENSIONS.md** (NEW companion document) — informative catalogue of
   producer-defined extension blocks under `extensions.*` in active use across
-  the Nova ecosystem. Documents `extensions.ai_brief` (the v0.7.4 example),
+  the reference implementation. Documents `extensions.ai_brief` (the v0.7.4 example),
   `extensions.entities` (typed entity graph), `extensions.relations` (typed
   edges between entities, mirroring the relation_types vocabulary in
   DEFINITIONS.md §3), `extensions.intent` + `extensions.intent_schema_version`
@@ -244,7 +244,7 @@ companion file in favour of the typed `extensions.entities` block.
 - **`entities.md`** — used in only five packs out of ~770 and never landed as
   a practical primitive. Producers MUST NOT emit `entities.md` in new packs.
   Equivalent and richer information now lives under `extensions.entities`
-  (typed entity records with stable Nova IDs and external-ID vocabulary)
+  (typed entity records with stable canonical entity IDs and external-ID vocabulary)
   and `extensions.relations` (typed edges with optional temporal and
   attribute data per DEFINITIONS.md §3). A one-shot migration script
   (`scripts/migrate-entities-md-to-extensions.mjs`, shipped with kp-forge)

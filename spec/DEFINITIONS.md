@@ -216,7 +216,7 @@ Edge attributes are particularly important for:
 ### Consumer Pattern — `extensions.relations` in PACK.yaml
 
 The `relation_types` schema above defines the *vocabulary*. Producers in
-the Nova ecosystem write *instances* of relations under
+the reference implementation write *instances* of relations under
 [`extensions.relations`](EXTENSIONS.md#23-extensionsrelations--typed-edges)
 in PACK.yaml, where each instance references entities declared under
 [`extensions.entities`](EXTENSIONS.md#22-extensionsentities--typed-entity-graph):

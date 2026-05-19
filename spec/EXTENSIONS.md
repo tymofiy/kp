@@ -19,8 +19,7 @@ the optional `extensions` object instead of appearing as new top-level keys
 [SPEC.md §3.2](SPEC.md)).
 
 This document is the catalogue of **producer-defined** extension blocks in
-active use across the reference implementation (the public `kp-forge`,
-`kp-packs`, and `kp-viewer` repositories). It is informative — KP:1 does
+active use across the reference implementation. It is informative — KP:1 does
 not require any extension to exist, and consumers MUST ignore extension
 content they do not understand. New extensions are listed here so producers and
 consumers can converge on shared shapes without forcing schema breaks or
