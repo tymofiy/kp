@@ -276,6 +276,110 @@ it. The English claim remains valid and complete on its own; the
 translations block adds audit trail without creating a parallel canonical
 surface.
 
+### 2.9 `extensions.collection` — pack-bundle membership
+
+**Owner:** kp-forge intake pipeline + kp-viewer library organization.
+**Status:** active (introduced 2026-05-24).
+
+Declares that a pack belongs to a user-facing **collection** — a bundle of
+related packs sharing a real-world origin (a private art collection, a watch
+collection, a wine cellar, a portfolio of holdings). Collections are an
+**orthogonal organizational axis** alongside `tier:` (claim-clustering hubs,
+≤20 sub_packs) and the viewer-derived `category` (first segment of `domain:`).
+A collection MAY span multiple categories — e.g., the Joukowsky Collection
+contains both antiquities and fine art under the `art/*` root.
+
+```yaml
+extensions:
+  collection:
+    name: "Joukowsky Collection"        # required — display name, grouping key
+    id: joukowsky-collection            # optional — stable identifier (see compat)
+    role: member                        # optional — hub | member | standalone (default: member)
+    item_kind: object                   # optional — see "Inventory taxonomy" below
+    item_role: artist                   # optional — finer classification within item_kind
+```
+
+**Field semantics.**
+
+- `name` — required. The display name shown in the viewer's scope chip and
+  used today as the grouping key. Two packs with the same `name` are treated
+  as belonging to the same collection.
+- `id` — optional. A stable, opaque identifier (e.g., kebab-case slug).
+  Reserved for future use when collections become a top-level spec field with
+  rename-safe references. Today, consumers MAY ignore `id` and group by `name`.
+- `role` — optional enum (`hub` | `member` | `standalone`), defaults to
+  `member`. `hub` marks a spine pack that describes the collection itself
+  (typically `domain: art/private-collection` or similar) — viewer renders it
+  as the collection cover when present. `member` is a regular pack in the
+  collection. `standalone` is reserved for packs that historically carried the
+  block but stand alone in the viewer; treat as "no collection" for grouping.
+- `item_kind` — optional controlled-vocabulary enum identifying what kind of
+  thing this pack represents *within the collection's inventory*. Drives the
+  viewer's inventory-dashboard layout when the user scopes to a collection.
+  Generalizable across art, watches, wine, real estate, and auction inventory.
+  See the table below.
+- `item_role` — optional free-form string narrowing the `item_kind`. e.g. a
+  pack with `item_kind: person` might carry `item_role: artist | scholar |
+  dealer | family | owner | auctioneer`; a `place` might carry `item_role:
+  room | gallery | auction_house | residence | region`; an `event` might carry
+  `item_role: exhibition | auction | sale | acquisition | appraisal`. Consumers
+  MAY surface these as filter pills within the kind's section. Unknown values
+  are ignored gracefully.
+
+### Inventory taxonomy (`item_kind`)
+
+| Value | Meaning | Joukowsky example | Christie's analogue |
+|---|---|---|---|
+| `spine` | Collection's overview/hub pack (typically one per collection) | `joukowsky-collection` | The auction-house catalog pack |
+| `subcollection` | Category hub that groups objects (a sub-bucket within the collection) | `category-antiquities` | Department (Impressionist, Contemporary) |
+| `object` | Individual inventory item | `category-antiquities-001-jade-figure-of-a-bixie` | Lot |
+| `person` | Any human entity | Artists, scholars, family members, owners | Consigners, buyers, specialists |
+| `place` | Physical location or organization-with-location | Rooms, residences, galleries, auction houses | Sale rooms, regions |
+| `period` | Temporal classification (era, dynasty, vintage) | Tang Dynasty, Hellenistic period | Era, vintage year |
+| `event` | Exhibition, auction, sale, acquisition, appraisal | 1985 Brown Exhibition | Auctions, sales |
+| `document` | Records (appraisals, catalogs, certificates, invoices) | Gurr Johns 2022 appraisal | Sale catalogs, condition reports |
+| `narrative` | Story content (voice briefings, monographs, voice scripts) | `narration-joukowsky-parents` | Sale-room essays |
+
+**Item kinds are display-axes, not access-control or routing axes.** A pack's
+`item_kind` controls how it appears in the collection inventory dashboard
+(which section, which filter pill). It does not affect search, embeddings,
+sealing, or any other system. Producers MAY omit `item_kind` entirely; the
+viewer falls back to name-prefix inference for legacy packs and otherwise
+shows the pack as a generic "other" entry.
+
+**One spine per collection (convention, not enforced).** A collection should
+have at most one pack with `item_kind: spine` — the cover/overview pack. If
+multiple are present, the viewer picks one deterministically (typically the
+oldest-sealed or alphabetically first). This is a convention, not a hard
+constraint; the parser does not error.
+
+**Distinction from `tier: hub`.** `tier: hub` (spec) is for small claim
+clusters (≤20 sub_packs) that declare their children explicitly via
+`sub_packs:`. `extensions.collection` is for large user-facing bundles
+(hundreds of items possible) where members share a `name` rather than being
+pre-declared. Both MAY coexist on the same pack; they describe different
+concerns.
+
+**Distinction from `category`.** `category` is derived at scan time from the
+first segment of `domain:` and is not authored. A collection MAY span
+multiple categories. Producers MUST NOT use `extensions.collection` to
+override or canonicalize category derivation.
+
+**Compatibility.** Consumers that do not understand the block MUST ignore
+it. Producers MAY omit the block entirely; packs without it appear in the
+viewer's "Uncollected" section (or the category section, depending on
+grouping mode). The kp-viewer reference consumer treats `name` as
+authoritative for grouping today; if/when `collection:` is promoted to a
+top-level spec field with `id` semantics, this catalogue entry will be
+updated and an alias-and-migrate path documented.
+
+**Authoring expectations.** When an intake pipeline detects sibling structure
+(shared origin, similar domains, shared creator/location/period metadata) it
+SHOULD propose a collection name to the user rather than emit individual
+standalone packs. The user accepts, edits, or rejects the proposal; on
+acceptance, every pack in the batch receives the same `name` and `role:
+member` (or `role: hub` for the spine pack if one exists).
+
 ---
 
 ## 3. Cross-cutting concerns
