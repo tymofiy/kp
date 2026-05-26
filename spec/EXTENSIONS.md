@@ -286,14 +286,14 @@ related packs sharing a real-world origin (a private art collection, a watch
 collection, a wine cellar, a portfolio of holdings). Collections are an
 **orthogonal organizational axis** alongside `tier:` (claim-clustering hubs,
 ≤20 sub_packs) and the viewer-derived `category` (first segment of `domain:`).
-A collection MAY span multiple categories — e.g., the Joukowsky Collection
-contains both antiquities and fine art under the `art/*` root.
+A collection MAY span multiple categories — e.g., a private art collection
+may contain both antiquities and fine art under the `art/*` root.
 
 ```yaml
 extensions:
   collection:
-    name: "Joukowsky Collection"        # required — display name, grouping key
-    id: joukowsky-collection            # optional — stable identifier (see compat)
+    name: "Example Antiquities Collection"  # required — display name, grouping key
+    id: example-antiquities-collection      # optional — stable identifier (see compat)
     role: member                        # optional — hub | member | standalone (default: member)
     item_kind: object                   # optional — see "Inventory taxonomy" below
     item_role: artist                   # optional — finer classification within item_kind
@@ -328,17 +328,17 @@ extensions:
 
 ### Inventory taxonomy (`item_kind`)
 
-| Value | Meaning | Joukowsky example | Christie's analogue |
+| Value | Meaning | Private-collection example | Auction-house analogue |
 |---|---|---|---|
-| `spine` | Collection's overview/hub pack (typically one per collection) | `joukowsky-collection` | The auction-house catalog pack |
+| `spine` | Collection's overview/hub pack (typically one per collection) | `example-antiquities-collection` | The auction-house catalog pack |
 | `subcollection` | Category hub that groups objects (a sub-bucket within the collection) | `category-antiquities` | Department (Impressionist, Contemporary) |
-| `object` | Individual inventory item | `category-antiquities-001-jade-figure-of-a-bixie` | Lot |
+| `object` | Individual inventory item | `category-antiquities-001-example-jade-figure` | Lot |
 | `person` | Any human entity | Artists, scholars, family members, owners | Consigners, buyers, specialists |
 | `place` | Physical location or organization-with-location | Rooms, residences, galleries, auction houses | Sale rooms, regions |
 | `period` | Temporal classification (era, dynasty, vintage) | Tang Dynasty, Hellenistic period | Era, vintage year |
-| `event` | Exhibition, auction, sale, acquisition, appraisal | 1985 Brown Exhibition | Auctions, sales |
-| `document` | Records (appraisals, catalogs, certificates, invoices) | Gurr Johns 2022 appraisal | Sale catalogs, condition reports |
-| `narrative` | Story content (voice briefings, monographs, voice scripts) | `narration-joukowsky-parents` | Sale-room essays |
+| `event` | Exhibition, auction, sale, acquisition, appraisal | 1985 university loan exhibition | Auctions, sales |
+| `document` | Records (appraisals, catalogs, certificates, invoices) | 2022 specialist appraisal | Sale catalogs, condition reports |
+| `narrative` | Story content (voice briefings, monographs, voice scripts) | `narration-collection-overview` | Sale-room essays |
 
 **Item kinds are display-axes, not access-control or routing axes.** A pack's
 `item_kind` controls how it appears in the collection inventory dashboard
