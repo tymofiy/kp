@@ -42,8 +42,8 @@ The relationship: PLAYBACK sits one layer above VOICE. A renderer consults the p
 audience_profile:
   familiarity: fresh                    # fresh | some_context | expert
   duration_tier: medium                  # short | medium | long
-  purpose: orientation                   # orientation | decision | risk_review | press | research | demo
-  domain_lens: buyer                     # buyer | consigner | compliance | journalist | collector | general
+  purpose: orientation                   # see "purpose" enum below
+  domain_lens: buyer                     # see "domain_lens" enum below
   register: curatorial                   # plain | curatorial | technical | investor (per VOICE.md §4.1)
   inferred: false                        # true if the profile was derived from defaults rather than dialogue
 ```
@@ -56,6 +56,63 @@ audience_profile:
 | `domain_lens` | No | enum | Listener's role-frame within the pack's domain. Refines emphasis (e.g., a buyer hears value claims first; compliance hears risk first). |
 | `register` | No | enum | Voice register from [VOICE.md §4.1](VOICE.md). Defaults to `curatorial` for art/heritage packs, `plain` otherwise. |
 | `inferred` | Yes | boolean | `true` when the profile defaulted; `false` when explicitly captured via discovery dialogue. |
+
+### 3.1 `purpose` enum
+
+The `purpose` field names why the listener is here. The original six values
+(`orientation`, `decision`, `risk_review`, `press`, `research`, `demo`) are
+joined by six use-case-named values added 2026-05-19:
+
+| Value | Listener context |
+|---|---|
+| `orientation` | New to the subject; wants the lay of the land. |
+| `decision` | Has to decide something concrete (buy / consign / approve / reject). |
+| `risk_review` | Reviewing for risk specifically — adverse media, sanctions, exposure. |
+| `press` | Journalist or writer assembling a story. |
+| `research` | Academic or analytic study; deeper than orientation, lighter than decision. |
+| `demo` | Showing the system off; not a real research session. |
+| `pre_meeting` | Brief before a meeting with the subject. Wants interests and obvious risks, fast. |
+| `hiring` | HR vetting context. Wants credentials verified, achievements substantiated, adverse media checked. |
+| `partnership` | Evaluating a potential partner or counterpart. Wants culture fit, track record, integrity surface. |
+| `competitive_intel` | Studying a competitor. Wants activity, traction, relationships, market position. |
+| `sales_prep` | Preparing a sales engagement. Wants decision-maker map, interests, hooks. |
+| `appreciation` | Admiring or tracking the subject. Wants achievements, cultural resonance, integrity surface light. |
+
+### 3.2 `domain_lens` enum
+
+The `domain_lens` field names the listener's role-frame. Original five
+values (`buyer`, `consigner`, `compliance`, `journalist`, `collector`,
+`general`) are joined by six use-case-named values added 2026-05-19:
+
+| Value | Role-frame |
+|---|---|
+| `buyer` | Listening as a potential buyer / acquirer. |
+| `consigner` | Listening as a potential consigner / seller. |
+| `compliance` | Listening as a compliance officer / auditor. |
+| `journalist` | Listening as press / journalist / fact-checker. |
+| `collector` | Listening as a private collector with no immediate transaction. |
+| `general` | No specific role; orienting. |
+| `hr_reviewer` | Listening as a hiring manager / HR / reference-check. |
+| `partner_evaluator` | Listening as a potential business partner. |
+| `competitor_analyst` | Listening as an analyst studying this subject as a competitor. |
+| `admirer` | Listening to admire or learn about the subject for its own sake. |
+| `meeting_host` | Listening shortly before a meeting with the subject. |
+| `salesperson` | Listening to prepare a sales engagement. |
+
+### 3.3 Extensibility
+
+Both enums are **extensible** — KP:1 v0.9 may add further values as new
+use cases emerge in production. Renderers MUST handle unknown enum
+values gracefully:
+
+- Unknown `purpose` → treat as `orientation`.
+- Unknown `domain_lens` → treat as `general`.
+
+This prevents an older renderer from crashing on a newer pack's profile,
+and it lets new values ship via spec updates without renderer
+re-releases. Producers SHOULD use the registered values from the tables
+above whenever possible; SHOULD NOT invent ad-hoc values when an
+existing one fits.
 
 `AudienceProfile.register` composes with — but does not replace — VOICE's producer-side `register`. Producer-side `register` controls how voice views are *written*; `AudienceProfile.register` is the listener-side selection for the *current session*. Where they conflict, the session selection wins for that session's narration; the underlying voice view file is unchanged.
 
