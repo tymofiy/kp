@@ -19,6 +19,10 @@ __pycache__/
 *.pem
 *.key
 
+# Local-only deny-list patterns (workspace-specific names that must
+# never appear in this public repo). See .private-deny-list.example.
+.private-deny-list
+
 # Work artifacts — kept outside the spec repo
 logs/
 PROMPT-*.md

@@ -92,6 +92,8 @@ These rules are absolute. They are the most common ways a fresh agent breaks the
 
 8. **MUST NOT translate or alter the syntactic operators (`→ ⊗ ⊗! ⊗~ ← ~ ⊘ ↔`) when localizing**. They are part of the syntax, not the prose. Translate the claim text only.
 
+9. **MUST NOT use real client, collection, vendor, family, or other private-engagement names in examples, prose, YAML samples, or pack identifiers.** This is a PUBLIC repository. Use fictional generic placeholders ("Example Antiquities Collection", "Acme Auction House", "2022 specialist appraisal", `example-collection`, `narration-collection-overview`). Real names from the author's network — even if those entities are publicly known philanthropists, institutions, or auction houses — imply an active engagement and reveal operational context that does not belong here. When tempted to reach for a familiar real-world example because it "feels more concrete," resist: the spec's persuasive force comes from coverage, not from name-dropping. (A pre-commit hook scans for workspace-specific patterns when configured; the behavioral rule in this file is the primary defense.)
+
 ---
 
 ## What you can ignore

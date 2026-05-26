@@ -1,0 +1,25 @@
+# Local-only deny-list for client / engagement / vendor names.
+#
+# Copy this file to .private-deny-list (which is gitignored) and add
+# the names from your workspace that must never appear in this PUBLIC
+# repository — client surnames, private-collection names, vendor firms
+# in active engagements, internal codenames, customer-facing domain
+# names, etc.
+#
+# Once set, the lefthook pre-commit and commit-msg hooks will refuse
+# to land staged content (in .md/.txt/.yml/.yaml/.json/.cff/.toml
+# files) or a commit message containing any of these patterns.
+#
+# Pattern syntax: POSIX extended regex (used with `grep -inE`),
+# case-insensitive. Join multiple patterns with `|`. Use `\s` for
+# whitespace, `\.` for a literal dot, `\b` for word boundary.
+#
+# Examples (replace with your own):
+#   export DENY_PATTERNS_CLIENT_NAMES='acme\s+corp|widget\s+industries|j\.\s*doe\s+collection|globex|initech'
+#
+# Workspace owners: keep this file under change control somewhere
+# private (1Password, a private notes repo, etc.). The cost of
+# losing your local copy is just losing the mechanical backstop —
+# the agent-side defense in AGENTS.md still applies.
+
+export DENY_PATTERNS_CLIENT_NAMES=''

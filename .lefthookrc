@@ -1,3 +1,10 @@
 # Lefthook shell config — sourced before hook commands run
 # Adds mise shims to PATH so biome, markdownlint, etc. are available
 export PATH="${HOME}/.local/share/mise/shims:${PATH}"
+
+# Local-only deny-list patterns for client / engagement names.
+# See .private-deny-list.example for the shape. The actual file is
+# gitignored so workspace-specific names never enter the public repo.
+# Fresh clones without this file fall back to the behavioral defense
+# in AGENTS.md §"What you MUST NOT do".
+[ -f .private-deny-list ] && . ./.private-deny-list

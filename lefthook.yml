@@ -66,6 +66,33 @@ pre-commit:
           exit 1
         fi
 
+    # Public repo: scan staged content for real client / engagement names.
+    # Patterns are loaded from a gitignored .private-deny-list file via
+    # .lefthookrc so the workspace-specific names never enter this repo.
+    # If $DENY_PATTERNS_CLIENT_NAMES is unset (fresh clone without the
+    # local patterns file), this check is a no-op and the only defense
+    # is the behavioral rule in AGENTS.md §"What you MUST NOT do".
+    client-names:
+      glob: "*.{md,txt,yml,yaml,json,cff,toml}"
+      exclude: "lefthook.yml|.lefthookrc|.private-deny-list*"
+      run: |
+        if [ -z "$DENY_PATTERNS_CLIENT_NAMES" ]; then exit 0; fi
+        found=0
+        for file in {staged_files}; do
+          if [ ! -f "$file" ]; then continue; fi
+          if grep -inE "$DENY_PATTERNS_CLIENT_NAMES" "$file" 2>/dev/null; then
+            echo "Client/engagement name match in: $file"
+            found=1
+          fi
+        done
+        if [ "$found" -eq 1 ]; then
+          echo ""
+          echo "Real-engagement name detected. This is a PUBLIC repo."
+          echo "Use fictional generic placeholders in examples"
+          echo "(see AGENTS.md §\"What you MUST NOT do\")."
+          exit 1
+        fi
+
 commit-msg:
   commands:
     validate:
@@ -86,5 +113,19 @@ commit-msg:
           echo ""
           echo "Process language in commit message. This is a PUBLIC repo."
           echo "Describe what changed, not which models reviewed it."
+          exit 1
+        fi
+
+    # Public repo: scan commit message for real client / engagement names.
+    # Patterns loaded from .private-deny-list via .lefthookrc — no-op if
+    # the local patterns file is absent.
+    client-names:
+      run: |
+        if [ -z "$DENY_PATTERNS_CLIENT_NAMES" ]; then exit 0; fi
+        msg=$(cat "{1}")
+        if echo "$msg" | grep -iE "$DENY_PATTERNS_CLIENT_NAMES" >/dev/null 2>&1; then
+          echo ""
+          echo "Real-engagement name in commit message. This is a PUBLIC repo."
+          echo "Rewrite the message with generic placeholders before committing."
           exit 1
         fi
