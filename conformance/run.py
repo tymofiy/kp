@@ -61,6 +61,7 @@ INVALID_ORDER = [
     "dangling-relation-target.kpack",
     "wrong-pack-name.kpack",
     "prediction-too-confident.kpack",
+    "verbose-prediction-too-confident.kpack",
 ]
 
 # Expected error categories for invalid fixtures.
@@ -75,6 +76,7 @@ INVALID_EXPECTED = {
     "dangling-relation-target.kpack": "SC-05",
     "wrong-pack-name.kpack": "SC-07",
     "prediction-too-confident.kpack": "SC-12",
+    "verbose-prediction-too-confident.kpack": "SC-12",
 }
 EXAMPLE_ORDER = [
     "solar-energy-market.kpack",
@@ -310,6 +312,20 @@ def validate_pack(pack_dir: Path) -> list[Err]:
             if type_s not in {"o", "r", "c", "i"}:
                 errs.append(Err("parse", f"invalid claim type '{type_s}' for {cid} (expected o/r/c/i)"))
 
+            # Position 4 (date): ISODate. Grammar is YYYY-MM-DD; validate the
+            # format when the slot is non-empty (empty interior slots are valid).
+            date_s = parts[3].strip()
+            if date_s and not re.fullmatch(r"\d{4}-\d{2}-\d{2}", date_s):
+                errs.append(Err("parse", f"invalid date '{date_s}' for {cid} (expected YYYY-MM-DD)"))
+
+            # Position 5 (depth) intentionally NOT enum-validated here. The spec
+            # (CORE.md) lists assumed/investigated/exhaustive, but a large share
+            # of the shipped corpus (system + grounding packs) uses additional
+            # depth values such as `practitioner`/`confirmed`. Enforcing the
+            # closed set would flag hundreds of production claims — that is a
+            # spec-vs-corpus reconciliation, not a parser quick-win, so it is
+            # left for a dedicated decision rather than enforced here.
+
             # Empty evidence position → syntactic error
             if not ev_s:
                 errs.append(Err("parse", f"empty evidence ref list for {cid}"))
@@ -349,6 +365,13 @@ def validate_pack(pack_dir: Path) -> list[Err]:
             cm = re.search(r"confidence:\s*(\d+\.\d+)", meta)
             if cm:
                 confidences.append((cid, float(cm.group(1)), cm.group(1)))
+
+            # SC-12: a prediction-nature claim must keep confidence ≤0.95.
+            # The dense branch enforces this at the position-6 nature slot; the
+            # verbose branch previously skipped it entirely.
+            nm = re.search(r"nature:\s*(\w+)", meta)
+            if cm and nm and nm.group(1) == "prediction" and float(cm.group(1)) > 0.95:
+                predictions_high_conf.append((cid, float(cm.group(1))))
 
             # Evidence refs
             em = re.search(r"evidence:\s*([^|]+)", meta)
