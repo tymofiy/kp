@@ -1,0 +1,39 @@
+# SPDX-License-Identifier: Apache-2.0
+# SPDX-FileCopyrightText: 2026 Timothy Kompanchenko
+#
+# Minimal packaging for the reference CLI: `pip install -e .` from a
+# checkout puts `kpack` on PATH (console script → reference/kpack_cli.py).
+# `kpack lint` delegates to conformance/run.py, which lives in the
+# repository tree rather than the wheel — a checkout (editable install)
+# is the supported layout, and the CLI says so loudly if the runner is
+# missing. Dependencies mirror requirements.txt; keep the two in sync.
+
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "kpack-reference"
+# Tracks the spec tag (v0.8.2-preview → 0.8.2a0 per PEP 440); part of the
+# release status-marker sweep.
+version = "0.8.2a0"
+description = "KP:1 Knowledge Pack reference CLI (kpack lint + contract pointers)"
+readme = "reference/README.md"
+requires-python = ">=3.11"
+license = "Apache-2.0"
+license-files = ["LICENSE-CODE"]
+dependencies = [
+  "pyyaml>=6.0.3",
+  "jsonschema[format-nongpl]>=4.26",
+  "parsimonious>=0.11",
+]
+
+[project.urls]
+Repository = "https://github.com/tymofiy/kp"
+
+[project.scripts]
+kpack = "kpack_cli:main"
+
+[tool.setuptools]
+package-dir = {"" = "reference"}
+py-modules = ["kpack_cli"]

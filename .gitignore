@@ -13,6 +13,12 @@ Thumbs.db
 node_modules/
 .env*
 __pycache__/
+.venv/
+
+# Packaging build artifacts (pip install -e . / build)
+*.egg-info/
+build/
+dist/
 
 # Secrets
 .secrets*

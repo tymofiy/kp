@@ -13,8 +13,27 @@ Must pass the conformance suite. Cannot redefine the spec.
 
 ## What ships today
 
-- **`kpack lint <path/to/pack.kpack>`** — implemented. Delegates to [`conformance/run.py`](../conformance/run.py) `--pack` with identical output and exit codes (0 pass / 1 fail / 2 usage). Supports `--json` for a machine-readable result and `--no-color`.
+- **`kpack lint <path/to/pack.kpack>`** — implemented. Delegates to [`conformance/run.py`](../conformance/run.py) `--pack` with identical output and exit codes (0 pass / 1 fail / 2 usage). Supports `--strict` (parse `claims.md` through the normative PEG grammar), `--json` for a machine-readable result, and `--no-color`.
 - **[`kpack`](kpack)** as a contract-pointer for everything else. Run `./kpack` to list the subcommands the spec describes and which spec section defines each one's contract; run `./kpack <subcommand>` for a one-paragraph summary.
+
+The CLI is argparse end-to-end: unknown subcommands and unknown flags fail
+loudly with exit code 2 — nothing is silently ignored. The implementation
+lives in [`kpack_cli.py`](kpack_cli.py); [`kpack`](kpack) is a thin launcher
+that keeps the no-install invocation working.
+
+### Install as a console script (optional)
+
+From a repository checkout:
+
+```bash
+pip install -e .
+kpack lint examples/hello-world.kpack
+```
+
+`pip install -e .` (editable) is the supported install: `kpack lint` runs
+the conformance runner from the repository tree, so the checkout must stay
+present. A plain site-packages install will refuse `lint` with a message
+saying exactly that.
 
 ```bash
 $ ./kpack lint ../examples/hello-world.kpack
