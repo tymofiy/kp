@@ -213,6 +213,11 @@ def _translate_peg(ford: str) -> str:
         newlines (the Rosetta legend spans lines); regex needs DOTALL
     Quoted literals pass through unchanged: parsimonious evaluates
     backslash escapes ('\\n', '\\r\\n') the same way Ford notation does.
+
+    Known limitation: a character class containing a literal ']' would
+    need escaping this walker does not perform. The shipped grammar has
+    no such class; if one is ever added, Grammar() compilation fails
+    loudly at startup rather than mis-parsing.
     """
     out = []
     i, n = 0, len(ford)

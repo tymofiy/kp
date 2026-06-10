@@ -222,7 +222,7 @@ Entity annotation format (AR-09): `[entity_type]` or `[entity_type|alias1,alias2
 
 ### Sections
 
-Claims are grouped under `##` headings. Section headings are freeform text. One or more claims MUST follow each section heading directly — no freeform prose or subheadings are permitted between the section heading and its claims.
+Claims are grouped under `##` headings. Section headings are freeform text. A section MAY open with a blockquote description before its claims, mirroring the document-level description (AR-17). One or more claims MUST follow — apart from that optional blockquote and blank lines, no freeform prose or subheadings are permitted between the section heading and its claims.
 
 ---
 
