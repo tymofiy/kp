@@ -91,7 +91,7 @@ See §3.1.
 **Compatibility.** Consumers that do not understand the block MUST ignore
 it. Producers MAY omit the block entirely; downstream consumers fall back
 to the H1 entity annotation in `claims.md`
-([CORE.md AR-09](CORE.md#claim-grammar)) when present.
+([CORE.md AR-09](CORE.md#appendix-b-ambiguity-resolutions)) when present.
 
 ### 2.3 `extensions.relations` — typed edges
 
@@ -432,8 +432,9 @@ playbook trace.
 
 ### 3.3 Per-claim entity references
 
-Claims MAY annotate which entities they describe via the existing
-`extensions` lane on `KPClaim` ([CORE.md §4](CORE.md#claims)):
+Claims MAY annotate which entities they describe via the `extensions`
+lane on the structured claim record (`KPClaim`,
+[STORAGE.md §3.2](STORAGE.md#32-json-serialization-operational)):
 
 ```yaml
 - id: C014
