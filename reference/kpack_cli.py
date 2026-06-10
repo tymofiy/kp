@@ -200,8 +200,10 @@ TEMPLATES = {"hello-world": Path(__file__).resolve().parent.parent / "examples" 
 ISO_DATE_RE = re.compile(r"\d{4}-\d{2}-\d{2}")
 CALVER_RE = re.compile(r"\d{4}\.\d{2}\.\d{2}")
 # Lines whose ISO dates are scaffold slots: dense claim metadata lines
-# (indented `{...}`) and evidence captured-fields.
-DATE_SLOT_LINE_RE = re.compile(r"^\s*\{|captured:")
+# (indented `{...}` — including any trailing prose CORE permits on them)
+# and evidence captured-fields (case-insensitive per AR-07: the list
+# format spells it `Captured:`).
+DATE_SLOT_LINE_RE = re.compile(r"^\s*\{|captured:", re.IGNORECASE)
 
 
 def _rewrite_slot_dates(text: str, today_iso: str) -> str:
@@ -281,16 +283,17 @@ def run_new(args: argparse.Namespace) -> int:
     # Drift detector: the rewrites above are anchored to the starter's
     # current text. If the starter evolves and an anchor stops matching,
     # the leftover identity shows up here — warn, don't fail (the scaffold
-    # still validates; the user can finish the rename by hand). Skipped
-    # when the chosen name itself contains the starter identity (e.g.
-    # `hello-world-two`), which would always trip it.
+    # still validates; the user can finish the rename by hand). The text
+    # is tested minus the identities placed on purpose — the description's
+    # provenance mention and the user's own name/title — so a pristine
+    # scaffold never warns, and real drift is caught even for names that
+    # themselves contain "hello-world".
+    intentional = "scaffolded from the hello-world starter"
     residue = []
-    if "hello-world" not in name:
-        residue = [
-            f.name
-            for f in (pack_yaml, claims, evidence)
-            if "hello-world" in f.read_text() or "Hello World" in f.read_text()
-        ]
+    for f in (pack_yaml, claims, evidence):
+        text = f.read_text().replace(intentional, "").replace(name, "").replace(title, "")
+        if "hello-world" in text or "Hello World" in text:
+            residue.append(f.name)
     if residue:
         print(
             f"kpack: warning — starter identity remains in {', '.join(residue)} "

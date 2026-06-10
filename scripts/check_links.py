@@ -24,11 +24,13 @@ import sys
 from pathlib import Path
 from urllib.parse import unquote
 
-# Optional CommonMark link titles — [text](target "title") — are consumed
-# so titled links are checked rather than silently skipped.
-MD_LINK_RE = re.compile(r"""\[[^\]]*\]\(([^)\s]+)(?:\s+"[^"]*")?\)""")
+# Optional CommonMark link titles — "title", 'title', or (title) after the
+# target — are consumed so titled links are checked rather than skipped.
+MD_LINK_RE = re.compile(
+    r"""\[[^\]]*\]\(([^)\s]+)(?:\s+(?:"[^"]*"|'[^']*'|\([^)]*\)))?\)"""
+)
 HEADING_RE = re.compile(r"^#{1,6}\s+(.*?)\s*#*\s*$")
-FENCE_RE = re.compile(r"^\s{0,3}(```|~~~)")
+FENCE_RE = re.compile(r"^\s{0,3}(`{3,}|~{3,})(.*)$")
 HTML_ANCHOR_RE = re.compile(r"""<a\s+(?:name|id)=["']([^"']+)["']""")
 INLINE_LINK_RE = re.compile(r"\[([^\]]*)\]\([^)]*\)")
 # Backticks and asterisks vanish in rendered heading text; underscores do
@@ -50,17 +52,24 @@ def collect_anchors(path: Path) -> set[str]:
     """All anchor ids a #fragment can point at in this markdown file."""
     anchors: set[str] = set()
     counts: dict[str, int] = {}
-    fence_char: str | None = None  # the opener's char — ``` only closes ```, ~~~ only ~~~
+    # Open fence as (char, length) per CommonMark: a fence closes only on
+    # the same character, at least as long, with nothing but whitespace
+    # after — so a ``` line inside a ```` block, or a ```lang line inside
+    # an open ``` block, is content, not a closer.
+    fence: tuple[str, int] | None = None
     for line in path.read_text().splitlines():
         fm = FENCE_RE.match(line)
         if fm:
-            mark = fm.group(1)[0]
-            if fence_char is None:
-                fence_char = mark
-            elif fence_char == mark:
-                fence_char = None
+            mark, rest = fm.group(1), fm.group(2)
+            if fence is None:
+                fence = (mark[0], len(mark))
+                continue
+            if mark[0] == fence[0] and len(mark) >= fence[1] and not rest.strip():
+                fence = None
+                continue
+            # inside a fence and not a valid closer: content
             continue
-        if fence_char:
+        if fence:
             continue
         m = HEADING_RE.match(line)
         if m:
