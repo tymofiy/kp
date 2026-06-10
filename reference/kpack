@@ -1,35 +1,41 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: Apache-2.0
 # SPDX-FileCopyrightText: 2026 Timothy Kompanchenko
-"""kpack — reference CLI stub.
+"""kpack — reference CLI (one implemented subcommand; the rest are contract pointers).
 
-This is a planned-tooling stub. The KP:1 specification (SPEC.md §13)
-describes a `kpack` command-line tool that does not yet ship in this
-repository. This stub exists so that a fresh agent or human reader who
-runs `kpack <subcommand>` gets a clear pointer to the spec section that
-will eventually define that command's contract, instead of `command not
-found` and a guessing game.
+The KP:1 specification (SPEC.md §13) describes a `kpack` command-line
+tool. One subcommand is implemented in this repository today:
 
-The only command that currently runs in this repository is
-`python3 conformance/run.py`. Every other `kpack <subcommand>` is a
-contract to be implemented; this stub names the contract.
+    kpack lint <path/to/pack.kpack>     # validate a pack (delegates to
+                                        # conformance/run.py --pack; same
+                                        # output, same exit codes)
+
+Every other `kpack <subcommand>` is a contract to be implemented: running
+it prints a pointer to the spec section that defines that command's
+contract, so a fresh agent or human reader gets the authority instead of
+`command not found` and a guessing game.
 
 Usage:
+    kpack lint <pack> [--json] [--no-color]   # validate a pack
     kpack <subcommand>          # prints the spec section for that subcommand
     kpack                       # lists all known subcommands and their spec sections
-    kpack --version             # prints the spec version this stub matches
+    kpack --version             # prints the spec version this tool matches
 """
 
+import subprocess
 import sys
+from pathlib import Path
 
 VERSION = "v0.8.1-preview"
+
+RUN_PY = Path(__file__).resolve().parent.parent / "conformance" / "run.py"
 
 COMMAND_REGISTRY = {
     "lint": (
         "spec/SPEC.md §13 Tooling",
         "Validate a pack's structure, references, and semantic constraints. "
-        "Today, run `python3 conformance/run.py` after copying your pack into "
-        "examples/, or import `validate_pack` from conformance/run.py.",
+        "IMPLEMENTED: `kpack lint <path>` delegates to "
+        "`conformance/run.py --pack` (same output, same exit codes).",
     ),
     "test": (
         "spec/SPEC.md §10 validation.yaml — Test Questions",
@@ -131,10 +137,10 @@ COMMAND_REGISTRY = {
 
 
 def print_banner() -> None:
-    print(f"kpack — KP:1 reference CLI stub ({VERSION})")
+    print(f"kpack — KP:1 reference CLI ({VERSION})")
     print()
-    print("This is a contract-pointer, not a runnable tool.")
-    print("The only command that ships today is: python3 conformance/run.py")
+    print("Implemented today: kpack lint <pack>  (delegates to conformance/run.py)")
+    print("Every other subcommand is a contract pointer to its spec section.")
     print()
 
 
@@ -160,9 +166,26 @@ def print_command_detail(cmd: str) -> int:
     print()
     print(f"  {summary}")
     print()
-    print("  This command is not yet implemented in this repository. The")
-    print("  contract above is the authority; an implementation is planned.")
+    if cmd == "lint":
+        print("  Run it:  kpack lint <path/to/pack.kpack> [--json] [--no-color]")
+    else:
+        print("  This command is not yet implemented in this repository. The")
+        print("  contract above is the authority; an implementation is planned.")
     return 0
+
+
+def run_lint(args: list[str]) -> int:
+    """Validate a pack by delegating to conformance/run.py --pack."""
+    flags = [a for a in args if a in ("--json", "--no-color")]
+    paths = [a for a in args if not a.startswith("-")]
+    if len(paths) != 1:
+        print("usage: kpack lint <path/to/pack.kpack> [--json] [--no-color]",
+              file=sys.stderr)
+        return 2
+    if not RUN_PY.exists():
+        print(f"kpack: conformance runner not found at {RUN_PY}", file=sys.stderr)
+        return 2
+    return subprocess.call([sys.executable, str(RUN_PY), "--pack", paths[0], *flags])
 
 
 def main(argv: list[str]) -> int:
@@ -176,6 +199,8 @@ def main(argv: list[str]) -> int:
     if argv[1] in ("-h", "--help"):
         print(__doc__)
         return 0
+    if argv[1] == "lint" and len(argv) > 2:
+        return run_lint(argv[2:])
     return print_command_detail(argv[1])
 
 
