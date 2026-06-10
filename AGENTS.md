@@ -55,7 +55,7 @@ python3 conformance/run.py --pack path/to/my-pack.kpack
 python3 conformance/run.py --pack path/to/my-pack.kpack --strict
 
 # Equivalent via the reference CLI (same validation, same exit codes;
-# add --json for a machine-readable result):
+# --strict and --json forward to the runner):
 ./reference/kpack lint path/to/my-pack.kpack
 ```
 

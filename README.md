@@ -118,7 +118,7 @@ idiomatic pack (three claims, two evidence entries) — and edit from there.
 | `examples/` | Five `.kpack` reference examples (validated by the conformance suite), including the `hello-world` starter |
 | `positioning/` | Public-facing positioning and design rationale |
 | `research/` | Benchmark design and prior art analysis |
-| `reference/` | Reference CLI — `kpack lint` is implemented (delegates to the conformance runner); other subcommands are contract-pointer stubs |
+| `reference/` | Reference CLI — `kpack lint` is implemented (delegates to the conformance runner); other subcommands are contract-pointer stubs. Installable as a console script: `pip install -e .` |
 | `decisions/` | Design decision records |
 | `scripts/` | Git hooks and validation helpers |
 
