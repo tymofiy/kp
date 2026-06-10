@@ -1,0 +1,34 @@
+name: Implementation experience
+description: You tried to build a parser / validator / renderer from the docs — what broke or surprised you
+labels: ["implementation"]
+body:
+  - type: input
+    id: what-you-built
+    attributes:
+      label: What you built
+      description: Surface and language
+      placeholder: "claims.md parser in Rust / PACK.yaml validator in TypeScript"
+    validations:
+      required: true
+  - type: textarea
+    id: friction
+    attributes:
+      label: What broke or surprised you
+      description: Where the docs were insufficient, misleading, or contradicted the fixtures
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Minimal reproduction
+      description: Input + expected + actual, if applicable
+      render: text
+  - type: input
+    id: docs-read
+    attributes:
+      label: Which documents did you implement from?
+      placeholder: "spec/CORE.md + kp-claims.peg only"
+  - type: textarea
+    id: suggestion
+    attributes:
+      label: What would have saved you the time?

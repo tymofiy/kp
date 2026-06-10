@@ -1,0 +1,42 @@
+name: Bug report
+description: A defect in the conformance runner, fixtures, grammar, schemas, or scripts
+labels: ["bug"]
+body:
+  - type: dropdown
+    id: component
+    attributes:
+      label: Component
+      options:
+        - conformance/run.py (runner)
+        - conformance/fixtures (a fixture tests the wrong thing)
+        - kp-claims.peg (grammar)
+        - JSON Schemas (PACK.yaml / signatures / composition)
+        - reference/kpack (CLI)
+        - scripts (hooks, link checker)
+        - documentation mismatch
+    validations:
+      required: true
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Reproduction
+      description: Commands + minimal input
+      render: text
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+      description: Cite the spec section or fixture that defines the correct behavior, if you can
+  - type: input
+    id: environment
+    attributes:
+      label: Environment
+      placeholder: "Python 3.12, macOS / jsonschema 4.26"

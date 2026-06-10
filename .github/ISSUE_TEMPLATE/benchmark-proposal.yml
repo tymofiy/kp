@@ -1,0 +1,28 @@
+name: Benchmark proposal
+description: A task design that would empirically test KP:1 against alternatives
+labels: ["benchmark"]
+body:
+  - type: textarea
+    id: task
+    attributes:
+      label: Task design
+      description: What the model/system is asked to do, with what inputs, under which conditions
+    validations:
+      required: true
+  - type: textarea
+    id: hypothesis
+    attributes:
+      label: What it would test
+      description: Which KP:1 value claim this exercises (e.g. cheaper carry-forward than prose, fewer contradiction misses than flat notes) — and what result would count as KP:1 losing
+    validations:
+      required: true
+  - type: textarea
+    id: protocol
+    attributes:
+      label: Data and protocol
+      description: Datasets, baselines (prose / RAG / JSON facts), metrics, scoring
+  - type: textarea
+    id: prior-art
+    attributes:
+      label: Related work
+      description: Existing benchmarks or papers this builds on — see research/benchmark-design.md for the current thinking

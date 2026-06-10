@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Security report
+    url: https://github.com/tymofiy/kp/security/advisories/new
+    about: Report privately — do not open a public issue for anything you believe is exploitable.
+  - name: Contribution guide
+    url: https://github.com/tymofiy/kp/blob/main/CONTRIBUTING.md
+    about: What feedback is wanted during the preview phase, and how PRs work.
