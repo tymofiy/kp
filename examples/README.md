@@ -3,15 +3,16 @@
 
 # KP Examples
 
-> **Status:** Four reference examples — two carryover from v0.7, two new in v0.8.0-preview.
+> **Status:** Five reference examples — two carryover from v0.7, two new in v0.8.0-preview, plus a copy-this starter.
 
-Curated sample Knowledge Packs that demonstrate the format. Every example pack is validated by `python3 conformance/run.py` as part of the conformance suite (22/22 passing).
+Curated sample Knowledge Packs that demonstrate the format. Every example pack is validated by `python3 conformance/run.py` as part of the conformance suite (23/23 passing).
 
 ## Examples
 
 | Pack | Claims | Evidence | Views | Purpose |
 |------|--------|----------|-------|---------|
-| [`solar-energy-market.kpack`](solar-energy-market.kpack/) | 8 | 8 | 1 | Hello-world — dense + verbose syntax, a subset of relation types (`→`, `⊗~`, `←`), solar energy domain |
+| [`hello-world.kpack`](hello-world.kpack/) | 3 | 2 | — | Copy-this starter — the minimum idiomatic shape; `cp -r` it and edit |
+| [`solar-energy-market.kpack`](solar-energy-market.kpack/) | 8 | 8 | 1 | First full example — dense + verbose syntax, a subset of relation types (`→`, `⊗~`, `←`), solar energy domain |
 | [`kp-external-assessment.kpack`](kp-external-assessment.kpack/) | 12 | 4 | 4 | Self-assessment — KP:1's own external assessment, demonstrates truth-over-posture positioning |
 | [`art-acquisition-decision.kpack`](art-acquisition-decision.kpack/) | 22 | 11 | 3 | Buyer-side decision pack — anonymized art acquisition demonstrating all four claim types, all three contradiction qualifiers (`⊗` / `⊗!` / `⊗~`), supersession (`⊘`), multiple confidence calibrations, judgment / prediction / meta natures, and three audience-specific views (overview, counsel, voice briefing). Walks the [AUTHORING.md](../spec/AUTHORING.md) decision rubrics end-to-end. |
 | [`auction-house-consignment-review.kpack`](auction-house-consignment-review.kpack/) | 20 | 9 | 4 | Consigner-side decision pack — anonymized auction-house review of a sculpture consignment over a foundry-mark attribution dispute. The complement to `art-acquisition-decision.kpack`: same domain, opposite role, the *decline* path, cross-pack `↔` references, and four audience-specific views including a formal-register consignor decline letter. |
@@ -20,7 +21,8 @@ Curated sample Knowledge Packs that demonstrate the format. Every example pack i
 
 For a fresh reader of KP:1:
 
-1. **`solar-energy-market.kpack`** is the simplest entry point. Read its [`claims.md`](solar-energy-market.kpack/claims.md) to see the claim syntax in action, then check [`PACK.yaml`](solar-energy-market.kpack/PACK.yaml) for the manifest format.
+0. **`hello-world.kpack`** is the copy-this starter — three claims, two evidence entries, nothing else. Copy the directory and edit it to begin your own pack.
+1. **`solar-energy-market.kpack`** is the simplest full example. Read its [`claims.md`](solar-energy-market.kpack/claims.md) to see the claim syntax in action, then check [`PACK.yaml`](solar-energy-market.kpack/PACK.yaml) for the manifest format.
 2. **`art-acquisition-decision.kpack`** is the comprehensive feature demo. Read it alongside [`spec/AUTHORING.md`](../spec/AUTHORING.md) to see how the decision rubrics translate into a real pack. This pack exercises every interesting feature of the format on a single coherent scenario.
 3. **`auction-house-consignment-review.kpack`** demonstrates the *other side* of high-stakes asset-decision support — the decline path and cross-pack references.
 4. **`kp-external-assessment.kpack`** is the meta example — KP:1 reasoning about itself.
@@ -42,4 +44,4 @@ pip install -r ../requirements.txt
 python3 ../conformance/run.py
 ```
 
-Expected output: `22/22 passed` (18 fixtures in `../conformance/fixtures/` + 4 examples here).
+Expected output: `23/23 passed` (18 fixtures in `../conformance/fixtures/` + 5 examples here).

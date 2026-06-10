@@ -59,17 +59,18 @@ A KP:1 implementation is **conformant** if it:
 From the repository root:
 
 ```bash
+python3 -m venv .venv && source .venv/bin/activate  # if your Python is externally managed (PEP 668)
 pip install -r requirements.txt
 python3 conformance/run.py
 ```
 
-Expected result: `22/22 passed`. The runner's Python dependencies are declared in `requirements.txt` — note that `jsonschema` is installed with its `format-nongpl` extra, which provides the validators that make JSON Schema `format` assertions (date-time, uri) actually enforce; with bare `jsonschema`, unrecognized formats are silently skipped.
+Expected result: `23/23 passed`. The runner's Python dependencies are declared in `requirements.txt` — note that `jsonschema` is installed with its `format-nongpl` extra, which provides the validators that make JSON Schema `format` assertions (date-time, uri) actually enforce; with bare `jsonschema`, unrecognized formats are silently skipped.
 
 ## Grammar vs Runner
 
 The PEG grammar in `grammar/kp-claims.peg` is the **normative** reference for KP:1 claim syntax. It is what implementations should target.
 
-The `run.py` runner in this preview release validates fixtures against **equivalent regular-expression patterns** rather than parsing through the PEG grammar directly. The two paths are kept in sync by hand. A future phase will replace the regex layer with a PEG-driven parser using a library such as `parsimonious` or `lark`. The fixture suite is the contract: any future runner that passes 22/22 against these fixtures is acceptable.
+The `run.py` runner in this preview release validates fixtures against **equivalent regular-expression patterns** rather than parsing through the PEG grammar directly. The two paths are kept in sync by hand. A future phase will replace the regex layer with a PEG-driven parser using a library such as `parsimonious` or `lark`. The fixture suite is the contract: any future runner that passes 23/23 against these fixtures is acceptable.
 
 If you want to implement a conforming parser today, target the PEG grammar, not the runner's regexes.
 
@@ -79,7 +80,7 @@ If you want to implement a conforming parser today, target the PEG grammar, not 
 |-------|-------------|--------|
 | C1 | Formal grammar (PEG), JSON Schema, 18 fixtures | **Done** |
 | C2 | YAML schemas for signatures.yaml, composition.yaml | **Done** |
-| C3 | Automated test runner (`run.py`, 22/22 pass) | **Done** |
+| C3 | Automated test runner (`run.py`, 23/23 pass) | **Done** |
 | C4 | Round-trip consistency tests | Not started |
 
 ## Key Design Decisions
@@ -90,8 +91,9 @@ If you want to implement a conforming parser today, target the PEG grammar, not 
   constraints). PEG cannot express cross-references, value ranges, or acyclicity.
 - **16 ambiguity resolutions**: See `grammar/README.md` for the full list. Each
   is a normative decision that was not fully specified in the prose spec.
-- **All four example packs validated**: `solar-energy-market.kpack`,
-  `kp-external-assessment.kpack`, `art-acquisition-decision.kpack`, and
+- **All five example packs validated**: `hello-world.kpack`,
+  `solar-energy-market.kpack`, `kp-external-assessment.kpack`,
+  `art-acquisition-decision.kpack`, and
   `auction-house-consignment-review.kpack` all pass the grammar and the
   semantic constraints. The runner validates them on every run alongside
-  the 18 fixture cases (22/22 total).
+  the 18 fixture cases (23/23 total).

@@ -9,6 +9,7 @@
 
 | Pack | Type | Features density | Best for |
 |---|---|---|---|
+| [`hello-world.kpack`](hello-world.kpack/) | Starter template | Minimal | Copying to start your own pack |
 | [`solar-energy-market.kpack`](solar-energy-market.kpack/) | Domain analysis | Light | First read; basic syntax |
 | [`kp-external-assessment.kpack`](kp-external-assessment.kpack/) | Meta-assessment | Medium | Self-referential / judgment-heavy authoring |
 | [`art-acquisition-decision.kpack`](art-acquisition-decision.kpack/) | Buyer-side decision | High | Full-feature reference; AUTHORING.md rubric walkthrough |
@@ -47,7 +48,7 @@ A `✓` means the pack uses the feature; `–` means it does not. Patterns are c
 | Explicit decline / negative recommendation | – | – | – | ✓ |
 | `extensions.*` blocks | – | – | – | – |
 
-The four packs together cover every feature in the format's grammar. `solar-energy-market` is the syntactic sampler; `art-acquisition-decision` is the rubric walkthrough; `auction-house-consignment-review` is the decline-path counterpart with cross-pack references.
+The four domain packs together cover every feature in the format's grammar (`hello-world` is a minimum-shape starter and is deliberately outside the matrices). `solar-energy-market` is the syntactic sampler; `art-acquisition-decision` is the rubric walkthrough; `auction-house-consignment-review` is the decline-path counterpart with cross-pack references.
 
 ---
 
@@ -113,7 +114,7 @@ Walks the `nature: judgment` annotation discipline and the §5 confidence-calibr
 
 ### `solar-energy-market.kpack` — basic syntax sampler
 
-The hello-world. Demonstrates dense + verbose claim metadata, a representative subset of relation symbols (`→`, `⊗~`, `←`; not the full eight — see the matrix above), and a single overview view. Use this to learn the syntax before opening the larger packs.
+The first full example. Demonstrates dense + verbose claim metadata, a representative subset of relation symbols (`→`, `⊗~`, `←`; not the full eight — see the matrix above), and a single overview view. Use this to learn the syntax before opening the larger packs. (For a bare copy-this template, use `hello-world.kpack` instead.)
 
 ---
 
@@ -126,4 +127,4 @@ The hello-world. Demonstrates dense + verbose claim metadata, a representative s
 
 ---
 
-*Generated 2026-05-09 alongside v0.8.0-preview. The index is regenerated when example packs change; verify by running `python3 conformance/run.py` (22/22 expected) before relying on the table data.*
+*Generated 2026-05-09 alongside v0.8.0-preview. The index is regenerated when example packs change; verify by running `python3 conformance/run.py` (23/23 expected) before relying on the table data.*

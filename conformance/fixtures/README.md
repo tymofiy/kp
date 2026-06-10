@@ -1,6 +1,6 @@
 # KP:1 Conformance Fixtures
 
-> **Status:** Complete — Phase C3 (automated runner passes 22/22: 18 fixtures + 4 example packs)
+> **Status:** Complete — Phase C3 (automated runner passes 23/23: 18 fixtures + 5 example packs)
 > **Spec version:** KP:1 v0.8.1-preview
 
 Test fixtures for KP:1 conformance validation. Each fixture is a complete
@@ -152,7 +152,7 @@ This validates each `claims.md` against an equivalent regex implementation of
 `grammar/kp-signatures.schema.json` when present, runs semantic constraint
 checks (SC-01 through SC-12), and verifies that all valid fixtures pass and
 all invalid fixtures fail with expected errors.
-Current result: **22/22 tests pass** (18 fixtures + 4 reference example packs).
+Current result: **23/23 tests pass** (18 fixtures + 5 reference example packs).
 
 To validate a single pack outside the bundled set:
 

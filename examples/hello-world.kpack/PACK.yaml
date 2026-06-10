@@ -1,0 +1,10 @@
+name: hello-world
+version: 2026.06.10
+domain: examples/getting-started
+author: Your Name Here
+description: The smallest idiomatic Knowledge Pack — copy this directory to start your own.
+spec_uri: https://github.com/tymofiy/kp
+spec_version: v0.8.1-preview
+confidence:
+  scale: simple
+  normalize: true

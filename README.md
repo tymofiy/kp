@@ -1,19 +1,13 @@
 <!-- SPDX-License-Identifier: CC-BY-4.0 -->
 <!-- SPDX-FileCopyrightText: 2026 Timothy Kompanchenko -->
 
-> *Man sieht nur, was man weiß.*  
-> *We see only what we know.*  
-> — Goethe
->
-> *You see that the sun rises and sets and therefore you think you know. You don't.*  
-> *You only know when you can answer the question: How or what for?*  
-> — Barenboim
->
 > *An AI knows only what we tell it.*  
 > *KP:1 is for telling it whole.*  
 > — KP:1
 
 # KP:1 -- Knowledge Pack Format
+
+[![CI](https://github.com/tymofiy/kp/actions/workflows/ci.yml/badge.svg)](https://github.com/tymofiy/kp/actions/workflows/ci.yml) [![Spec license: CC BY 4.0](https://img.shields.io/badge/spec-CC_BY_4.0-blue)](LICENSE) [![Code license: Apache 2.0](https://img.shields.io/badge/code-Apache_2.0-blue)](LICENSE-CODE) [![Latest tag](https://img.shields.io/github/v/tag/tymofiy/kp?label=tag)](https://github.com/tymofiy/kp/tags)
 
 > KP:1 is a format that doesn't flatten knowledge. Uncertainties stay uncertain,
 > contradictions stay in tension, and the trace of how beliefs evolved is kept
@@ -25,6 +19,13 @@
 **See also:** [`spec/CORE.md`](spec/CORE.md), [`spec/SPEC.md`](spec/SPEC.md), [`spec/AUTHORING.md`](spec/AUTHORING.md), [`AGENTS.md`](AGENTS.md) (AI-first routing), [`GOVERNANCE.md`](GOVERNANCE.md), [`CONTRIBUTING.md`](CONTRIBUTING.md)
 
 ## What is KP:1?
+
+> *Man sieht nur, was man weiß. / We see only what we know.*  
+> — Goethe
+>
+> *You see that the sun rises and sets and therefore you think you know. You don't.*  
+> *You only know when you can answer the question: How or what for?*  
+> — Barenboim
 
 Think about what anyone actually knows about a real artwork: contradictory
 accounts of provenance, overlapping stories that reinforce each other, uncertain
@@ -56,6 +57,17 @@ without reconstructing from scratch. This is the same wave as
 `llms.txt` and `AGENTS.md` — formats built for AI to read directly —
 applied to knowledge itself.
 
+### When to reach for it — and when not
+
+**Use KP:1 when** beliefs need to survive transport: an AI or a human team
+carrying claims forward — with their uncertainty, contradictions, evidence
+trail, and supersession history intact — across sessions, tools, and time.
+
+**Don't use KP:1 when** you need search or live retrieval over a large corpus
+(that is a RAG pipeline's job), a queryable graph database, or a free-form
+notes app. KP:1 is the packaging for authored, curated knowledge; it
+complements those systems rather than replacing them.
+
 ## Quick Start
 
 Read **[spec/CORE.md](spec/CORE.md)** -- the implementable Core specification.
@@ -72,7 +84,13 @@ A claim in KP:1 looks like this:
 ```
 
 Each claim has an ID, an assertion, a confidence/type/evidence block, and
-optional context with relations to other claims.
+optional context with relations to other claims. Relation symbols, in brief:
+`→` supports · `⊗` contradicts (`⊗!` known error, `⊗~` productive tension) ·
+`←` requires · `~` refines · `⊘` supersedes · `↔` see also.
+
+To start a pack of your own, copy
+[`examples/hello-world.kpack/`](examples/hello-world.kpack/) — the smallest
+idiomatic pack (three claims, two evidence entries) — and edit from there.
 
 ## Repository Structure
 
@@ -80,7 +98,7 @@ optional context with relations to other claims.
 |-----------|---------|
 | `spec/` | Normative specification -- [CORE.md](spec/CORE.md), [SPEC.md](spec/SPEC.md), and companion documents |
 | `conformance/` | PEG grammar, JSON Schema, and 18 test fixtures |
-| `examples/` | Four complete `.kpack` reference examples (validated by the conformance suite) |
+| `examples/` | Five `.kpack` reference examples (validated by the conformance suite), including the `hello-world` starter |
 | `positioning/` | Public-facing positioning and design rationale |
 | `research/` | Benchmark design and prior art analysis |
 | `reference/` | Reference CLI — `kpack lint` is implemented (delegates to the conformance runner); other subcommands are contract-pointer stubs |
@@ -91,7 +109,11 @@ Top-level governance and policy files include `GOVERNANCE.md`, `CONTRIBUTING.md`
 
 ## Examples
 
-Four complete Knowledge Packs demonstrate the format:
+Five Knowledge Packs demonstrate the format:
+
+- **[Hello World](examples/hello-world.kpack/)** -- The copy-this starter:
+  the smallest idiomatic pack (three claims, two evidence entries, one
+  relation each of `→` and `~`). `cp -r` it to begin your own pack.
 
 - **[Solar Energy Market](examples/solar-energy-market.kpack/)** -- Market
   analysis with cost trajectories, technology trends, and regional adoption.
@@ -132,12 +154,12 @@ The [conformance suite](conformance/) provides formal validation tools:
   schema for PACK.yaml manifests
 - **18 test fixtures** -- 6 valid packs that must be accepted, 12 invalid packs
   that must be rejected with specific errors
-- **4 complete example packs** -- the kpacks in `examples/` are validated by
+- **5 complete example packs** -- the kpacks in `examples/` are validated by
   the runner as part of the suite, so the live examples are themselves
   conformance tests
 
-The runner (`conformance/run.py`) reports **22/22 passed** on a conformant
-implementation: 18 fixture tests + 4 example validations. A conformant
+The runner (`conformance/run.py`) reports **23/23 passed** on a conformant
+implementation: 18 fixture tests + 5 example validations. A conformant
 implementation parses all valid fixtures, rejects all invalid ones, validates
 PACK.yaml against the schema (including its `format` assertions), validates
 `signatures.yaml` and `composition.yaml` against their schemas when present,
@@ -146,8 +168,9 @@ and enforces semantic constraints SC-01 through SC-12.
 Run from a fresh checkout:
 
 ```bash
+python3 -m venv .venv && source .venv/bin/activate  # if your Python is externally managed (PEP 668)
 pip install -r requirements.txt
-python3 conformance/run.py                       # full suite (22/22 expected)
+python3 conformance/run.py                       # full suite (23/23 expected)
 python3 conformance/run.py --pack path/to/x.kpack  # validate a single pack
 ```
 
@@ -166,7 +189,7 @@ format's genuinely novel contributions.
 
 ## Status
 
-This is an **editor's draft** maintained by a single editor in a public repository. It is published as `KP:1 Public Draft — 2026-05` (current git tag `v0.8.1-preview`, with the v0.7.x preview series and the iterative v0.8.x preview line documented in [`spec/CHANGELOG.md`](spec/CHANGELOG.md)). It has a formal grammar, a JSON Schema, a conformance suite with 18 test fixtures plus 4 reference examples (22/22 validated).
+This is an **editor's draft** maintained by a single editor in a public repository. It is published as `KP:1 Public Draft — 2026-05` (current git tag `v0.8.1-preview`, with the v0.7.x preview series and the iterative v0.8.x preview line documented in [`spec/CHANGELOG.md`](spec/CHANGELOG.md)). It has a formal grammar, a JSON Schema, a conformance suite with 18 test fixtures plus 5 reference examples (23/23 validated).
 
 The specification is **not final** and may change in any way at any time, including breaking changes. It is **not yet ratified** by any standards body. Compatibility commitments will arrive only with a non-draft version. See [`GOVERNANCE.md`](GOVERNANCE.md) for the full governance picture, including how decisions are made during the preview phase and what changes when the Knowledge Pack Foundation is incorporated.
 
