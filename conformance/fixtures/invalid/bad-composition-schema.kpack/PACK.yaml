@@ -1,0 +1,4 @@
+name: bad-composition-schema
+version: 2026.06.10
+domain: test/conformance
+author: KP Conformance Suite

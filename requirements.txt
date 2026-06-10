@@ -1,4 +1,8 @@
 # KP:1 conformance suite Python dependencies
 # Install with: pip install -r requirements.txt
 pyyaml>=6.0.3
-jsonschema>=4.26
+# format-nongpl pulls the non-GPL format validators (rfc3339-validator,
+# rfc3986-validator, ...) so JSON Schema "format" assertions (date,
+# date-time, uri) are actually enforced. Bare jsonschema silently skips
+# any format it has no validator for.
+jsonschema[format-nongpl]>=4.26

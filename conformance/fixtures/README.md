@@ -1,6 +1,6 @@
 # KP:1 Conformance Fixtures
 
-> **Status:** Complete — Phase C3 (automated runner passes 20/20: 16 fixtures + 4 example packs)
+> **Status:** Complete — Phase C3 (automated runner passes 22/22: 18 fixtures + 4 example packs)
 > **Spec version:** KP:1 v0.8.1-preview
 
 Test fixtures for KP:1 conformance validation. Each fixture is a complete
@@ -70,6 +70,8 @@ Implementations MUST reject each fixture, flagging the specific violation.
 | `wrong-pack-name.kpack` | Frontmatter `pack:` value disagrees with PACK.yaml `name:` | SC-07 | MUST reject |
 | `prediction-too-confident.kpack` | nature=prediction with confidence 0.97 (>0.95 cap) | SC-12 | MUST reject |
 | `verbose-prediction-too-confident.kpack` | Same SC-12 violation in verbose named-field syntax | SC-12 | MUST reject |
+| `bad-format-fields.kpack` | PACK.yaml `freshness` is not a date, `spec_uri` is not a URI | Schema (format) | MUST reject |
+| `bad-composition-schema.kpack` | composition.yaml `meeting.date` is not an ISO 8601 datetime | Composition schema (format) | MUST reject |
 
 ### Violation Details
 
@@ -120,6 +122,21 @@ verbose named-field syntax (`` `confidence: 0.97 | … | nature: prediction` ``)
 Guards the constraint on both metadata forms — a validator that only checks
 the dense position-6 slot would miss it.
 
+**bad-format-fields:** PACK.yaml declares `freshness: "2026-13-45"` (month 13)
+and `spec_uri: "not a uri"`. Both violate JSON Schema `format` assertions; the
+claims document itself is fully valid, so a validator that skips format
+checking wrongly accepts the pack.
+
+**bad-composition-schema:** A composition pack whose `composition.yaml` sets
+`meeting.date: next tuesday` — every other field is valid, so the only
+violation is the `date-time` format assertion. Catches validators that do not
+check `composition.yaml` against `kp-composition.schema.json` at all, and
+validators without format enforcement. Note the dependency sensitivity: the
+`date-time` validator ships in jsonschema's `format-nongpl` extra (pinned in
+`requirements.txt`); with bare `jsonschema`, this violation goes undetected
+while `bad-format-fields`' date violation is still caught (the `date` checker
+is stdlib-backed).
+
 ## Running Fixtures
 
 The automated test runner validates all fixtures:
@@ -135,7 +152,7 @@ This validates each `claims.md` against an equivalent regex implementation of
 `grammar/kp-signatures.schema.json` when present, runs semantic constraint
 checks (SC-01 through SC-12), and verifies that all valid fixtures pass and
 all invalid fixtures fail with expected errors.
-Current result: **20/20 tests pass** (16 fixtures + 4 reference example packs).
+Current result: **22/22 tests pass** (18 fixtures + 4 reference example packs).
 
 To validate a single pack outside the bundled set:
 

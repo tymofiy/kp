@@ -619,7 +619,7 @@ The following normative decisions resolve ambiguities identified during grammar 
 | AR-11 | Continuation lines use 2+ spaces of indentation. |
 | AR-12 | Claim ID gaps are permitted. Uniqueness is the only constraint (SC-02). |
 | AR-13 | A claim uses EITHER dense OR verbose metadata. No mixing within a single claim. |
-| AR-14 | `signatures.yaml` schema defined in ARCHIVE.md. `composition.yaml` schema is published at `conformance/grammar/kp-composition.schema.json` (informative); the conformance runner detects composition packs by `composition.yaml` presence (per [SPEC.md §2](SPEC.md), [COMPOSITION.md](COMPOSITION.md)) but does not currently validate them against the published schema. Producers MAY validate independently. |
+| AR-14 | `signatures.yaml` schema defined in ARCHIVE.md. `composition.yaml` schema is published at `conformance/grammar/kp-composition.schema.json` (informative); the conformance runner detects composition packs by `composition.yaml` presence (per [SPEC.md §2](SPEC.md), [COMPOSITION.md](COMPOSITION.md)) and validates `composition.yaml` against the published schema when the file is present. |
 | AR-15 | `tier` is optional. When `hub`, `sub_packs` is required. |
 | AR-16 | Cross-pack references: `pack_name#section_ref`. `#` is the separator. |
 
