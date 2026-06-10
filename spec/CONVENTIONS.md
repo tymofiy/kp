@@ -37,7 +37,7 @@ Source of truth: this document.
 |---|------|-----------|---------|-------|
 | 1 | **Spelling authority** | Merriam-Webster (first listed entry) | "canceled" not "cancelled" | M-W is the de facto standard referenced by AP, Chicago, Google, Microsoft, Apple |
 | 2 | **Style fallback** | Chicago Manual of Style, 18th ed. | — | For questions M-W doesn't answer (hyphenation edge cases, etc.) |
-| 3 | **Locale tag** | `en-US` | PACK.yaml: `linguistic_epoch: en-US-2026` | BCP 47 language tag; year suffix anchors semantic drift |
+| 3 | **Locale tag** | `en-US` | PACK.yaml: `linguistic_epoch: en-US-2026` | BCP 47 language tag; year suffix anchors semantic drift. Note: `linguistic_epoch` is a decoration field per CORE.md §3 (no consumer behavior in v0.8.1-preview; new producers SHOULD prefer `extensions.*`) |
 | 4 | **Dates** | ISO 8601: `YYYY-MM-DD` | `2026-03-22` | Never "March 22, 2026" in claims. Views may localize |
 | 5 | **Date ranges** | ISO 8601 with "to" | `2026-01-01 to 2026-03-31` | Not en-dash ranges in claims; views may use en-dash |
 | 6 | **Times** | ISO 8601 with UTC | `14:30 UTC` or `2026-03-22T14:30:00Z` | UTC always; IANA zone in parentheses if local matters: `(America/New_York)` |
@@ -63,7 +63,7 @@ Source of truth: this document.
 | 26 | **Phone numbers** | E.164 with spaces | `+1 555 012 3456` | Canonical storage format. Views may add parentheses |
 | 27 | **Quotation marks** | Straight double quotes | `"scaffolding"` not `"scaffolding"` | ASCII `"` (U+0022). Curly quotes in views only |
 | 28 | **Lists in prose** | Semicolons for complex items | `types (6.3K); db (6.6K); api (31K)` | Commas for simple items; semicolons when items contain internal commas |
-| 29 | **Non-English terms** | Preserve original script + romanization | `Київ (Kyiv)` | Follow i18n.md conventions. Never anglicize proper nouns |
+| 29 | **Non-English terms** | Preserve original script + romanization | `Київ (Kyiv)` | Follow MULTILINGUAL.md conventions. Never anglicize proper nouns |
 | 30 | **Sentence length** | Target 15-25 words | — | Aligns with controlled language standards (ASD-STE100). Improves translation and LLM parsing |
 
 ---
@@ -188,7 +188,7 @@ conventions. Semicolons for complex list items follows Chicago Manual of Style.
 
 ### 29-30. Non-English terms, sentence length
 
-Follows the existing i18n.md convention. Sentence length target of 15-25 words
+Follows the MULTILINGUAL.md conventions. Sentence length target of 15-25 words
 aligns with ASD-STE100 Simplified Technical English and improves both human
 comprehension and machine translation accuracy.
 
@@ -199,7 +199,7 @@ comprehension and machine translation accuracy.
 When a linguistic question arises that is not covered by this document:
 
 ```text
-1. This document (linguistic.md)
+1. This document (CONVENTIONS.md)
    ↓ not covered
 2. Merriam-Webster Dictionary (first listed spelling)
    ↓ not covered (style question, not spelling)
@@ -314,10 +314,10 @@ This document governs all human-language content in Knowledge Packs:
 - `PACK.yaml` — `description` and other prose fields
 
 It does **not** govern:
-- Machine identifiers (IDs, slugs, URIs) — see `namespaces.md`
-- Metadata field names — see `system/schemas/knowledge-schema.yaml`
-- Name romanization — see `i18n.md`
-- Privacy and sensitivity classification — see `privacy.md`
+- Machine identifiers (IDs, slugs, URIs) — see the patterns in CORE.md §3 and `conformance/grammar/kp-pack.schema.json`
+- Metadata field names — see `conformance/grammar/kp-pack.schema.json` (the normative manifest schema)
+- Name romanization — see MULTILINGUAL.md
+- Privacy and sensitivity classification — see the `sensitivity` / `visibility` fields in CORE.md §3
 
 Changes to this document should be versioned in git and noted in the `updated_at`
 frontmatter field.

@@ -5,7 +5,7 @@
 
 > **Date:** 2026-04-12
 > **Status:** Draft
-> **Resolves:** AR-14 (signatures.yaml schema deferred to Phase C2)
+> **Resolves:** AR-14 — `signatures.yaml` schema (formal artifact: [`conformance/grammar/kp-signatures.schema.json`](../conformance/grammar/kp-signatures.schema.json))
 
 > **`kpack` CLI invocations in this document describe planned reference tooling.** Only `python3 conformance/run.py` ships today. See [SPEC.md §13](SPEC.md) and the contract-pointer stub at [`reference/kpack`](../reference/kpack) for status.
 
@@ -58,7 +58,7 @@ marquet-le-passeur.kpack (ZIP)
 ├── claims.md
 ├── evidence.md
 ├── signatures.yaml        # REQUIRED in sealed archives — integrity metadata (absent in export archives)
-├── entities.md             # if present in pack
+├── entities.md             # if present in pack (deprecated — legacy packs only)
 ├── history.md              # if present in pack
 ├── composition.yaml        # if present in pack
 ├── validation.yaml         # if present in pack
@@ -167,7 +167,7 @@ SHA-256 of this concatenation → pack hash.
 
 ## 4. `signatures.yaml`
 
-This section defines the schema for `signatures.yaml`, resolving SPEC.md §2's "Tooling only — Cryptographic hashes + signing key for integrity verification" and CORE.md AR-14.
+This section defines the schema for `signatures.yaml`, resolving SPEC.md §2's "Tooling only — Cryptographic hashes + signing key for integrity verification" and CORE.md AR-14. The normative JSON Schema artifact is [`conformance/grammar/kp-signatures.schema.json`](../conformance/grammar/kp-signatures.schema.json); the conformance runner validates `signatures.yaml` against it whenever the file is present.
 
 ### Schema
 
@@ -266,7 +266,7 @@ Sealing happens at every version transition in the pack lifecycle:
 
 ### 4.2 Signing (optional)
 
-Signing provides **tamper evidence** for the sealing metadata — proof that `pack_hash`, `sealed_at`, `sealed_by`, and `parent` have not been modified since sealing. It is OPTIONAL because:
+Signing provides **tamper evidence** for the sealing metadata — proof that `pack_hash`, `sealed_at`, `sealed_by`, and the primary parent fields (`parent.version`, `parent.pack_hash`) have not been modified since sealing. It is OPTIONAL because:
 
 - Single-user deployments gain little from signing.
 - Multi-tenant deployments (auction houses, galleries) benefit from knowing *which system* sealed a version.
@@ -281,6 +281,8 @@ The signing payload is the UTF-8 encoding of the following concatenation:
 ```
 
 Where `parent.version` and `parent.pack_hash` use their exact string values from `signatures.yaml` if present, or the empty string for a v1 pack (no parent). All fields use their literal `signatures.yaml` values — no normalization or transformation.
+
+> **Scope note.** The v1 signing payload binds the single primary parent only; `parent.merge_parents` entries (§4 field table) are covered by **neither** the signature **nor** the pack content hash (`signatures.yaml` is excluded from hashing, §3). Merge-parent entries are therefore **unauthenticated lineage hints**: an attacker can add, remove, or alter them in a signed archive without invalidating anything. Verifiers MUST NOT treat merge-parent assertions as tamper-evident; only the referenced archives' own contents can be verified, never the assertion that they are parents of this pack. A future payload revision may extend coverage.
 
 **Signing procedure:**
 
@@ -330,7 +332,7 @@ A broken chain (parent hash mismatch) indicates tampering, data loss, or a versi
 
 ### Branching
 
-Version chains may branch when multiple systems modify the same pack concurrently (e.g., two users editing simultaneously). Branch resolution is an implementation concern, not a spec concern. This spec defines the linear chain; conflict resolution policies and merge-parent semantics are deferred to a future version of this spec.
+Version chains may branch when multiple systems modify the same pack concurrently (e.g., two users editing simultaneously). Branch resolution is an implementation concern, not a spec concern. This spec defines the linear chain and the `parent.merge_parents` data shape (§4); branch conflict-resolution *policy* is deferred to a future version of this spec.
 
 ---
 
@@ -491,7 +493,7 @@ The integrity chain (hash verification) is valuable without signing. Signing add
 
 ### Why does the signature bind metadata, not just the pack hash?
 
-`signatures.yaml` is excluded from the content hash to avoid circular dependency. But without binding, the metadata fields (`sealed_at`, `sealed_by`, `parent`) could be rewritten without breaking verification — defeating the purpose of the integrity chain. The signing payload (§4.2) binds these fields so that any modification invalidates the signature.
+`signatures.yaml` is excluded from the content hash to avoid circular dependency. But without binding, the metadata fields (`sealed_at`, `sealed_by`, the primary `parent` fields) could be rewritten without breaking verification — defeating the purpose of the integrity chain. The signing payload (§4.2) binds these fields so that any modification invalidates the signature (`parent.merge_parents` excepted — see the §4.2 scope note).
 
 ---
 

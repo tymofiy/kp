@@ -292,7 +292,7 @@ In the pack-as-master model, an entity-claim-evidence index is a derived project
 
 | Index Component | Role | Derived From |
 |-----------------|------|--------------|
-| Entities | Global entity registry | `entities.md` across all packs |
+| Entities | Global entity registry | `extensions.entities` (legacy: `entities.md`) across all packs |
 | Claims | Cross-pack claim index | `claims.md` across all packs |
 | Evidence | Evidence lookup | `evidence.md` across all packs |
 | Entity Links | Cross-entity relationships | Claim relations + entity references |

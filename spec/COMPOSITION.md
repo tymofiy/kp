@@ -195,7 +195,7 @@ Notice: every claim is about the meeting situation, not about the referenced dom
 
 ## 4. Voice Assistant Integration
 
-Composition is designed to work with the three-process voice architecture described in SPEC.md section 15 and the v2 vision document.
+Composition is designed to work with the three-process voice architecture described in §4 below ("The Three Processes") and in [NOTES.md §7](NOTES.md).
 
 ### The Three Processes
 
@@ -415,7 +415,7 @@ pre_load:
 - `sections` instead of `agenda` (one-directional, not interactive)
 - `narrative_hint` guides the voice or document renderer on framing
 - `format` declares the intended delivery surface
-- No `on_demand` -- briefings are pre-composed, not exploratory
+- Typically no `on_demand` -- briefings are pre-composed, not exploratory (the schema permits it for every type)
 
 ### research
 
@@ -569,7 +569,11 @@ kpack archive webb-advisory-2026-03-24.kpack/
 
 ### Composition Validation (kpack lint)
 
-For composite packs, `kpack lint` adds these checks:
+The shipping conformance runner (`python3 conformance/run.py`, also reachable
+as `kpack lint`) already validates `composition.yaml` against the published
+[`kp-composition.schema.json`](../conformance/grammar/kp-composition.schema.json)
+whenever the file is present (per CORE.md AR-14). The checks below are the
+planned superset for composite packs:
 
 | Check | Severity | Description |
 |-------|----------|-------------|

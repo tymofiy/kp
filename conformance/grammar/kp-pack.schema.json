@@ -341,7 +341,7 @@
           "register": {
             "type": "string",
             "enum": ["plain", "curatorial", "technical", "investor"],
-            "description": "Voice register — diction and emphasis profile. See VOICE.md §4.1."
+            "description": "Voice register — diction and emphasis profile. See VOICE.md §4.2."
           },
           "sub_register": {
             "type": "string",

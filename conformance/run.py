@@ -381,7 +381,7 @@ def validate_pack(pack_dir: Path) -> list[Err]:
             except ValueError:
                 errs.append(Err("parse", f"invalid confidence '{conf_s}' for {cid}"))
 
-            # Position 5 (index 5) is nature when present (judgment | prediction | meta)
+            # Position 6 (index 5) is nature when present (judgment | prediction | meta)
             if conf_val is not None and len(parts) >= 6:
                 nature_s = parts[5].strip()
                 if nature_s == "prediction" and conf_val > 0.95:
@@ -514,6 +514,18 @@ def main():
     if as_json or no_color or os.environ.get("NO_COLOR") or not sys.stdout.isatty():
         global GREEN, RED, BOLD, DIM, RESET
         GREEN = RED = BOLD = DIM = RESET = ""
+
+    # The date-time/uri format validators are optional jsonschema deps
+    # (requirements.txt pins jsonschema[format-nongpl]). Without them,
+    # format assertions are silently skipped and the format-violation
+    # fixtures stop failing — warn loudly instead of passing quietly.
+    if "date-time" not in FORMAT_CHECKER.checkers:
+        print(
+            "warning: jsonschema format validators not installed "
+            "(run: pip install -r requirements.txt); date-time/uri "
+            "format assertions will NOT be enforced",
+            file=sys.stderr,
+        )
 
     # `--pack PATH` validates a single pack directory and exits.
     # The natural workflow for an external author validating their own pack.

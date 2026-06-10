@@ -47,7 +47,7 @@ locales:
       reviewed_by: null                # Human reviewer (null if unreviewed)
 ```
 
-### Field Reference
+### 3.1 Field Reference
 
 | Field | Required | Type | Description |
 |-------|----------|------|-------------|
@@ -61,7 +61,7 @@ locales:
 | `available[].translator` | Yes | Enum | Who performed the translation: `machine`, `human`, `hybrid`. |
 | `available[].reviewed_by` | No | String | Name of human reviewer. Required when `status` is `reviewed` or `verified`. |
 
-### Language Tags
+### 3.2 Language Tags
 
 All language tags use **BCP 47** format (IETF BCP 47 / RFC 5646):
 
@@ -79,9 +79,9 @@ The subtag after the hyphen is the region. Use the most specific applicable tag.
 
 `en-GB` is treated as a *mechanical sibling* of `en-US`, not a translation in the full sense: the two share semantics and structure, differing in spelling (colour/color, organise/organize), idiom (boot/trunk, lift/elevator), and a small set of dialect-specific terms. Tooling MAY auto-derive an en-GB view from en-US via spelling normalization plus a curated idiom list; full re-translation is not required. Other en-* tags (en-CA, en-AU, en-IN, etc.) are reserved for future use; producers SHOULD NOT mint custom en-* tags without filing a spec note.
 
-### Register Sub-distinctions
+### 3.3 Register Sub-distinctions
 
-Within a single locale, voice content may legitimately need to vary by **register** beyond the four primary registers defined in [VOICE.md §4.1](VOICE.md). Locale-specific sub-registers refine within that primary axis rather than replacing it.
+Within a single locale, voice content may legitimately need to vary by **register** beyond the four primary registers defined in [VOICE.md §4.2](VOICE.md). Locale-specific sub-registers refine within that primary axis rather than replacing it.
 
 Examples:
 

@@ -30,11 +30,11 @@ A `✓` means the pack uses the feature; `–` means it does not. Patterns are c
 | All four claim types (`o/r/c/i`) | – (no `c`) | – (i-heavy) | ✓ | ✓ |
 | `nature: judgment` | – | ✓ | ✓ | ✓ |
 | `nature: prediction` | – | – | ✓ | ✓ |
-| `nature: meta` | – | – | ✓ | – |
+| `nature: meta` | – | – | ✓ | ✓ |
 | Relation: `→` supports | ✓ | ✓ | ✓ | ✓ |
-| Relation: `←` requires | – | – | ✓ | – |
-| Relation: `~` refines | – | – | ✓ | – |
-| Relation: `⊗` bare contradiction | ✓ | – | – | – |
+| Relation: `←` requires | ✓ | – | ✓ | – |
+| Relation: `~` refines | – | – | ✓ | ✓ |
+| Relation: `⊗` bare contradiction | – | – | – | – |
 | Relation: `⊗!` error contradiction | – | – | ✓ | ✓ |
 | Relation: `⊗~` productive tension | ✓ | – | ✓ | – |
 | Relation: `⊘` supersedes | – | – | ✓ | – |
@@ -127,4 +127,4 @@ The first full example. Demonstrates dense + verbose claim metadata, a represent
 
 ---
 
-*Generated 2026-05-09 alongside v0.8.0-preview. The index is regenerated when example packs change; verify by running `python3 conformance/run.py` (23/23 expected) before relying on the table data.*
+*Regenerated 2026-06-10 for v0.8.1-preview (matrix cells re-verified against pack contents). The index is regenerated when example packs change; verify by running `python3 conformance/run.py` (23/23 expected) before relying on the table data.*

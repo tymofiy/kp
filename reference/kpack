@@ -108,23 +108,23 @@ COMMAND_REGISTRY = {
         "PlaybackPlan. Defined in PLAYBACK.md.",
     ),
     "seal": (
-        "spec/ARCHIVE.md §4 Sealing & Verification",
+        "spec/ARCHIVE.md §4.1 Sealing",
         "Seal a pack directory into a `.kpack` ZIP archive with a "
         "`signatures.yaml` integrity record. Defined in ARCHIVE.md.",
     ),
     "verify": (
-        "spec/ARCHIVE.md §4 Sealing & Verification",
+        "spec/ARCHIVE.md §6.2 Verify",
         "Verify a `.kpack` archive's integrity (content hash, signature, "
         "ZIP safety). Optionally verify a version chain across multiple "
         "sealed archives (`--chain v1 v2 v3`).",
     ),
     "extract": (
-        "spec/ARCHIVE.md §5 Extraction",
+        "spec/ARCHIVE.md §6.3 Extract",
         "Extract a sealed `.kpack` archive into a directory. Inverse of "
         "`seal`. Validates archive integrity before extraction.",
     ),
     "info": (
-        "spec/ARCHIVE.md §5 Extraction",
+        "spec/ARCHIVE.md §7 CLI Commands (info)",
         "Display archive metadata (signatures, content hash, contained "
         "files) without extracting. Defined in ARCHIVE.md.",
     ),

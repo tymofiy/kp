@@ -60,15 +60,15 @@ not indicate verbose syntax or emphasis.
 
 **Ambiguity:** Relations appear "after prose" but exact line rules unspecified.
 
-**Resolution:** Relations appear on **continuation lines** (indented 2+ spaces).
-They may be:
-- On the same line as context prose (trailing): `...the question. ⊗~C001`
-- On a dedicated line starting with a relation symbol: `→C002, ⊗~C003`
-- Mixed with prose on multi-line continuations
+**Resolution:** Relations appear on the metadata line after the closing `}`
+(separated by a space) and/or on continuation lines (indented 2+ spaces).
+In either position they may be:
+- Trailing context prose: `...the question. ⊗~C001`
+- Starting the line (or the post-brace text) directly: `→C002, ⊗~C003`
 
-A relation symbol at a word boundary on a continuation line is parsed as a
-relation, not prose. The Unicode symbols are unambiguous enough to serve as
-implicit delimiters.
+Relations form a comma-separated list that ends the line. A relation symbol
+is parsed as a relation only when immediately followed by a valid claim-ID
+reference (per AR-10); other occurrences are prose.
 
 ### AR-05: Verbose syntax delimiters
 
@@ -128,9 +128,10 @@ be machine-normalized while aliases preserve human conventions (e.g., `SEM`).
 
 **Resolution:** The 8 relation symbols (→ ⊗ ⊗! ⊗~ ← ~ ⊘ ↔) are unambiguous
 Unicode codepoints that do not appear in natural prose. A relation symbol
-followed immediately by a claim ID reference (`C[0-9]+`) is a relation, not
-prose. The tilde `~` is the only ambiguous case — it is parsed as a relation
-only when immediately followed by `C` and digits.
+followed immediately by a claim-ID reference — `C[0-9]+(-v[0-9]+)?` or a
+cross-pack reference `pack_name#section` (AR-16) — is a relation, not prose.
+The tilde `~` is the only ambiguous case — it is parsed as a relation only
+when immediately followed by a valid claim-ID reference.
 
 ### AR-11: Continuation line indentation
 
@@ -171,9 +172,9 @@ verbose metadata. This simplifies parsing and avoids precedence ambiguity.
 - `kp-composition.schema.json` — validates `composition.yaml` with type-conditional
   fields (`meeting-prep`, `briefing`, `research`, `presentation`), shared `pre_load`/`on_demand`
   loading lists, and per-type metadata and content structures derived from COMPOSITION.md.
-- `kp-signatures.schema.json` — validates `signatures.yaml` with required hash algorithm
-  and per-file digest map, optional signing key and signature with conditional enforcement
-  (signature present requires signing_key and signed_at).
+- `kp-signatures.schema.json` — validates `signatures.yaml` with required hash
+  algorithm, per-file digest map, `sealed_at`, and `sealed_by`; the optional
+  `signature` object requires `method`, `value`, and `key_id` when present.
 
 ### AR-15: Tier field normative status
 

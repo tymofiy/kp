@@ -39,13 +39,13 @@ Until the full protocol is specified, agents encountering cross-pack contradicti
 Pack A (`market-snapshot.kpack`) asserts:
 
 ```text
-- [C001] Global widget market is approximately $2B {0.85|r|E001|2025-Q1|investigated}
+- [C001] Global widget market is approximately $2B {0.85|r|E001|2025-03-31|investigated}
 ```
 
 Pack B (`market-snapshot-v2.kpack`) asserts:
 
 ```text
-- [C001] Global widget market is approximately $3B {0.85|r|E007|2025-Q4|investigated}
+- [C001] Global widget market is approximately $3B {0.85|r|E007|2025-12-31|investigated}
 ```
 
 A v0.8.1-preview reconciliation report (a new pack `widget-market-reconciliation.kpack`) would look like:
@@ -62,7 +62,7 @@ A v0.8.1-preview reconciliation report (a new pack `widget-market-reconciliation
 - [C003] Recommendation: treat Pack B's $3B figure as the more recent reading; cite
   Pack A's $2B as historical-snapshot context. Final reconciliation deferred to a
   human reviewer who can confirm methodology equivalence.
-  {0.65|i|E001,E007|2026-05-09|investigated|judgment|meta} ←C002
+  {0.65|i|E001,E007|2026-05-09|investigated|judgment} ←C002
 ```
 
 The report pack uses CORE-conformant syntax throughout, references the source packs via `↔`, and explicitly defers the final canonical answer. This is the v0.8.1-preview answer for cross-pack disagreement: **annotate, surface, defer to human** — do not auto-flatten into consensus.
