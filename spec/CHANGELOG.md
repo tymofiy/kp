@@ -193,7 +193,7 @@ changes; pure schema bumps.
   rendering-layer responsibility.
 - **`role` enum gained `"co-author"`** — Authorship role for packs
   co-authored by humans and AI (substrate authoring with parallel
-  cross-model sessions). Existing roles unchanged.
+  drafting sessions). Existing roles unchanged.
 
 ### Compatibility
 - **Monotonic relaxation, no breaking changes.** Pre-v0.7.7.1 packs
@@ -343,7 +343,7 @@ No breaking changes. Packs produced before this entry remain valid. Packs that a
 
 ## v0.7.2 — 2026-04-12
 
-**Schema tightening and new metadata fields — informed by cross-model open-standards review.**
+**Schema tightening and new metadata fields — informed by an open-standards review.**
 
 ### Added
 - **`evidence_basis`** (PACK.yaml, optional string) — Narrative description of the evidence foundation underpinning a pack. Informational, not machine-actionable.
