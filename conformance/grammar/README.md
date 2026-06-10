@@ -193,6 +193,24 @@ format `pack_name#section_ref`. The `#` is the separator. Pack name follows
 the same `[a-z0-9-]+` pattern as PACK.yaml names. Section ref is freeform
 text until the next delimiter (comma, newline, or end of line).
 
+### AR-17: Document structure tolerances
+
+**Ambiguity:** The grammar as first drafted required structural elements
+(frontmatter, heading, sections, claims) to abut with single newlines, and
+gave only the document heading a blockquote description. The shipped corpus —
+fixtures and examples alike — separates structural elements with blank lines
+(as Markdown rendering conventions require around headings and list items),
+and one example opens a section with an explanatory blockquote. Surfaced by
+the first machine execution of the grammar.
+
+**Resolution:** Blank lines (a bare newline; whitespace-only lines do not
+qualify) are permitted between structural elements: after the frontmatter,
+around the document heading and its description, before and between sections,
+and between claims. A section MAY open with a blockquote description before
+its claims, mirroring the document-level description. Neither tolerance
+changes claim-level syntax: continuation lines still bind to their claim
+with 2+ space indentation (AR-11), and a blank line still ends a claim block.
+
 ## Conformance Levels
 
 **Strict** (MUST pass all):

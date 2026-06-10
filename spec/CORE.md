@@ -622,6 +622,7 @@ The following normative decisions resolve ambiguities identified during grammar 
 | AR-14 | `signatures.yaml` schema defined in ARCHIVE.md. `composition.yaml` schema is published at `conformance/grammar/kp-composition.schema.json` (informative); the conformance runner detects composition packs by `composition.yaml` presence (per [SPEC.md §2](SPEC.md), [COMPOSITION.md](COMPOSITION.md)) and validates `composition.yaml` against the published schema when the file is present. |
 | AR-15 | `tier` is optional. When `hub`, `sub_packs` is required. |
 | AR-16 | Cross-pack references: `pack_name#section_ref`. `#` is the separator. |
+| AR-17 | Blank lines are permitted between structural elements (frontmatter, headings, descriptions, sections, claims). A section MAY open with a blockquote description, mirroring the document heading. Whitespace-only lines are not blank lines. |
 
 ---
 

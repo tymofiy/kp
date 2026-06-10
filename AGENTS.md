@@ -49,6 +49,11 @@ pip install -r requirements.txt
 # Validate a single pack:
 python3 conformance/run.py --pack path/to/my-pack.kpack
 
+# Add --strict to also parse claims.md through the normative PEG grammar
+# (grammar/kp-claims.peg) — the default layer is deliberately looser at
+# the line level:
+python3 conformance/run.py --pack path/to/my-pack.kpack --strict
+
 # Equivalent via the reference CLI (same validation, same exit codes;
 # add --json for a machine-readable result):
 ./reference/kpack lint path/to/my-pack.kpack
@@ -72,7 +77,7 @@ To run the full conformance suite (23 fixture + example tests):
 python3 conformance/run.py
 ```
 
-If validation fails, the runner names the **semantic constraint** (`SC-01` … `SC-12`) or **ambiguity resolution** (`AR-01` … `AR-16`) you violated. Look those up in [`spec/CORE.md`](spec/CORE.md) §12 and Appendix B.
+If validation fails, the runner names the **semantic constraint** (`SC-01` … `SC-12`) or **ambiguity resolution** (`AR-01` … `AR-17`) you violated. Look those up in [`spec/CORE.md`](spec/CORE.md) §12 and Appendix B.
 
 ---
 

@@ -6,16 +6,21 @@
 Validates .kpack directories against the KP:1 spec.
 
 The PEG grammar in grammar/kp-claims.peg is the normative reference for
-KP:1 claim syntax. This runner validates equivalent regular-expression
-patterns for v0.8.2-preview; a PEG-driven parser using parsimonious or
-lark is planned for a future phase. JSON Schema validation and semantic
-constraints SC-01 through SC-12 are also enforced. See
+KP:1 claim syntax. By default this runner validates equivalent
+regular-expression patterns, which are deliberately more permissive at
+the line level. With --strict, each pack's claims.md is additionally
+parsed through the PEG grammar itself (via parsimonious), so syntax the
+regex layer tolerates but the grammar rejects is reported. Composition
+packs are exempt from the PEG parse: their claims.md is narrative by
+design (SPEC.md §2, COMPOSITION.md). JSON Schema validation and semantic
+constraints SC-01 through SC-12 are enforced in both modes. See
 conformance/README.md for the grammar-vs-runner contract.
 
-Dependencies: pyyaml, jsonschema (see requirements.txt)
+Dependencies: pyyaml, jsonschema; --strict also needs parsimonious
+(all pinned in requirements.txt)
 Usage:
-    python3 conformance/run.py                                # full suite
-    python3 conformance/run.py --pack PATH [--json] [--no-color]
+    python3 conformance/run.py [--strict]                     # full suite
+    python3 conformance/run.py --pack PATH [--strict] [--json] [--no-color]
 Color is auto-disabled when output is not a terminal or NO_COLOR is set.
 """
 
@@ -182,7 +187,113 @@ _REL_VERBOSE = re.compile(
 _VERBOSE_REL_LINE = re.compile(r"`relations:\s*(.+?)`")
 
 
-def validate_pack(pack_dir: Path) -> list[Err]:
+# ── Strict layer: PEG-driven validation (--strict) ─────────────────
+#
+# The normative grammar is written in implementation-neutral Bryan Ford
+# PEG notation. parsimonious shares PEG semantics exactly (ordered
+# choice, predicates, greedy repetition) under a slightly different
+# surface syntax, so the shipped file is translated mechanically at load
+# time rather than vendored in a second notation. parsimonious over
+# lark: lark grammars are EBNF with Earley/LALR semantics — the
+# grammar's ordered choices and not-predicates (e.g. ProseChar's
+# relation boundary) have no direct lark equivalent.
+
+PEG_PATH = SCRIPT_DIR / "grammar" / "kp-claims.peg"
+_strict_grammar = None
+
+
+def _translate_peg(ford: str) -> str:
+    """Translate Ford-notation PEG to parsimonious's DSL.
+
+    Mechanical, character-level, quote-aware:
+      - strip // comments
+      - rule arrow  <-  becomes  =
+      - character classes [...] become regex terminals ~"[...]"
+      - bare . (any char) becomes ~"(?s)." — Ford's any-char matches
+        newlines (the Rosetta legend spans lines); regex needs DOTALL
+    Quoted literals pass through unchanged: parsimonious evaluates
+    backslash escapes ('\\n', '\\r\\n') the same way Ford notation does.
+    """
+    out = []
+    i, n = 0, len(ford)
+    quote = None  # inside a quoted literal: the quote char, else None
+    in_class = False
+    while i < n:
+        c = ford[i]
+        if quote:
+            out.append(c)
+            if c == "\\" and i + 1 < n:
+                out.append(ford[i + 1])
+                i += 1
+            elif c == quote:
+                quote = None
+        elif in_class:
+            out.append(c)
+            if c == "\\" and i + 1 < n:
+                out.append(ford[i + 1])
+                i += 1
+            elif c == "]":
+                out.append('"')
+                in_class = False
+        elif c in ("'", '"'):
+            quote = c
+            out.append(c)
+        elif c == "[":
+            in_class = True
+            out.append('~"[')
+        elif c == "/" and i + 1 < n and ford[i + 1] == "/":
+            while i < n and ford[i] != "\n":
+                i += 1
+            continue
+        elif c == "<" and i + 1 < n and ford[i + 1] == "-":
+            out.append("=")
+            i += 1
+        elif c == ".":
+            out.append('~"(?s)."')
+        else:
+            out.append(c)
+        i += 1
+    return "".join(out)
+
+
+def strict_grammar():
+    """Compile the normative grammar once per process.
+
+    Exits loudly if parsimonious is missing — strict mode must never
+    degrade silently into the regex-only layer.
+    """
+    global _strict_grammar
+    if _strict_grammar is None:
+        try:
+            from parsimonious.grammar import Grammar
+        except ImportError:
+            print(
+                "error: --strict requires the 'parsimonious' package "
+                "(run: pip install -r requirements.txt)",
+                file=sys.stderr,
+            )
+            sys.exit(2)
+        _strict_grammar = Grammar(_translate_peg(PEG_PATH.read_text()))
+    return _strict_grammar
+
+
+def strict_check(claims_text: str) -> Err | None:
+    """Parse claims.md through the PEG grammar. None = document matches."""
+    grammar = strict_grammar()  # first touch — its missing-package guard fires here
+    from parsimonious.exceptions import ParseError
+
+    try:
+        grammar.parse(claims_text)
+    except ParseError as e:  # IncompleteParseError subclasses ParseError
+        return Err(
+            "strict",
+            "claims.md does not match grammar/kp-claims.peg "
+            f"(line {e.line()}, column {e.column()})",
+        )
+    return None
+
+
+def validate_pack(pack_dir: Path, strict: bool = False) -> list[Err]:
     """Validate a .kpack directory. Returns list of errors (empty = valid)."""
     pack_dir = Path(pack_dir)
     errs: list[Err] = []
@@ -496,6 +607,15 @@ def validate_pack(pack_dir: Path) -> list[Err]:
     for cid, conf_val in predictions_high_conf:
         errs.append(Err("SC-12", f"prediction {cid} has confidence {conf_val} > 0.95 (predictions have irreducible uncertainty; reserve 0.99+ for trivially-falsifiable claims)"))
 
+    # ── Strict: claims.md must match the normative PEG grammar ──
+    # Appended last so the regex/semantic layer's first error (which the
+    # invalid-fixture expectations key on) is unaffected. Composition
+    # packs are exempt: their claims.md is narrative by design.
+    if strict and not is_composition:
+        serr = strict_check(text)
+        if serr:
+            errs.append(serr)
+
     return errs
 
 
@@ -506,7 +626,8 @@ def main():
     argv = sys.argv[1:]
     as_json = "--json" in argv
     no_color = "--no-color" in argv
-    argv = [a for a in argv if a not in ("--json", "--no-color")]
+    strict = "--strict" in argv
+    argv = [a for a in argv if a not in ("--json", "--no-color", "--strict")]
 
     # Color is for humans at a terminal: disabled when output is piped or
     # redirected (so CI logs stay clean), when NO_COLOR is set
@@ -532,7 +653,7 @@ def main():
     # `--json` emits a machine-readable result object instead of prose.
     if argv and argv[0] == "--pack":
         if len(argv) < 2:
-            print(f"{RED}usage: run.py --pack PATH [--json] [--no-color]{RESET}")
+            print(f"{RED}usage: run.py --pack PATH [--strict] [--json] [--no-color]{RESET}")
             sys.exit(2)
         pack_path = Path(argv[1])
         if not pack_path.is_dir():
@@ -542,7 +663,7 @@ def main():
             else:
                 print(f"{RED}Pack directory not found: {pack_path}{RESET}")
             sys.exit(2)
-        errs = validate_pack(pack_path)
+        errs = validate_pack(pack_path, strict=strict)
         if as_json:
             print(json.dumps({
                 "path": str(pack_path),
@@ -562,7 +683,8 @@ def main():
         print("--json requires --pack PATH", file=sys.stderr)
         sys.exit(2)
 
-    print(f"\n{BOLD}KP:1 Conformance Test Runner{RESET}")
+    mode = " (strict: PEG grammar)" if strict else ""
+    print(f"\n{BOLD}KP:1 Conformance Test Runner{mode}{RESET}")
     print("=" * 29)
 
     total = 0
@@ -576,7 +698,7 @@ def main():
             if not path.is_dir():
                 print(f"  {name:<35} {DIM}SKIP (not found){RESET}")
                 continue
-            errs = validate_pack(path)
+            errs = validate_pack(path, strict=strict)
             total += 1
             if expect_pass:
                 if not errs:

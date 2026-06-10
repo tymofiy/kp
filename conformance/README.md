@@ -62,6 +62,7 @@ From the repository root:
 python3 -m venv .venv && source .venv/bin/activate  # if your Python is externally managed (PEP 668)
 pip install -r requirements.txt
 python3 conformance/run.py
+python3 conformance/run.py --strict   # also parse claims.md through the PEG grammar
 ```
 
 Expected result: `23/23 passed`. The runner's Python dependencies are declared in `requirements.txt` — note that `jsonschema` is installed with its `format-nongpl` extra, which provides the validators that make JSON Schema `format` assertions (date-time, uri) actually enforce; with bare `jsonschema`, unrecognized formats are silently skipped.
@@ -70,9 +71,11 @@ Expected result: `23/23 passed`. The runner's Python dependencies are declared i
 
 The PEG grammar in `grammar/kp-claims.peg` is the **normative** reference for KP:1 claim syntax. It is what implementations should target.
 
-The `run.py` runner in this preview release validates fixtures against **equivalent regular-expression patterns** rather than parsing through the PEG grammar directly. The two paths are kept in sync by hand. The regex layer is deliberately more permissive at the line level — it recognizes relation tokens anywhere after the metadata brace and does not require comma separation — while the PEG defines the normative shape (space after `}`, comma-separated relations ending the line). A pack accepted by the runner but rejected by the PEG is malformed; implement to the PEG. A future phase will replace the regex layer with a PEG-driven parser using a library such as `parsimonious` or `lark`. The fixture suite is the contract: any future runner that passes 23/23 against these fixtures is acceptable.
+The `run.py` runner validates fixtures against **equivalent regular-expression patterns** by default. The regex layer is deliberately more permissive at the line level — it recognizes relation tokens anywhere after the metadata brace and does not require comma separation — while the PEG defines the normative shape (space after `}`, comma-separated relations ending the line).
 
-If you want to implement a conforming parser today, target the PEG grammar, not the runner's regexes.
+With **`--strict`**, the runner additionally parses each pack's `claims.md` through the PEG grammar itself, loaded at runtime via a mechanical Ford-PEG → parsimonious translation (documented in `run.py`). The normative grammar is machine-executed, not mirrored by hand. Two scope notes: composition packs are exempt from the PEG parse (their `claims.md` is narrative by design, per SPEC.md §2 and COMPOSITION.md), and strict errors are appended after the regex/semantic layer's errors. Making `--strict` the default is a release decision deferred to a later version.
+
+A pack accepted by the default runner but rejected by the PEG is malformed; implement to the PEG, and run `--strict` to check. The fixture suite is the contract: the suite passes 23/23 in both modes, and any runner that does the same is acceptable.
 
 ## Phase Status
 
@@ -89,7 +92,7 @@ If you want to implement a conforming parser today, target the PEG grammar, not 
   the dense/verbose syntax distinction and the prose/relation boundary problem.
 - **Two-layer validation**: Syntactic (PEG parseable) then semantic (post-parse
   constraints). PEG cannot express cross-references, value ranges, or acyclicity.
-- **16 ambiguity resolutions**: See `grammar/README.md` for the full list. Each
+- **17 ambiguity resolutions**: See `grammar/README.md` for the full list. Each
   is a normative decision that was not fully specified in the prose spec.
 - **All five example packs validated**: `hello-world.kpack`,
   `solar-energy-market.kpack`, `kp-external-assessment.kpack`,

@@ -6,3 +6,7 @@ pyyaml>=6.0.3
 # date-time, uri) are actually enforced. Bare jsonschema silently skips
 # any format it has no validator for.
 jsonschema[format-nongpl]>=4.26
+# PEG engine for `run.py --strict`, which machine-executes the normative
+# grammar/kp-claims.peg. Chosen for faithful PEG semantics (ordered
+# choice, and/not predicates) — see the strict layer in conformance/run.py.
+parsimonious>=0.11

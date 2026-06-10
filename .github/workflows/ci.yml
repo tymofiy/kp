@@ -68,6 +68,8 @@ jobs:
         run: python3 scripts/check_links.py
       - name: Run conformance suite
         run: python3 conformance/run.py
+      - name: Run conformance suite (strict PEG)
+        run: python3 conformance/run.py --strict
     timeout-minutes: 5
   # Portability gate for implementers: the conformance suite on the
   # supported Python floor and intermediate versions. Required status
@@ -90,6 +92,8 @@ jobs:
         run: pip install -r requirements.txt
       - name: Run conformance suite
         run: python3 conformance/run.py
+      - name: Run conformance suite (strict PEG)
+        run: python3 conformance/run.py --strict
     timeout-minutes: 5
 concurrency:
   group: ci-${{ github.ref }}

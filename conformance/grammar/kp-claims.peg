@@ -11,6 +11,13 @@
 // all documents that match this grammar. Implementations MUST reject documents
 // that fail to match, subject to the conformance levels defined in the README.
 //
+// This grammar is machine-executed by `conformance/run.py --strict`, which
+// loads this file through a mechanical Ford-PEG → parsimonious translation
+// (rule arrow, character classes, bare any-char; see _translate_peg in
+// run.py). The translation does not alter the language accepted. Note for
+// implementers: `.` (any character) matches newlines — the Rosetta header
+// legend spans multiple lines.
+//
 // Conventions:
 //   <- : rule definition
 //   /  : ordered choice (try left first)
@@ -37,8 +44,13 @@
 // TOP LEVEL
 // ============================================================================
 
-ClaimsDocument  <- RosettaHeader NL Frontmatter NL DocumentHeading NL
-                   Section+ EOF
+// Blank lines between structural elements are permitted (AR-17): Markdown
+// rendering conventions require them around headings and list items, and
+// the entire shipped corpus uses them. A blank line is a bare newline —
+// whitespace-only lines are NOT blank lines and remain illegal.
+
+ClaimsDocument  <- RosettaHeader NL Frontmatter NL BlankLine*
+                   DocumentHeading (BlankLine* Section)+ BlankLine* EOF
 
 
 // ============================================================================
@@ -84,7 +96,7 @@ ScaleName       <- LOWER_ALPHA ('_' / LOWER_ALPHA / DIGIT)*
 //         > One-line description (may span multiple > lines)
 
 DocumentHeading <- '# ' HeadingText EntityAnnotation? NL
-                   Description?
+                   (BlankLine* Description)?
 
 HeadingText     <- (!('[' / NL) .)+
 
@@ -101,8 +113,10 @@ BlockquoteLine  <- '>' SP? (!NL .)+ NL
 // SECTIONS
 // ============================================================================
 // Claims are grouped under ## headings. Heading text is freeform.
+// A section MAY open with a blockquote description before its claims,
+// mirroring the document-level Description (AR-17).
 
-Section         <- SectionHeading NL? Claim+
+Section         <- SectionHeading (BlankLine* Description)? (BlankLine* Claim)+
 SectionHeading  <- '##' SP (!NL .)+ NL
 
 
@@ -291,6 +305,7 @@ EvidenceProse   <- NL (!(NL '## ') (!NL .)+ NL)*
 INDENT          <- '  ' SP*               // 2+ spaces
 SP              <- ' '                     // single space
 NL              <- '\r\n' / '\n'           // newline (CRLF or LF)
+BlankLine       <- NL                      // a line containing nothing (AR-17)
 EOF             <- !.
 
 DIGIT           <- [0-9]
