@@ -1,6 +1,6 @@
 # KP Reference Implementation
 
-> **Status:** One implemented subcommand (`kpack lint`); every other `kpack` subcommand is a contract-pointer.
+> **Status:** Two implemented subcommands (`kpack lint`, `kpack new`); every other `kpack` subcommand is a contract-pointer.
 
 Reference parser, serializer, and linter for KP:1. Eventually this directory will hold the canonical tooling that:
 
@@ -14,6 +14,7 @@ Must pass the conformance suite. Cannot redefine the spec.
 ## What ships today
 
 - **`kpack lint <path/to/pack.kpack>`** — implemented. Delegates to [`conformance/run.py`](../conformance/run.py) `--pack` with identical output and exit codes (0 pass / 1 fail / 2 usage). Supports `--strict` (parse `claims.md` through the normative PEG grammar), `--json` for a machine-readable result, and `--no-color`.
+- **`kpack new <name> [--from hello-world]`** — implemented. Copies the hello-world starter to `<name>.kpack/` in the current directory, rewrites the pack identity (name and version in both PACK.yaml and the claims.md frontmatter — SC-07/SC-08 stay consistent — plus titles and dates), then validates the scaffold (strict) and only reports success on PASS. Refuses existing destinations and non-grammar pack names.
 - **[`kpack`](kpack)** as a contract-pointer for everything else. Run `./kpack` to list the subcommands the spec describes and which spec section defines each one's contract; run `./kpack <subcommand>` for a one-paragraph summary.
 
 The CLI is argparse end-to-end: unknown subcommands and unknown flags fail
@@ -43,6 +44,7 @@ $ ./kpack
 kpack — KP:1 reference CLI (v0.8.2-preview)
 
 Implemented today: kpack lint <pack>  (delegates to conformance/run.py)
+                   kpack new <name>   (scaffold from the hello-world starter)
 Every other subcommand is a contract pointer to its spec section.
 
 Subcommands and the spec sections that define them:
@@ -59,4 +61,4 @@ kpack reconcile
 
 ## What does not ship yet
 
-The actual implementations of `render`, `bundle`, `archive`, `new`, `reconcile`, `compose`, `patrol`, `promote`, `restore`, `play` are planned. The contract for each lives in the spec section the stub names.
+The actual implementations of `render`, `bundle`, `archive`, `reconcile`, `compose`, `patrol`, `promote`, `restore`, `play` are planned. The contract for each lives in the spec section the stub names.
