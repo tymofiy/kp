@@ -8,7 +8,7 @@
 > **Editor:** Timothy Kompanchenko
 > **Decisions:** D4 (meeting pack lifecycle), D15 (archive-never-delete), D19 (reconcile-before-archive)
 
-> **`kpack` CLI invocations in this document describe planned reference tooling.** Only `python3 conformance/run.py` ships today. See [SPEC.md §13](SPEC.md) and the contract-pointer stub at [`reference/kpack`](../reference/kpack) for status.
+> **`kpack` CLI invocations in this document describe planned reference tooling** unless named here: `python3 conformance/run.py`, `./reference/kpack lint`, and `./reference/kpack new` ship today. See [SPEC.md §13](SPEC.md) and [`reference/kpack`](../reference/kpack) for status.
 
 ---
 
@@ -351,7 +351,7 @@ kpack restore meetings/webb-advisory-2026-03-22.kpack/
 # Moves from _archive/ back to active directory
 ```
 
-> The `kpack` commands above describe planned reference tooling. As of v0.8.3-preview, the commands that ship in this repository are `python3 conformance/run.py` and `./reference/kpack lint` (which delegates to it). See [SPEC.md §13 Tooling](SPEC.md) for status.
+> The `kpack` commands above describe planned reference tooling. As of v0.8.3-preview, the commands that ship in this repository are `python3 conformance/run.py`, `./reference/kpack lint` (which delegates to it), and `./reference/kpack new` (scaffolds a validated pack from the starter). See [SPEC.md §13 Tooling](SPEC.md) for status.
 
 ---
 

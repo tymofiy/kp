@@ -9,7 +9,7 @@
 > **Parent:** [SPEC.md](SPEC.md); design rationale in [RATIONALE.md §1, Principle 18](RATIONALE.md).
 > **Implements:** Decision D14 (Meeting pack composition, agenda overlay, pre_load/on_demand)
 
-> **`kpack` CLI invocations in this document describe planned reference tooling.** Only `python3 conformance/run.py` ships today. See [SPEC.md §13](SPEC.md) and the contract-pointer stub at [`reference/kpack`](../reference/kpack) for status.
+> **`kpack` CLI invocations in this document describe planned reference tooling** unless named here: `python3 conformance/run.py`, `./reference/kpack lint`, and `./reference/kpack new` ship today. See [SPEC.md §13](SPEC.md) and [`reference/kpack`](../reference/kpack) for status.
 
 ---
 

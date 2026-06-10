@@ -1303,22 +1303,23 @@ A conversation flow using navigation:
 
 ## 13. Tooling (planned reference CLI)
 
-> **Status of the `kpack` CLI (as of v0.8.3-preview):** the commands listed
-> in this section describe **planned reference tooling**, not commands that
-> ship in this repository today. The only fully-implemented command is
-> `python3 conformance/run.py` (the conformance suite). A contract-pointer
-> stub at [`reference/kpack`](../reference/kpack) prints which spec section
-> defines each subcommand's contract — run `./reference/kpack` (or `./reference/kpack <subcommand>`)
-> to see where to look. Commands like `kpack lint`, `kpack render`,
-> `kpack reconcile`, etc. describe the contract a future reference tool will
-> implement. Producers can implement these contracts independently against
+> **Status of the `kpack` CLI (as of v0.8.3-preview):** two subcommands are
+> implemented in this repository — `kpack lint` (delegates to
+> `python3 conformance/run.py --pack`; supports `--strict`) and `kpack new`
+> (scaffolds a validated pack from the hello-world starter, the
+> `--from hello-world` form of the contract below). Every other command in
+> this section describes **planned reference tooling**. The CLI at
+> [`reference/kpack`](../reference/kpack) doubles as a contract pointer —
+> run `./reference/kpack` (or `./reference/kpack <subcommand>`) to see
+> which spec section defines each unimplemented subcommand's contract.
+> Producers can implement these contracts independently against
 > [CORE.md](CORE.md), the JSON Schema, and [AUTHORING.md](AUTHORING.md).
 
 ### MVP Commands
 
 ```bash
-# Planned reference tooling — not currently shipped.
-# See ../reference/kpack for the contract-pointer stub.
+# kpack lint ships today (delegates to the conformance runner, --strict
+# supported); the rest of this list is planned reference tooling.
 kpack lint [path]              # Validate structure and references
 kpack test [path]              # Run validation.yaml against an LLM
 kpack export [path] --format   # Export to JSONL, JSON, or other formats
@@ -1329,8 +1330,8 @@ kpack render [path] --view X   # Regenerate a specific view
 ### Extended Commands
 
 ```bash
-# Planned reference tooling — not currently shipped.
-# See ../reference/kpack for the contract-pointer stub.
+# kpack new ships today in its `--from hello-world` form; everything
+# else below is planned reference tooling (see ../reference/kpack).
 
 # Pack creation
 kpack new [name]                       # Create new pack (interactive)
