@@ -66,7 +66,7 @@ else:
     print("PASS")
 ```
 
-To run the full conformance suite (20 fixture + example tests):
+To run the full conformance suite (22 fixture + example tests):
 
 ```bash
 python3 conformance/run.py

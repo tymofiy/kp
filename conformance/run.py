@@ -44,8 +44,14 @@ RESET = "\033[0m"
 SCRIPT_DIR = Path(__file__).resolve().parent
 SCHEMA_PATH = SCRIPT_DIR / "grammar" / "kp-pack.schema.json"
 SIGNATURES_SCHEMA_PATH = SCRIPT_DIR / "grammar" / "kp-signatures.schema.json"
+COMPOSITION_SCHEMA_PATH = SCRIPT_DIR / "grammar" / "kp-composition.schema.json"
 FIXTURES_DIR = SCRIPT_DIR / "fixtures"
 EXAMPLES_DIR = SCRIPT_DIR.parent / "examples"
+
+# One shared checker for all schema validations. Which formats it enforces
+# depends on installed validator packages — requirements.txt pins
+# jsonschema[format-nongpl] so date, date-time, and uri are all live.
+FORMAT_CHECKER = jsonschema.FormatChecker()
 
 VALID_ORDER = [
     "minimal.kpack",
@@ -66,6 +72,8 @@ INVALID_ORDER = [
     "wrong-pack-name.kpack",
     "prediction-too-confident.kpack",
     "verbose-prediction-too-confident.kpack",
+    "bad-format-fields.kpack",
+    "bad-composition-schema.kpack",
 ]
 
 # Expected error categories for invalid fixtures.
@@ -81,6 +89,8 @@ INVALID_EXPECTED = {
     "wrong-pack-name.kpack": "SC-07",
     "prediction-too-confident.kpack": "SC-12",
     "verbose-prediction-too-confident.kpack": "SC-12",
+    "bad-format-fields.kpack": "schema",
+    "bad-composition-schema.kpack": "composition",
 }
 EXAMPLE_ORDER = [
     "solar-energy-market.kpack",
@@ -98,6 +108,7 @@ VERBOSE_TYPE_MAP = {
 
 _schema_cache = None
 _signatures_schema_cache = None
+_composition_schema_cache = None
 
 
 def schema():
@@ -114,6 +125,14 @@ def signatures_schema():
         with open(SIGNATURES_SCHEMA_PATH) as f:
             _signatures_schema_cache = json.load(f)
     return _signatures_schema_cache
+
+
+def composition_schema():
+    global _composition_schema_cache
+    if _composition_schema_cache is None:
+        with open(COMPOSITION_SCHEMA_PATH) as f:
+            _composition_schema_cache = json.load(f)
+    return _composition_schema_cache
 
 
 def _stringify_dates(obj):
@@ -194,7 +213,7 @@ def validate_pack(pack_dir: Path) -> list[Err]:
         return [Err("schema", f"PACK.yaml parse error: {e}")]
 
     try:
-        jsonschema.validate(pack, schema())
+        jsonschema.validate(pack, schema(), format_checker=FORMAT_CHECKER)
     except jsonschema.ValidationError as e:
         errs.append(Err("schema", e.message))
 
@@ -212,10 +231,29 @@ def validate_pack(pack_dir: Path) -> list[Err]:
                     jsonschema.validate(
                         sigs,
                         signatures_schema(),
-                        format_checker=jsonschema.FormatChecker(),
+                        format_checker=FORMAT_CHECKER,
                     )
                 except jsonschema.ValidationError as e:
                     errs.append(Err("signatures", f"signatures.yaml: {e.message}"))
+
+    # ── composition.yaml: validate against its schema (if present) ──
+    if is_composition:
+        try:
+            comp = _stringify_dates(yaml.safe_load(composition_path.read_text()))
+        except yaml.YAMLError as e:
+            errs.append(Err("composition", f"composition.yaml parse error: {e}"))
+        else:
+            if comp is None:
+                errs.append(Err("composition", "composition.yaml is empty"))
+            else:
+                try:
+                    jsonschema.validate(
+                        comp,
+                        composition_schema(),
+                        format_checker=FORMAT_CHECKER,
+                    )
+                except jsonschema.ValidationError as e:
+                    errs.append(Err("composition", f"composition.yaml: {e.message}"))
 
     # ── claims.md: Rosetta header ──
     text = claims_path.read_text()

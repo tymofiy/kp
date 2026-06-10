@@ -1,0 +1,13 @@
+type: meeting-prep
+
+meeting:
+  date: next tuesday
+  duration: 30m
+  participants:
+    - Alice
+
+agenda:
+  - topic: Format enforcement coverage
+
+pre_load:
+  - minimal-fixture
