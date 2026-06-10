@@ -4,11 +4,14 @@
 """kpack — reference CLI (one implemented subcommand; the rest are contract pointers).
 
 The KP:1 specification (SPEC.md §13) describes a `kpack` command-line
-tool. One subcommand is implemented in this repository today:
+tool. Two subcommands are implemented in this repository today:
 
     kpack lint <path/to/pack.kpack>     # validate a pack (delegates to
                                         # conformance/run.py --pack; same
                                         # output, same exit codes)
+    kpack new <name>                    # scaffold a pack from the
+                                        # hello-world starter and validate
+                                        # it before reporting success
 
 Every other `kpack <subcommand>` is a contract to be implemented: running
 it prints a pointer to the spec section that defines that command's
@@ -24,12 +27,16 @@ This module is the implementation behind two equivalent invocations:
 
 Usage:
     kpack lint <pack> [--strict] [--json] [--no-color]   # validate a pack
+    kpack new <name> [--from hello-world]   # scaffold + validate a new pack
     kpack <subcommand>          # prints the spec section for that subcommand
     kpack                       # lists all known subcommands and their spec sections
     kpack --version             # prints the spec version this tool matches
 """
 
 import argparse
+import datetime
+import re
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -83,9 +90,11 @@ COMMAND_REGISTRY = {
         "chain. Defined in ARCHIVE.md.",
     ),
     "new": (
-        "spec/CORE.md §2 Pack Structure (planned scaffold)",
-        "Scaffold a new pack from a template. Templates are not specified in "
-        "v0.8.2-preview; see ORGANIZATION.md for repository layout patterns.",
+        "spec/CORE.md §2 Pack Structure",
+        "Scaffold a new pack from the hello-world starter. IMPLEMENTED: "
+        "`kpack new <name> [--from hello-world]` copies the starter, rewrites "
+        "the pack identity (name, version, dates — SC-07/SC-08 kept "
+        "consistent), and validates the result before reporting success.",
     ),
     "reconcile": (
         "spec/RECONCILIATION.md (stub — design deferred to v0.9 / v1.0)",
@@ -152,6 +161,7 @@ def print_banner() -> None:
     print(f"kpack — KP:1 reference CLI ({VERSION})")
     print()
     print("Implemented today: kpack lint <pack>  (delegates to conformance/run.py)")
+    print("                   kpack new <name>   (scaffold from the hello-world starter)")
     print("Every other subcommand is a contract pointer to its spec section.")
     print()
 
@@ -175,9 +185,115 @@ def print_command_detail(cmd: str) -> int:
     print()
     if cmd == "lint":
         print("  Run it:  kpack lint <path/to/pack.kpack> [--strict] [--json] [--no-color]")
+    elif cmd == "new":
+        print("  Run it:  kpack new <name> [--from hello-world]")
     else:
         print("  This command is not yet implemented in this repository. The")
         print("  contract above is the authority; an implementation is planned.")
+    return 0
+
+
+# Pack names follow the PackName grammar (kp-claims.peg):
+# LOWER_ALNUM IDENT_CHAR* — i.e. [a-z0-9][a-z0-9-]*
+PACK_NAME_RE = re.compile(r"^[a-z0-9][a-z0-9-]*$")
+TEMPLATES = {"hello-world": Path(__file__).resolve().parent.parent / "examples" / "hello-world.kpack"}
+ISO_DATE_RE = re.compile(r"\d{4}-\d{2}-\d{2}")
+CALVER_RE = re.compile(r"\d{4}\.\d{2}\.\d{2}")
+
+
+def run_new(args: argparse.Namespace) -> int:
+    """Scaffold a new pack: copy the starter, rewrite identity, validate."""
+    name = args.name
+    if not PACK_NAME_RE.match(name):
+        print(
+            f"kpack: invalid pack name '{name}' — names are lowercase "
+            "alphanumeric plus hyphens, starting with a letter or digit "
+            "([a-z0-9][a-z0-9-]*)",
+            file=sys.stderr,
+        )
+        return 2
+
+    template = TEMPLATES[args.template]
+    if not template.is_dir():
+        print(f"kpack: starter template not found at {template}", file=sys.stderr)
+        print(
+            "kpack new runs against the repository tree; install from a "
+            "checkout with `pip install -e .` (or run ./reference/kpack).",
+            file=sys.stderr,
+        )
+        return 2
+
+    dest = Path.cwd() / f"{name}.kpack"
+    if dest.exists():
+        print(f"kpack: {dest} already exists — refusing to overwrite", file=sys.stderr)
+        return 2
+
+    today_iso = datetime.date.today().isoformat()        # 2026-06-10
+    today_calver = today_iso.replace("-", ".")            # 2026.06.10
+    title = " ".join(w.capitalize() for w in name.split("-"))
+
+    shutil.copytree(template, dest)
+
+    # PACK.yaml: identity + dates. SC-07/SC-08 require name and version to
+    # match the claims.md frontmatter — both are rewritten in lockstep.
+    pack_yaml = dest / "PACK.yaml"
+    text = pack_yaml.read_text()
+    text = text.replace("name: hello-world", f"name: {name}")
+    text = CALVER_RE.sub(today_calver, text)
+    text = text.replace(
+        "description: The smallest idiomatic Knowledge Pack — copy this directory to start your own.",
+        f"description: {title} — scaffolded from the hello-world starter; edit claims.md to begin.",
+    )
+    pack_yaml.write_text(text)
+
+    # claims.md: frontmatter identity, title, dates. The starter has ISO
+    # dates only in claim metadata (position 4), so a blanket rewrite is
+    # exact. The [example] entity annotation is the starter's, not yours.
+    claims = dest / "claims.md"
+    text = claims.read_text()
+    text = text.replace(
+        "pack: hello-world | v: ", f"pack: {name} | v: "
+    )
+    text = CALVER_RE.sub(today_calver, text)
+    text = text.replace("# Hello World [example]", f"# {title}")
+    text = ISO_DATE_RE.sub(today_iso, text)
+    claims.write_text(text)
+
+    # evidence.md: title + captured dates.
+    evidence = dest / "evidence.md"
+    text = evidence.read_text()
+    text = text.replace("# Evidence — Hello World", f"# Evidence — {title}")
+    text = ISO_DATE_RE.sub(today_iso, text)
+    evidence.write_text(text)
+
+    # Validate before claiming success — strict, so the scaffold is proven
+    # against the PEG grammar, not just the permissive layer.
+    if not RUN_PY.exists():
+        print(f"kpack: conformance runner not found at {RUN_PY}", file=sys.stderr)
+        return 2
+    result = subprocess.call(
+        [sys.executable, str(RUN_PY), "--pack", str(dest), "--strict", "--no-color"]
+    )
+    if result == 2:
+        # run.py exit 2 is an environment/usage problem (e.g. parsimonious
+        # missing for --strict), not an invalid scaffold.
+        print(
+            f"kpack: could not validate the scaffold (see error above). "
+            f"It was created at {dest} — install the dependencies "
+            "(pip install -r requirements.txt) and run "
+            f"`kpack lint {dest.name} --strict` to verify it.",
+            file=sys.stderr,
+        )
+        return 2
+    if result != 0:
+        print(
+            f"kpack: scaffold failed validation — left in place at {dest} "
+            "for inspection. This is a bug in `kpack new`; please report it.",
+            file=sys.stderr,
+        )
+        return 1
+    print(f"Next steps: edit {dest.name}/claims.md (your claims), evidence.md")
+    print("(your sources), and PACK.yaml (domain, author, description).")
     return 0
 
 
@@ -229,8 +345,24 @@ def build_parser() -> argparse.ArgumentParser:
         "--no-color", action="store_true", help="disable ANSI color"
     )
 
+    new_p = sub.add_parser(
+        "new",
+        help="scaffold a new pack from the hello-world starter",
+        description="Copy the hello-world starter to <name>.kpack in the "
+        "current directory, rewrite the pack identity (name, version, "
+        "dates), and validate the result (strict) before reporting success.",
+    )
+    new_p.add_argument("name", help="pack name ([a-z0-9][a-z0-9-]*)")
+    new_p.add_argument(
+        "--from",
+        dest="template",
+        choices=sorted(TEMPLATES),
+        default="hello-world",
+        help="starter template (default: hello-world)",
+    )
+
     for cmd, (anchor, _) in COMMAND_REGISTRY.items():
-        if cmd == "lint":
+        if cmd in ("lint", "new"):
             continue
         sub.add_parser(
             cmd,
@@ -249,6 +381,8 @@ def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)  # unknown flags/subcommands: loud exit 2
     if args.cmd == "lint":
         return run_lint(args)
+    if args.cmd == "new":
+        return run_new(args)
     return print_command_detail(args.cmd)
 
 
