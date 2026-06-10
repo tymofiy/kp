@@ -317,7 +317,7 @@ of KP:1" — each author applies genuine craft to their format.
       "nature": "judgment",
       "evidence": [
         {"id": "E1", "source": "IRENA Renewable Power Generation Costs 2025", "type": "research"},
-        {"id": "E2", "source": "Multi-model synthesis — 10 assessments", "type": "multi_source_synthesis"}
+        {"id": "E2", "source": "Multi-source synthesis — 10 assessments", "type": "multi_source_synthesis"}
       ],
       "context": "Learning curve (22% cost reduction per doubling) held for 40 years. 10/10 analyses converged."
     }

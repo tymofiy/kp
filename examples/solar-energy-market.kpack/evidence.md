@@ -4,7 +4,7 @@
 > **type:** multi_source_synthesis | **captured:** 2026-03-01
 > **source:** Internal analysis — 10 independent assessments across multiple AI models
 
-Multi-model synthesis across 10 analyses and 8 distinct models. All converged
+Multi-source synthesis across 10 analyses and 8 distinct models. All converged
 on cost decline being structural (manufacturing learning curve) rather than
 cyclical (subsidy-driven).
 
