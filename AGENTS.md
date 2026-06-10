@@ -5,7 +5,7 @@
 
 > **Audience:** an autonomous AI agent (Claude, GPT, Gemini, local model, etc.) reading this repository for the first time.
 >
-> **Purpose:** route you to the minimum required reading for your specific task, so you don't have to load all ~9,400 lines of spec prose across the 22 spec/*.md files into your context window before doing useful work.
+> **Purpose:** route you to the minimum required reading for your specific task, so you don't have to load all ~9,800 lines of spec prose across the 22 spec/*.md files into your context window before doing useful work.
 >
 > If you are a human, [`README.md`](README.md) is the better entry point.
 
@@ -62,7 +62,7 @@ else:
     print("PASS")
 ```
 
-To run the full conformance suite (19 fixture + example tests):
+To run the full conformance suite (20 fixture + example tests):
 
 ```bash
 python3 conformance/run.py
