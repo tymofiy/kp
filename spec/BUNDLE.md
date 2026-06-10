@@ -50,7 +50,7 @@ For persistent sharing, complete pack transfer, or archival:
 {contents of evidence.md}
 
 --- ENTITIES ---
-{contents of entities.md, if present}
+{contents of entities.md, if present (deprecated — legacy packs only)}
 
 --- VIEW: {view-name} ---
 {contents of views/{view-name}.md}
@@ -76,7 +76,7 @@ For persistent sharing, complete pack transfer, or archival:
 | PACK.YAML | Always | — |
 | CLAIMS | Always | — |
 | EVIDENCE | Yes | `--no-evidence` to exclude |
-| ENTITIES | If present | `--no-entities` to exclude |
+| ENTITIES | If present (deprecated — legacy packs) | `--no-entities` to exclude |
 | VIEWS | All declared views | `--views overview,briefing` to select |
 | HISTORY | No | `--include-history` to include |
 | VALIDATION | No | `--include-validation` to include |

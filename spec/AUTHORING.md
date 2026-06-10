@@ -106,13 +106,13 @@ What KIND of statement is this — about empirical reality, about your evaluatio
 ✓ [C001] LVMH Q3 2025 revenue was €19.1B {0.99|o|E001|2025-10-22}
   factual default, no annotation needed.
 
-✓ [C002] LVMH's Q3 result is a strong buy signal {0.65|i|E001,E002|2025-10-22|judgment}
+✓ [C002] LVMH's Q3 result is a strong buy signal {0.65|i|E001,E002|2025-10-22||judgment}
   judgment: this is an evaluation; another analyst could read the same data differently.
 
-✓ [C003] LVMH Q4 2025 revenue will exceed €20B {0.55|i|E001,E002,E003|2025-10-22|prediction}
+✓ [C003] LVMH Q4 2025 revenue will exceed €20B {0.55|i|E001,E002,E003|2025-10-22||prediction}
   prediction: about a future state.
 
-✓ [C004] C002 may be revised when Q4 actuals are released {0.90|i|E001|2025-10-22|meta}
+✓ [C004] C002 may be revised when Q4 actuals are released {0.90|i|E001|2025-10-22||meta}
   meta: about another claim.
 ```
 
@@ -123,7 +123,7 @@ The most common authoring failure is **over-classifying empirical statements as 
 Test: if the claim could be falsified by a single piece of disconfirming evidence, it is factual.
 
 ```text
-✗ [C001] LVMH revenue was likely around €19B {0.65|i|E001|2025-10-22|judgment}
+✗ [C001] LVMH revenue was likely around €19B {0.65|i|E001|2025-10-22||judgment}
   Misuse of judgment. The revenue is reported; cite it directly.
 
 ✓ [C001] LVMH Q3 2025 revenue was €19.1B {0.95|r|E001|2025-10-22}
@@ -249,7 +249,7 @@ Reserve confidence ≥0.99 for **trivially-falsifiable claims** — assertions a
 ✓ [C002] The mean of {3.1, 4.2, 3.8, 4.0, 3.5} is 3.72 {0.99|c|E002|2025-03-15}
   Falsification: compute the mean.
 
-✗ [C003] Acme Corp will increase capacity in 2027 {0.99|i|E001|2025-03-15|prediction}
+✗ [C003] Acme Corp will increase capacity in 2027 {0.99|i|E001|2025-03-15||prediction}
   Predictions cannot be 0.99. Future-state claims have irreducible uncertainty.
 ```
 
@@ -511,7 +511,7 @@ A short example of "raw observation → KP claims" to anchor the rubrics above.
 [C003] Acme Corp Q3 2025 revenue exceeded analyst consensus of $4.5B {0.91|c|E001|2025-03-15}
   Computed: 4.7 > 4.5.
 
-[C004] Acme Corp Q4 2025 revenue is likely to exceed $5B {0.65|r|E001|2025-03-15|prediction}
+[C004] Acme Corp Q4 2025 revenue is likely to exceed $5B {0.65|r|E001|2025-03-15||prediction}
   Reported on the basis of the CFO's statement; downgraded from 0.85 because forward statements on earnings calls have known biases. Prediction nature.
 
 [C005] Acme Corp Q3 2025 operating margin was 16% {0.85|r|E002|2025-03-15|investigated}
@@ -521,7 +521,7 @@ A short example of "raw observation → KP claims" to anchor the rubrics above.
 [C007] Acme Corp's operating margin has compressed by 2 percentage points YoY {0.85|c|E002|2025-03-15}
   Computed from C005 - C006.
 
-[C008] The margin compression reflects a pricing-driven slowdown {0.55|r|E002|2025-03-15|judgment}
+[C008] The margin compression reflects a pricing-driven slowdown {0.55|r|E002|2025-03-15||judgment}
   Reported as Bloomberg's analysis (judgment-shaped). Judgment nature; downgraded confidence because Bloomberg's analyst opinion is one read of the data.
 ```
 

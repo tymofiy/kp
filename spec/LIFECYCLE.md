@@ -297,8 +297,8 @@ Claims reviewed: 8
 
 ══════════════════════════════════════════════════════
 Result: BLOCKED — 2 orphan claims require review.
-  Run: kpack promote M007 --to research/regulatory-landscape.kpack
-  Run: kpack promote M008 --to research/gridscale-partnership.kpack
+  Run: kpack promote C007 --to research/regulatory-landscape.kpack
+  Run: kpack promote C008 --to research/gridscale-partnership.kpack
   Or:  kpack archive --force webb-advisory-2026-03-22.kpack
        (acknowledges orphans as meeting-specific context)
 ```
@@ -343,7 +343,7 @@ kpack reconcile meetings/webb-advisory-2026-03-22.kpack/
 kpack reconcile --all
 
 # Promote a specific claim to a standing pack
-kpack promote M007 --to research/regulatory-landscape.kpack
+kpack promote C007 --to research/regulatory-landscape.kpack
 # Adds the claim to the target pack, marks it as promoted in the source
 
 # Restore a pack from archive

@@ -44,7 +44,7 @@ audience_profile:
   duration_tier: medium                  # short | medium | long
   purpose: orientation                   # see "purpose" enum below
   domain_lens: buyer                     # see "domain_lens" enum below
-  register: curatorial                   # plain | curatorial | technical | investor (per VOICE.md §4.1)
+  register: curatorial                   # plain | curatorial | technical | investor (per VOICE.md §4.2)
   inferred: false                        # true if the profile was derived from defaults rather than dialogue
 ```
 
@@ -54,7 +54,7 @@ audience_profile:
 | `duration_tier` | Yes | enum | Time budget. Drives phase count and word budget. |
 | `purpose` | Yes | enum | Why the listener is here. Drives phase ordering and emphasis. |
 | `domain_lens` | No | enum | Listener's role-frame within the pack's domain. Refines emphasis (e.g., a buyer hears value claims first; compliance hears risk first). |
-| `register` | No | enum | Voice register from [VOICE.md §4.1](VOICE.md). Defaults to `curatorial` for art/heritage packs, `plain` otherwise. |
+| `register` | No | enum | Voice register from [VOICE.md §4.2](VOICE.md). Defaults to `curatorial` for art/heritage packs, `plain` otherwise. |
 | `inferred` | Yes | boolean | `true` when the profile defaulted; `false` when explicitly captured via discovery dialogue. |
 
 ### 3.1 `purpose` enum
@@ -80,7 +80,7 @@ joined by six use-case-named values added 2026-05-19:
 
 ### 3.2 `domain_lens` enum
 
-The `domain_lens` field names the listener's role-frame. Original five
+The `domain_lens` field names the listener's role-frame. Original six
 values (`buyer`, `consigner`, `compliance`, `journalist`, `collector`,
 `general`) are joined by six use-case-named values added 2026-05-19:
 
@@ -274,7 +274,7 @@ The following are committed for the v0.8.1-preview tag and will not change witho
 
 - The top-level `PlaybackPlan` shape (`pack_id`, `audience_profile`, `duration_tier`, `phases[]`, `resume_policy`, `handoff_policy`).
 - `AudienceProfile` field set (`familiarity`, `duration_tier`, `purpose`, `domain_lens`, `register`, `inferred`) and the enum values for the four required fields.
-- The four primary `register` values (`plain` / `curatorial` / `technical` / `investor`) and their tie to [VOICE.md §4.1](VOICE.md).
+- The four primary `register` values (`plain` / `curatorial` / `technical` / `investor`) and their tie to [VOICE.md §4.2](VOICE.md).
 - Rule P1 (the language model MUST NOT have a phase-advancement tool) and Rule P2 (only the real-time voice pipeline actor sends protocol messages; only the playback controller decides current phase). These are the architectural invariants the format depends on.
 - The `min_tier` mechanism (one PlaybackPlan describes all three tiers via filtering).
 
@@ -285,7 +285,7 @@ The schema may evolve based on observed behavior:
 - The phase `source_refs[]` vocabulary is likely to expand once real packs ship presentations.
 - `transition_intent` enum values may consolidate or expand based on prosody experiments.
 - `handoff_policy.inactivity_seconds` defaults will be tuned empirically.
-- The `register` field's interaction with [VOICE.md §4.1](VOICE.md) may need clarification once both fields ship in real packs.
+- The `register` field's interaction with [VOICE.md §4.2](VOICE.md) may need clarification once both fields ship in real packs.
 
 Producers MAY emit `PlaybackPlan` artifacts in v0.8.1-preview packs as advisory metadata; consumers SHOULD treat them as informational and tolerant of schema drift.
 
@@ -295,7 +295,7 @@ The status will graduate from experimental to active after at least three real p
 
 ## 10. Related
 
-- [VOICE.md §4.1](VOICE.md) — the four primary voice registers (`plain`, `curatorial`, `technical`, `investor`). `AudienceProfile.register` is the session-time selector across this axis.
-- [MULTILINGUAL.md §3.3](MULTILINGUAL.md) — locale-specific sub-registers (Halychyna, Quebec, MSA, etc.). `sub_register` is informational per MULTILINGUAL.md §3.3 (not a normative enum); the runtime MAY honor it if set on the source voice view, but MUST not depend on its presence and SHOULD not treat its absence as an error.
+- [VOICE.md §4.2](VOICE.md) — the four primary voice registers (`plain`, `curatorial`, `technical`, `investor`). `AudienceProfile.register` is the session-time selector across this axis.
+- [MULTILINGUAL.md §3.3](MULTILINGUAL.md#33-register-sub-distinctions) — locale-specific sub-registers (Halychyna, Quebec, MSA, etc.). `sub_register` is informational per MULTILINGUAL.md §3.3 (not a normative enum); the runtime MAY honor it if set on the source voice view, but MUST not depend on its presence and SHOULD not treat its absence as an error.
 - [EXTENSIONS.md §2.1 `ai_brief`](EXTENSIONS.md) — `ai_brief.headline` / `redFlags` / `beCarefulAbout` / `next` are common phase `source_refs`.
 - [COMPOSITION.md](COMPOSITION.md) — multi-pack composition for meeting packs. A meeting-pack `PlaybackPlan` may aggregate phases across the composed packs in the order COMPOSITION declares.

@@ -159,8 +159,8 @@ A Knowledge Pack is a directory with a conventional name ending in `.kpack/` (re
 ├── PACK.yaml              # REQUIRED — Manifest
 ├── claims.md              # REQUIRED — Current truth (the primary file)
 ├── evidence.md            # RECOMMENDED — Backing sources and citations
-├── history.md             # RECOMMENDED — Superseded claims (audit trail)
-├── entities.md            # OPTIONAL — Entity definitions and relationships
+├── history.md             # OPTIONAL — Superseded claims (audit trail)
+├── entities.md            # OPTIONAL — Entity definitions (deprecated — see §7)
 ├── composition.yaml       # OPTIONAL — Meeting/composite pack references (see spec/COMPOSITION.md)
 ├── validation.yaml        # OPTIONAL — Test questions for verification
 ├── signatures.yaml        # OPTIONAL — Cryptographic integrity proof (see spec/ARCHIVE.md)
@@ -276,7 +276,7 @@ conflicts:                             # Known contradictions with other packs
 
 provenance:                            # Trust context (S-C1: Poisoned Pack)
   author: Jane Chen                    #   Who created/maintains this
-  role: independent                    #   manufacturer | independent | regulator | academic | individual
+  role: independent                    #   manufacturer | independent | regulator | academic | individual | co-author
   reviewed_by: null                    #   Independent reviewer's name, if any
   review_date: null                    #   When independently reviewed
   signed: false                        #   Cryptographic signature present?
@@ -573,6 +573,7 @@ When omitted, the claim is a factual assertion (the default). Only annotate clai
 | `requires` | This claim depends on another being true |
 | `refines` | This claim adds detail to another |
 | `supersedes` | This claim replaces a prior claim |
+| `see_also` | Cross-reference to a related claim or pack |
 
 ### Alternative Verbose Syntax
 
@@ -861,7 +862,7 @@ by Fraunhofer ISE CalLab. Commercial module target: 2028.
 
 ## 7. Deprecated: entities.md — Entity Definitions
 
-> **Deprecated as of v0.7.6 (2026-04-28).** New packs MUST NOT emit
+> **Deprecated as of v0.7.7 (2026-04-28).** New packs MUST NOT emit
 > `entities.md`. Use [`extensions.entities`](EXTENSIONS.md#22-extensionsentities--typed-entity-graph)
 > for the typed entity graph and [`extensions.relations`](EXTENSIONS.md#23-extensionsrelations--typed-edges)
 > for typed edges. The successor surfaces carry stable canonical entity IDs, an external-ID

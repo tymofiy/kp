@@ -5,7 +5,7 @@
 
 > **Date:** 2026-04-12
 > **Status:** Draft
-> **Resolves:** AR-14 (signatures.yaml schema deferred to Phase C2)
+> **Resolves:** AR-14 — `signatures.yaml` schema (formal artifact: [`conformance/grammar/kp-signatures.schema.json`](../conformance/grammar/kp-signatures.schema.json))
 
 > **`kpack` CLI invocations in this document describe planned reference tooling.** Only `python3 conformance/run.py` ships today. See [SPEC.md §13](SPEC.md) and the contract-pointer stub at [`reference/kpack`](../reference/kpack) for status.
 
@@ -58,7 +58,7 @@ marquet-le-passeur.kpack (ZIP)
 ├── claims.md
 ├── evidence.md
 ├── signatures.yaml        # REQUIRED in sealed archives — integrity metadata (absent in export archives)
-├── entities.md             # if present in pack
+├── entities.md             # if present in pack (deprecated — legacy packs only)
 ├── history.md              # if present in pack
 ├── composition.yaml        # if present in pack
 ├── validation.yaml         # if present in pack
@@ -167,7 +167,7 @@ SHA-256 of this concatenation → pack hash.
 
 ## 4. `signatures.yaml`
 
-This section defines the schema for `signatures.yaml`, resolving SPEC.md §2's "Tooling only — Cryptographic hashes + signing key for integrity verification" and CORE.md AR-14.
+This section defines the schema for `signatures.yaml`, resolving SPEC.md §2's "Tooling only — Cryptographic hashes + signing key for integrity verification" and CORE.md AR-14. The normative JSON Schema artifact is [`conformance/grammar/kp-signatures.schema.json`](../conformance/grammar/kp-signatures.schema.json); the conformance runner validates `signatures.yaml` against it whenever the file is present.
 
 ### Schema
 
@@ -282,6 +282,8 @@ The signing payload is the UTF-8 encoding of the following concatenation:
 
 Where `parent.version` and `parent.pack_hash` use their exact string values from `signatures.yaml` if present, or the empty string for a v1 pack (no parent). All fields use their literal `signatures.yaml` values — no normalization or transformation.
 
+> **Scope note.** The v1 signing payload binds the single primary parent only; `parent.merge_parents` entries (§4 field table) are **not** covered by the signature. Consumers verifying merge lineage should treat merge-parent data as integrity-checked by the pack hashes it references, not by this signature. A future payload revision may extend coverage.
+
 **Signing procedure:**
 
 1. Compute the pack hash per §3.
@@ -330,7 +332,7 @@ A broken chain (parent hash mismatch) indicates tampering, data loss, or a versi
 
 ### Branching
 
-Version chains may branch when multiple systems modify the same pack concurrently (e.g., two users editing simultaneously). Branch resolution is an implementation concern, not a spec concern. This spec defines the linear chain; conflict resolution policies and merge-parent semantics are deferred to a future version of this spec.
+Version chains may branch when multiple systems modify the same pack concurrently (e.g., two users editing simultaneously). Branch resolution is an implementation concern, not a spec concern. This spec defines the linear chain and the `parent.merge_parents` data shape (§4); branch conflict-resolution *policy* is deferred to a future version of this spec.
 
 ---
 

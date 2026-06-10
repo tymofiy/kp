@@ -68,7 +68,7 @@ Locale is the higher-order grouping. A Ukrainian voice briefing lives at `views/
 
 Voice view files are plain text with minimal markup. The content is what gets spoken. Everything else is metadata in HTML comments.
 
-### Metadata Header
+### 4.1 Metadata Header
 
 Every voice view begins with HTML comment metadata:
 
@@ -86,11 +86,11 @@ Every voice view begins with HTML comment metadata:
 | `voice` | Yes | View identifier | Matches the `name` field in PACK.yaml voice view declaration |
 | `duration` | Yes | `~N seconds` or `~N minutes` | Approximate spoken duration at natural pace |
 | `pace` | Yes | `brisk`, `measured`, `deliberate` | Speaking tempo hint for TTS or human reader |
-| `register` | Recommended | `plain`, `curatorial`, `technical`, `investor` | Voice register — diction and emphasis profile (see §4.1 below) |
+| `register` | Recommended | `plain`, `curatorial`, `technical`, `investor` | Voice register — diction and emphasis profile (see §4.2 below) |
 | `generated` | Recommended | ISO date + claims version | Staleness detection (same mechanism as display views) |
 | `source` | Recommended | Comma-separated claim IDs | Traceability back to claims.md |
 
-### Register
+### 4.2 Register
 
 `register` is an orthogonal axis to `pace`: pace controls speed, register controls diction and emphasis profile. The four spec values:
 
@@ -99,11 +99,11 @@ Every voice view begins with HTML comment metadata:
 - **`technical`** — precise, terminology-honest, minimal hedging. For internal technical briefings to listeners already fluent in the domain.
 - **`investor`** — verdict-forward, risk-explicit, decision-shaped. Opens with a one-line takeaway; closes with what matters for action.
 
-`register` composes orthogonally with locale and persona surfaces: the same pack may emit `views/uk/voice/briefing.md` at `register: curatorial` and `views/voice/briefing.md` at `register: investor` from the same underlying claims. It is also distinct from app-side `AudienceProfile.persona` (consumer concept) — `register` is a producer-side spec field on the voice view itself, governing how the prose was authored.
+`register` composes orthogonally with locale and persona surfaces: the same pack may emit `views/uk/voice/briefing.md` at `register: curatorial` and `views/voice/briefing.md` at `register: investor` from the same underlying claims. It is also distinct from app-side `AudienceProfile.register` ([PLAYBACK.md §2](PLAYBACK.md) — the session-time selector across this axis) — the `register` defined here is a producer-side spec field on the voice view itself, governing how the prose was authored.
 
 For language-specific register sub-distinctions (e.g., Western Ukrainian vs literary Ukrainian, Quebec French vs Parisian French) see [MULTILINGUAL.md §3.3](MULTILINGUAL.md#33-register-sub-distinctions). The four values above are the primary axis; locale-specific sub-registers refine within them rather than replacing them.
 
-### Body Conventions
+### 4.3 Body Conventions
 
 The body is written as spoken text. The following rules govern its format:
 

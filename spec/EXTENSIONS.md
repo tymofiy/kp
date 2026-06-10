@@ -459,7 +459,7 @@ specific claims to the typed entities under `extensions.entities`.
 ### 4.1 From `entities.md` to `extensions.entities`
 
 The `entities.md` file ([SPEC.md §7](SPEC.md)) is **deprecated** as of
-2026-04-28. It saw use in five packs out of ~770 and never landed as a
+v0.7.7 (2026-04-28). It saw use in five packs out of ~770 and never landed as a
 practical primitive — its free-text `Relationships` block was never
 machine-consumed.
 
