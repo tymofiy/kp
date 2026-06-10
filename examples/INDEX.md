@@ -127,4 +127,4 @@ The first full example. Demonstrates dense + verbose claim metadata, a represent
 
 ---
 
-*Regenerated 2026-06-10 for v0.8.1-preview (matrix cells re-verified against pack contents). The index is regenerated when example packs change; verify by running `python3 conformance/run.py` (23/23 expected) before relying on the table data.*
+*Regenerated 2026-06-10 for v0.8.2-preview (matrix cells re-verified against pack contents). The index is regenerated when example packs change; verify by running `python3 conformance/run.py` (23/23 expected) before relying on the table data.*
