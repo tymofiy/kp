@@ -39,6 +39,21 @@ That's the difference between knowledge and data. Data answers yes or no.
 Knowledge has the shape of belief — its uncertainties, its tensions, its
 history. **KP:1 is a format that keeps the shape.**
 
+The same knowledge, flattened and kept:
+
+```text
+Prose: "Solar costs are probably still falling, though some analysts disagree."
+
+KP:1:
+- [C001] Solar cost decline is structural, not cyclical
+  {0.85|i|E001,E002|2026-06-10|investigated|judgment} ⊗~C003
+```
+
+The prose flattens confidence, evidence, recency, and a live disagreement
+into hedge-words. The claim keeps each one addressable: held at 0.85, on two
+cited pieces of evidence, dated, investigated but not exhaustively, a
+judgment — and in productive tension (`⊗~`) with a competing claim.
+
 **Built AI-first.** Every AI reading knowledge from prose today hits the
 same problem: amnesia. Between sessions, between context windows, between tools,
 the model loses the thread and has to reconstruct from prose what's being
@@ -84,7 +99,9 @@ A claim in KP:1 looks like this:
 ```
 
 Each claim has an ID, an assertion, a confidence/type/evidence block, and
-optional context with relations to other claims. Relation symbols, in brief:
+optional context with relations to other claims. The metadata block, position
+by position: `{confidence | type | evidence refs | date established | depth | nature}`.
+Relation symbols, in brief:
 `→` supports · `⊗` contradicts (`⊗!` known error, `⊗~` productive tension) ·
 `←` requires · `~` refines · `⊘` supersedes · `↔` see also.
 
@@ -106,6 +123,13 @@ idiomatic pack (three claims, two evidence entries) — and edit from there.
 | `scripts/` | Git hooks and validation helpers |
 
 Top-level governance and policy files include `GOVERNANCE.md`, `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`, `LICENSE`, `LICENSE-CODE`, and `DCO.txt`.
+
+### If you are an AI agent
+
+Start with [`AGENTS.md`](AGENTS.md). It routes you to the minimum required
+reading for your specific task — parsing, authoring, reconciling, translating,
+composing, or voice playback — and lists the mistakes agents most often make
+with the format.
 
 ## Examples
 
@@ -182,16 +206,18 @@ KP:1 has its own syntax and semantics. **[spec/MAPPING.md](spec/MAPPING.md)**
 provides a field-by-field translation to RDF/JSON-LD, PROV-O, and
 Nanopublications — grading each mapping as clean, lossy, or impossible, so
 practitioners using existing semantic web toolchains can assess what they
-gain and what they lose. Notably, KP:1's distinction between unqualified
+gain and what they lose. Of the 21 concepts mapped, 4 translate cleanly,
+8 with loss, and 9 have no standard equivalent, counting the best grade
+achieved across the three targets. Notably, KP:1's distinction between unqualified
 contradiction (⊗), error-contradiction (⊗!), and informative tension (⊗~)
 has no direct equivalent in any of these standards — it is one of the
 format's genuinely novel contributions.
 
 ## Status
 
-This is an **editor's draft** maintained by a single editor in a public repository. It is published as `KP:1 Public Draft — 2026-06` (current git tag `v0.8.2-preview`, with the v0.7.x preview series and the iterative v0.8.x preview line documented in [`spec/CHANGELOG.md`](spec/CHANGELOG.md)). It has a formal grammar, a JSON Schema, a conformance suite with 18 test fixtures plus 5 reference examples (23/23 validated).
+KP:1 is published as `KP:1 Public Draft — 2026-06` (current git tag `v0.8.2-preview`, with the v0.7.x preview series and the iterative v0.8.x preview line documented in [`spec/CHANGELOG.md`](spec/CHANGELOG.md)). It has a formal grammar, a JSON Schema, a conformance suite with 18 test fixtures plus 5 reference examples (23/23 validated).
 
-The specification is **not final** and may change in any way at any time, including breaking changes. It is **not yet ratified** by any standards body. Compatibility commitments will arrive only with a non-draft version. See [`GOVERNANCE.md`](GOVERNANCE.md) for the full governance picture, including how decisions are made during the preview phase and what changes when the Knowledge Pack Foundation is incorporated.
+This is an **editor's draft** maintained by a single editor in a public repository. The specification is **not final** and may change in any way at any time, including breaking changes. It is **not yet ratified** by any standards body. Compatibility commitments will arrive only with a non-draft version. See [`GOVERNANCE.md`](GOVERNANCE.md) for the full governance picture, including how decisions are made during the preview phase and what changes when the Knowledge Pack Foundation is incorporated.
 
 The current phase is **feedback-only**: the editor welcomes issues, comparisons, ambiguity reports, and critical review through GitHub issues, but does not accept external pull requests modifying normative spec text. See [`CONTRIBUTING.md`](CONTRIBUTING.md) for details.
 

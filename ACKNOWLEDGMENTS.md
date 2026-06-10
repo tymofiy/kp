@@ -7,6 +7,9 @@ KP:1 was drafted by Timothy Kompanchenko with substantial drafting,
 editing, and analytical assistance from large language models —
 primarily Anthropic's Claude (Opus 4.x family), with additional
 review passes from Google's Gemini and OpenAI's Codex/GPT models.
+Fittingly, the format was drafted in workflows of exactly the kind
+it addresses — long-running AI collaboration in which epistemic
+state had to survive session boundaries.
 The editor is solely responsible for the final text and any errors.
 
 Independent spec reviews during the v0.7-preview audit phase
