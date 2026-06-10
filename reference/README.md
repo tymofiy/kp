@@ -41,7 +41,7 @@ $ ./kpack lint ../examples/hello-world.kpack
 ../examples/hello-world.kpack: PASS
 
 $ ./kpack
-kpack — KP:1 reference CLI (v0.8.2-preview)
+kpack — KP:1 reference CLI (v0.8.3-preview)
 
 Implemented today: kpack lint <pack>  (delegates to conformance/run.py)
                    kpack new <name>   (scaffold from the hello-world starter)
