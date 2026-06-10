@@ -199,6 +199,17 @@ PACK_NAME_RE = re.compile(r"^[a-z0-9][a-z0-9-]*$")
 TEMPLATES = {"hello-world": Path(__file__).resolve().parent.parent / "examples" / "hello-world.kpack"}
 ISO_DATE_RE = re.compile(r"\d{4}-\d{2}-\d{2}")
 CALVER_RE = re.compile(r"\d{4}\.\d{2}\.\d{2}")
+# Lines whose ISO dates are scaffold slots: dense claim metadata lines
+# (indented `{...}`) and evidence captured-fields.
+DATE_SLOT_LINE_RE = re.compile(r"^\s*\{|captured:")
+
+
+def _rewrite_slot_dates(text: str, today_iso: str) -> str:
+    """Rewrite ISO dates to today, but only on metadata/captured lines."""
+    return "".join(
+        ISO_DATE_RE.sub(today_iso, line) if DATE_SLOT_LINE_RE.search(line) else line
+        for line in text.splitlines(keepends=True)
+    )
 
 
 def run_new(args: argparse.Namespace) -> int:
@@ -246,9 +257,10 @@ def run_new(args: argparse.Namespace) -> int:
     )
     pack_yaml.write_text(text)
 
-    # claims.md: frontmatter identity, title, dates. The starter has ISO
-    # dates only in claim metadata (position 4), so a blanket rewrite is
-    # exact. The [example] entity annotation is the starter's, not yours.
+    # claims.md: frontmatter identity, title, dates. ISO dates are rewritten
+    # only on metadata lines ({...} position 4) and evidence captured-lines —
+    # never in prose — so a starter that one day mentions a date in running
+    # text keeps it.
     claims = dest / "claims.md"
     text = claims.read_text()
     text = text.replace(
@@ -256,15 +268,36 @@ def run_new(args: argparse.Namespace) -> int:
     )
     text = CALVER_RE.sub(today_calver, text)
     text = text.replace("# Hello World [example]", f"# {title}")
-    text = ISO_DATE_RE.sub(today_iso, text)
+    text = _rewrite_slot_dates(text, today_iso)
     claims.write_text(text)
 
     # evidence.md: title + captured dates.
     evidence = dest / "evidence.md"
     text = evidence.read_text()
     text = text.replace("# Evidence — Hello World", f"# Evidence — {title}")
-    text = ISO_DATE_RE.sub(today_iso, text)
+    text = _rewrite_slot_dates(text, today_iso)
     evidence.write_text(text)
+
+    # Drift detector: the rewrites above are anchored to the starter's
+    # current text. If the starter evolves and an anchor stops matching,
+    # the leftover identity shows up here — warn, don't fail (the scaffold
+    # still validates; the user can finish the rename by hand). Skipped
+    # when the chosen name itself contains the starter identity (e.g.
+    # `hello-world-two`), which would always trip it.
+    residue = []
+    if "hello-world" not in name:
+        residue = [
+            f.name
+            for f in (pack_yaml, claims, evidence)
+            if "hello-world" in f.read_text() or "Hello World" in f.read_text()
+        ]
+    if residue:
+        print(
+            f"kpack: warning — starter identity remains in {', '.join(residue)} "
+            "(the starter's text has drifted from kpack new's rewrite anchors); "
+            "finish the rename by hand and report this as a kpack-new bug",
+            file=sys.stderr,
+        )
 
     # Validate before claiming success — strict, so the scaffold is proven
     # against the PEG grammar, not just the permissive layer.

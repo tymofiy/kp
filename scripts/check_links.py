@@ -24,12 +24,16 @@ import sys
 from pathlib import Path
 from urllib.parse import unquote
 
-MD_LINK_RE = re.compile(r"\[[^\]]*\]\(([^)\s]+)\)")
+# Optional CommonMark link titles — [text](target "title") — are consumed
+# so titled links are checked rather than silently skipped.
+MD_LINK_RE = re.compile(r"""\[[^\]]*\]\(([^)\s]+)(?:\s+"[^"]*")?\)""")
 HEADING_RE = re.compile(r"^#{1,6}\s+(.*?)\s*#*\s*$")
 FENCE_RE = re.compile(r"^\s{0,3}(```|~~~)")
 HTML_ANCHOR_RE = re.compile(r"""<a\s+(?:name|id)=["']([^"']+)["']""")
 INLINE_LINK_RE = re.compile(r"\[([^\]]*)\]\([^)]*\)")
-MARKER_RE = re.compile(r"[`*_]")
+# Backticks and asterisks vanish in rendered heading text; underscores do
+# NOT — github-slugger preserves them (Foo_Bar → foo_bar), so they stay.
+MARKER_RE = re.compile(r"[`*]")
 NON_SLUG_RE = re.compile(r"[^\w\- ]")
 
 
@@ -46,12 +50,17 @@ def collect_anchors(path: Path) -> set[str]:
     """All anchor ids a #fragment can point at in this markdown file."""
     anchors: set[str] = set()
     counts: dict[str, int] = {}
-    in_fence = False
+    fence_char: str | None = None  # the opener's char — ``` only closes ```, ~~~ only ~~~
     for line in path.read_text().splitlines():
-        if FENCE_RE.match(line):
-            in_fence = not in_fence
+        fm = FENCE_RE.match(line)
+        if fm:
+            mark = fm.group(1)[0]
+            if fence_char is None:
+                fence_char = mark
+            elif fence_char == mark:
+                fence_char = None
             continue
-        if in_fence:
+        if fence_char:
             continue
         m = HEADING_RE.match(line)
         if m:
@@ -87,9 +96,17 @@ def main() -> int:
                 if match.startswith(("http://", "https://", "mailto:")):
                     continue
                 target, _, frag = match.partition("#")
-                # Resolve the target document: same file for bare #fragment
+                # Resolve the target document: same file for bare #fragment.
+                # Targets are taken literally (no percent-decoding): GitHub
+                # treats %2F etc. as filename characters, so decoding here
+                # would mask links that 404 on the rendered site. Absolute
+                # paths can never resolve as repo files on GitHub.
+                if target.startswith("/"):
+                    print(f"BROKEN LINK in {path}: {match} (absolute path)")
+                    broken += 1
+                    continue
                 if target:
-                    target_path = path.parent / unquote(target)
+                    target_path = path.parent / target
                     if not target_path.exists():
                         print(f"BROKEN LINK in {path}: {match}")
                         broken += 1
