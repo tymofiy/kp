@@ -14,7 +14,7 @@ help:
 	@echo "KP:1 conformance targets"
 	@echo ""
 	@echo "  make install        Install Python dependencies (pyyaml, jsonschema)"
-	@echo "  make conformance    Run the full conformance suite (expects 19/19)"
+	@echo "  make conformance    Run the full conformance suite (expects 20/20)"
 	@echo "  make pack PACK=path Validate a single pack at PATH"
 	@echo "  make lint           Same as conformance (alias)"
 	@echo "  make clean          Remove __pycache__ and .pyc files"
