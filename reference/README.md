@@ -1,6 +1,6 @@
 # KP Reference Implementation
 
-> **Status:** Stub — `kpack` CLI is a contract-pointer; no real tooling yet.
+> **Status:** One implemented subcommand (`kpack lint`); every other `kpack` subcommand is a contract-pointer.
 
 Reference parser, serializer, and linter for KP:1. Eventually this directory will hold the canonical tooling that:
 
@@ -13,14 +13,18 @@ Must pass the conformance suite. Cannot redefine the spec.
 
 ## What ships today
 
-- **[`kpack`](kpack)** — a contract-pointer stub. Run `./kpack` (or `python3 kpack`) to see the list of subcommands the spec describes and which spec section defines each one's contract. Run `./kpack <subcommand>` for a one-paragraph summary of that command's spec contract. This stub does not implement any command; it tells a fresh agent or human reader where to look when they expect a `kpack <subcommand>` to exist. The only currently-implemented validator in this repository is [`conformance/run.py`](../conformance/run.py).
+- **`kpack lint <path/to/pack.kpack>`** — implemented. Delegates to [`conformance/run.py`](../conformance/run.py) `--pack` with identical output and exit codes (0 pass / 1 fail / 2 usage). Supports `--json` for a machine-readable result and `--no-color`.
+- **[`kpack`](kpack)** as a contract-pointer for everything else. Run `./kpack` to list the subcommands the spec describes and which spec section defines each one's contract; run `./kpack <subcommand>` for a one-paragraph summary.
 
 ```bash
-$ ./kpack
-kpack — KP:1 reference CLI stub (v0.8.1-preview)
+$ ./kpack lint ../examples/hello-world.kpack
+../examples/hello-world.kpack: PASS
 
-This is a contract-pointer, not a runnable tool.
-The only command that ships today is: python3 conformance/run.py
+$ ./kpack
+kpack — KP:1 reference CLI (v0.8.2-preview)
+
+Implemented today: kpack lint <pack>  (delegates to conformance/run.py)
+Every other subcommand is a contract pointer to its spec section.
 
 Subcommands and the spec sections that define them:
 
@@ -36,4 +40,4 @@ kpack reconcile
 
 ## What does not ship yet
 
-The actual implementations of `lint`, `render`, `bundle`, `archive`, `new`, `reconcile`, `compose`, `patrol`, `promote`, `restore`, `play` are planned. The contract for each lives in the spec section the stub names.
+The actual implementations of `render`, `bundle`, `archive`, `new`, `reconcile`, `compose`, `patrol`, `promote`, `restore`, `play` are planned. The contract for each lives in the spec section the stub names.

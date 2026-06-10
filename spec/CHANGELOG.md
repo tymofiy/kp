@@ -5,6 +5,104 @@
 
 ---
 
+## v0.8.2-preview — 2026-06-10
+
+**Conformance hardening, the first runnable `kpack` subcommand, and a cross-document consistency pass.**
+
+This patch preview makes JSON Schema `format` assertions actually enforce,
+validates `composition.yaml` against its published schema, ships `kpack lint`
+as the first implemented reference-CLI subcommand, adds a copy-this starter
+example, opens the repository's feedback funnel, and lands a structured
+consistency pass across the spec documents and formal artifacts. Monotonic:
+no breaking changes; existing v0.8.1-preview packs continue to validate
+unchanged.
+
+### Added
+
+- **Format-assertion enforcement** — `requirements.txt` now pins
+  `jsonschema[format-nongpl]`, so `date`, `date-time`, and `uri` formats in
+  PACK.yaml / `signatures.yaml` / `composition.yaml` validation are enforced
+  rather than silently skipped (bare jsonschema ignores formats it has no
+  validator for). The runner warns on stderr when the optional validators are
+  absent.
+- **`composition.yaml` schema validation** — the runner validates composition
+  files against `kp-composition.schema.json` whenever the file is present;
+  CORE AR-14 updated to record the behavior.
+- **Two negative fixtures** — `bad-format-fields.kpack` and
+  `bad-composition-schema.kpack`; the suite grows to 23/23 (18 fixtures +
+  5 examples).
+- **`kpack lint`** — first implemented subcommand of the reference CLI;
+  delegates to `conformance/run.py --pack` with identical exit codes. The
+  runner gains `--json` and `--no-color` flags plus NO_COLOR/terminal
+  auto-detection.
+- **`examples/hello-world.kpack`** — the minimal copy-this starter, validated
+  as part of the conformance suite so it can never drift.
+- **Repository gates** — CI now runs full-tree and commit-message hygiene
+  scans, the relative-link check, and a Python 3.11–3.13 compatibility matrix
+  alongside the primary 3.14 job; `workflow_dispatch` enabled.
+- **Community surfaces** — six issue forms matching CONTRIBUTING's feedback
+  lanes, `SECURITY.md` with private vulnerability reporting enabled, and
+  repository badges.
+
+### Changed
+
+- **README opening** — the KP:1 self-quote leads as a three-line hook; the
+  title, anti-flattening pitch, badge row, and status block sit in the first
+  screen; the Goethe and Barenboim epigraphs open "What is KP:1?". New
+  "When to reach for it — and when not" scoping box and a relation-symbol
+  legend under the Quick Start.
+- **CORE §6.1 / AR-04** — relations-placement language now states the exact
+  normative shape (relations are separated from the closing `}` by a space
+  and form a comma-separated list ending the line); the conformance README
+  documents that the regex runner is deliberately more permissive than the
+  PEG at line level — implement to the PEG.
+- **VOICE §4 and MULTILINGUAL §3 subsections numbered** (4.1–4.3 and
+  3.1–3.3), making the long-standing `§4.1` / `§3.3` cross-references and
+  anchor slugs resolve.
+
+### Fixed
+
+- **PEG grammar** — relations on the metadata line now parse (the prior
+  `MetadataTrailingProse` swallowed them as prose, contradicting CORE, AR-04,
+  and the shipped fixtures); `EvidenceFieldName` gains
+  `reliability`/`credibility` (defined in CORE §10); SC-12 added to the
+  grammar's semantic-constraint inventory.
+- **AUTHORING.md worked examples** — seven nature-bearing examples placed the
+  nature keyword in position 5 (depth's slot); all now use the empty-depth
+  form `{…|date||nature}` per CORE §6.1.
+- **`entities.md` deprecation record** unified to v0.7.7 (2026-04-28) across
+  CORE, SPEC, and EXTENSIONS — three documents previously carried three
+  different versions.
+- **Cross-references** — dangling pre-publication pointers in CONVENTIONS.md
+  (`i18n.md`, `namespaces.md`, `privacy.md`, a workspace schema path, and a
+  stale self-name); COMPOSITION.md's voice-architecture pointer (SPEC §15
+  never described it); LIFECYCLE.md's stale M-prefixed claim IDs in the
+  reconciliation example; `reference/kpack`'s ARCHIVE section citations; the
+  nonexistent `AudienceProfile.persona` field name in VOICE.md
+  (→ `.register`); the `domain_lens` base-set count (six, not five); four
+  feature-matrix cells in `examples/INDEX.md`; SPEC's relation-verb table
+  gains the missing `see_also` row and the provenance `role` comment gains
+  `co-author`; `history.md` aligned to OPTIONAL (CORE wins).
+- **ARCHIVE.md** — merge-parent integrity posture stated plainly
+  (`parent.merge_parents` is covered by neither the signing payload nor the
+  content hash and is unauthenticated lineage metadata); §4/§5 merge-parent
+  wording reconciled; the `kp-signatures.schema.json` artifact is now linked
+  from §4; AR-14 banner names the shipped schema.
+- **`scripts/check_links.py`** — a character-class bug (`[^http]`) meant any
+  relative link whose target begins with `h`, `t`, or `p` was never checked;
+  the checker now also exits non-zero on breakage so CI can gate on it.
+- **Documented suite counts** corrected to match the runner across all
+  surfaces (19/19 → 23/23 as fixtures and examples landed).
+
+### Compatibility
+
+- **Monotonic relaxation of nothing; no breaking changes.** All
+  v0.8.1-preview packs validate unchanged. Format-assertion enforcement only
+  rejects values that were already invalid per the schemas (malformed dates
+  and URIs); all five reference examples pass unchanged.
+
+---
+
 ## v0.8.1-preview — 2026-05-10
 
 **Voice-view register metadata promoted into the conformance schema.**

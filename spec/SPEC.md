@@ -1,9 +1,9 @@
 <!-- SPDX-License-Identifier: CC-BY-4.0 -->
 <!-- SPDX-FileCopyrightText: 2026 Timothy Kompanchenko -->
 
-# Knowledge Pack Specification v0.8.1-preview
+# Knowledge Pack Specification v0.8.2-preview
 
-> **Status:** Editor's Draft — `KP:1 Public Draft — 2026-05` (`v0.8.1-preview`)
+> **Status:** Editor's Draft — `KP:1 Public Draft — 2026-06` (`v0.8.2-preview`)
 > **Editor:** Timothy Kompanchenko
 > **Date:** 2026-05-10
 > **Version history:** See `CHANGELOG.md`
@@ -1303,7 +1303,7 @@ A conversation flow using navigation:
 
 ## 13. Tooling (planned reference CLI)
 
-> **Status of the `kpack` CLI (as of v0.8.1-preview):** the commands listed
+> **Status of the `kpack` CLI (as of v0.8.2-preview):** the commands listed
 > in this section describe **planned reference tooling**, not commands that
 > ship in this repository today. The only fully-implemented command is
 > `python3 conformance/run.py` (the conformance suite). A contract-pointer

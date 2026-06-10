@@ -18,7 +18,7 @@ description: >
   audience-specific views including a consignor-facing decline letter.
 
 spec_uri: https://github.com/tymofiy/kp
-spec_version: v0.8.1-preview
+spec_version: v0.8.2-preview
 kind: claim
 
 confidence:
