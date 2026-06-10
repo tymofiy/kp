@@ -266,7 +266,7 @@ Sealing happens at every version transition in the pack lifecycle:
 
 ### 4.2 Signing (optional)
 
-Signing provides **tamper evidence** for the sealing metadata — proof that `pack_hash`, `sealed_at`, `sealed_by`, and `parent` have not been modified since sealing. It is OPTIONAL because:
+Signing provides **tamper evidence** for the sealing metadata — proof that `pack_hash`, `sealed_at`, `sealed_by`, and the primary parent fields (`parent.version`, `parent.pack_hash`) have not been modified since sealing. It is OPTIONAL because:
 
 - Single-user deployments gain little from signing.
 - Multi-tenant deployments (auction houses, galleries) benefit from knowing *which system* sealed a version.
@@ -282,7 +282,7 @@ The signing payload is the UTF-8 encoding of the following concatenation:
 
 Where `parent.version` and `parent.pack_hash` use their exact string values from `signatures.yaml` if present, or the empty string for a v1 pack (no parent). All fields use their literal `signatures.yaml` values — no normalization or transformation.
 
-> **Scope note.** The v1 signing payload binds the single primary parent only; `parent.merge_parents` entries (§4 field table) are **not** covered by the signature. Consumers verifying merge lineage should treat merge-parent data as integrity-checked by the pack hashes it references, not by this signature. A future payload revision may extend coverage.
+> **Scope note.** The v1 signing payload binds the single primary parent only; `parent.merge_parents` entries (§4 field table) are covered by **neither** the signature **nor** the pack content hash (`signatures.yaml` is excluded from hashing, §3). Merge-parent entries are therefore **unauthenticated lineage hints**: an attacker can add, remove, or alter them in a signed archive without invalidating anything. Verifiers MUST NOT treat merge-parent assertions as tamper-evident; only the referenced archives' own contents can be verified, never the assertion that they are parents of this pack. A future payload revision may extend coverage.
 
 **Signing procedure:**
 
@@ -493,7 +493,7 @@ The integrity chain (hash verification) is valuable without signing. Signing add
 
 ### Why does the signature bind metadata, not just the pack hash?
 
-`signatures.yaml` is excluded from the content hash to avoid circular dependency. But without binding, the metadata fields (`sealed_at`, `sealed_by`, `parent`) could be rewritten without breaking verification — defeating the purpose of the integrity chain. The signing payload (§4.2) binds these fields so that any modification invalidates the signature.
+`signatures.yaml` is excluded from the content hash to avoid circular dependency. But without binding, the metadata fields (`sealed_at`, `sealed_by`, the primary `parent` fields) could be rewritten without breaking verification — defeating the purpose of the integrity chain. The signing payload (§4.2) binds these fields so that any modification invalidates the signature (`parent.merge_parents` excepted — see the §4.2 scope note).
 
 ---
 

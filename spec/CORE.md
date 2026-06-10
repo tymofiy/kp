@@ -255,7 +255,7 @@ Positions 1–4 are REQUIRED. Positions 5–6 are OPTIONAL. Empty interior slots
 
 **Context prose** may follow the metadata on the same line (trailing prose) or on subsequent indented continuation lines (2+ spaces, AR-11).
 
-**Relations** MAY appear on the metadata line after the closing `}` — immediately after the brace, or trailing the context prose — and/or on subsequent continuation lines. In all positions, a relation symbol is parsed as a relation only when immediately followed by a valid claim-ID reference (`C` + digits or a cross-pack reference, per AR-10); other occurrences are prose. Relations use symbol syntax:
+**Relations** MAY appear on the metadata line after the closing `}` (separated from it by a space) — either starting the trailing text or following the context prose — and/or on subsequent continuation lines. In every position, relations form a comma-separated list that ends the line, and a relation symbol is parsed as a relation only when immediately followed by a valid claim-ID reference (`C` + digits or a cross-pack reference, per AR-10); other occurrences are prose. Relations use symbol syntax:
 
 ```text
 →C002, ⊗~C003
@@ -609,7 +609,7 @@ The following normative decisions resolve ambiguities identified during grammar 
 | AR-01 | Claim ID is `C[0-9]+(-v[0-9]+)?`. Zero-padding conventional, not required. |
 | AR-02 | Evidence ID is `E[0-9]+`. Same padding rules as claim IDs. |
 | AR-03 | Bold wrapping (`**[C001]**`) is optional syntactic sugar. No semantic meaning. |
-| AR-04 | Relations MAY appear on the metadata line after the closing `}` (immediately or trailing the context prose), and/or on subsequent continuation lines (2+ spaces). A relation symbol is parsed as a relation only when immediately followed by a valid claim-ID reference (per AR-10); other occurrences are prose. Relations may trail prose or start a line. |
+| AR-04 | Relations MAY appear on the metadata line after the closing `}` (separated by a space; starting the trailing text or following the context prose), and/or on subsequent continuation lines (2+ spaces). Relations form a comma-separated list ending the line. A relation symbol is parsed as a relation only when immediately followed by a valid claim-ID reference (per AR-10); other occurrences are prose. |
 | AR-05 | Verbose relation names are a closed enum of 8 values. |
 | AR-06 | Evidence `type` is open vocabulary. Unknown types MUST be accepted. |
 | AR-07 | Both blockquote and list evidence formats are valid. Field names are case-insensitive. |

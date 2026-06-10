@@ -70,7 +70,7 @@ Expected result: `23/23 passed`. The runner's Python dependencies are declared i
 
 The PEG grammar in `grammar/kp-claims.peg` is the **normative** reference for KP:1 claim syntax. It is what implementations should target.
 
-The `run.py` runner in this preview release validates fixtures against **equivalent regular-expression patterns** rather than parsing through the PEG grammar directly. The two paths are kept in sync by hand. A future phase will replace the regex layer with a PEG-driven parser using a library such as `parsimonious` or `lark`. The fixture suite is the contract: any future runner that passes 23/23 against these fixtures is acceptable.
+The `run.py` runner in this preview release validates fixtures against **equivalent regular-expression patterns** rather than parsing through the PEG grammar directly. The two paths are kept in sync by hand. The regex layer is deliberately more permissive at the line level — it recognizes relation tokens anywhere after the metadata brace and does not require comma separation — while the PEG defines the normative shape (space after `}`, comma-separated relations ending the line). A pack accepted by the runner but rejected by the PEG is malformed; implement to the PEG. A future phase will replace the regex layer with a PEG-driven parser using a library such as `parsimonious` or `lark`. The fixture suite is the contract: any future runner that passes 23/23 against these fixtures is acceptable.
 
 If you want to implement a conforming parser today, target the PEG grammar, not the runner's regexes.
 
