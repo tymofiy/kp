@@ -19,7 +19,7 @@ KP:1 (Knowledge Pack v1) is a plain-text format for representing **epistemic sta
 
 [`conformance/fixtures/valid/maximal.kpack/`](conformance/fixtures/valid/maximal.kpack/) demonstrates **all the hard features**: the `⊗!` (error) and `⊗~` (productive tension) qualifiers, supersession (`⊘`) chains, cross-pack `↔` references, all six metadata positions in the dense form, and meta-claims. It passes conformance. Read this before reading prose about what those features mean.
 
-The four `examples/` packs are progressively more demanding: `solar-energy-market.kpack` (hello-world; dense + verbose syntax), `kp-external-assessment.kpack` (meta example), `art-acquisition-decision.kpack` (full feature surface; walks AUTHORING.md end-to-end), and `auction-house-consignment-review.kpack` (consigner-side counterpart; cross-pack `↔` references).
+The five `examples/` packs are progressively more demanding: `hello-world.kpack` (copy-this starter; minimum idiomatic shape), `solar-energy-market.kpack` (first full example; dense + verbose syntax), `kp-external-assessment.kpack` (meta example), `art-acquisition-decision.kpack` (full feature surface; walks AUTHORING.md end-to-end), and `auction-house-consignment-review.kpack` (consigner-side counterpart; cross-pack `↔` references).
 
 ---
 
@@ -66,7 +66,7 @@ else:
     print("PASS")
 ```
 
-To run the full conformance suite (22 fixture + example tests):
+To run the full conformance suite (23 fixture + example tests):
 
 ```bash
 python3 conformance/run.py

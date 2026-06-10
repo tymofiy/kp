@@ -93,6 +93,7 @@ INVALID_EXPECTED = {
     "bad-composition-schema.kpack": "composition",
 }
 EXAMPLE_ORDER = [
+    "hello-world.kpack",
     "solar-energy-market.kpack",
     "kp-external-assessment.kpack",
     "art-acquisition-decision.kpack",
