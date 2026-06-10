@@ -1,0 +1,28 @@
+name: Comparison with another format
+description: How KP:1 stacks up against RDF/JSON-LD, PROV-O, nanopublications, AIF, or anything else
+labels: ["comparison"]
+body:
+  - type: input
+    id: other-format
+    attributes:
+      label: The other format or standard
+      placeholder: "PROV-O / nanopublications / your in-house format"
+    validations:
+      required: true
+  - type: textarea
+    id: comparison
+    attributes:
+      label: The comparison
+      description: Where the formats overlap, where each wins, and on what evidence. Cite spec sections on both sides where you can — spec/MAPPING.md is the existing field-by-field analysis for RDF/JSON-LD, PROV-O, and nanopublications.
+    validations:
+      required: true
+  - type: textarea
+    id: claim-challenged
+    attributes:
+      label: Which KP:1 claim does this challenge or support?
+      description: e.g. the novelty of the three-way contradiction qualifiers, the no-reconstruction argument
+  - type: textarea
+    id: sources
+    attributes:
+      label: Sources
+      description: Links or citations for the other side of the comparison

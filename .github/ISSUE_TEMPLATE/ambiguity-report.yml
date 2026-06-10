@@ -1,0 +1,35 @@
+name: Ambiguity report
+description: The spec is unclear, contradictory, or open to multiple readings
+labels: ["ambiguity"]
+body:
+  - type: input
+    id: spec-section
+    attributes:
+      label: Spec section
+      description: Exact file and section (line numbers welcome)
+      placeholder: "spec/CORE.md §6.1"
+    validations:
+      required: true
+  - type: textarea
+    id: ambiguity
+    attributes:
+      label: The ambiguity
+      description: What is unclear, and what are the plausible competing readings?
+    validations:
+      required: true
+  - type: textarea
+    id: example
+    attributes:
+      label: Minimal example
+      description: A pack fragment or claim line that makes the ambiguity concrete
+      render: text
+  - type: textarea
+    id: proposal
+    attributes:
+      label: What should the spec say?
+      description: Even a wrong proposal is more useful than an abstract complaint
+  - type: input
+    id: confidence
+    attributes:
+      label: How confident are you that this is a real ambiguity?
+      placeholder: "e.g. \"fairly sure\" / \"might be intended — not sure\""

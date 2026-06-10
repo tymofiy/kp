@@ -47,7 +47,7 @@ The most useful issues share a few qualities:
 4. **Honest about confidence.** "I think X is wrong because Y" is better than "X is wrong." Saying "I am not sure if this is intended or a bug" is welcome and useful.
 5. **Actionable.** If possible, propose what the spec should say instead. Even a wrong proposal is more useful than abstract complaint.
 
-Issue templates may be added after the initial public release; until then, use a normal GitHub issue and include the information above.
+Issue forms exist for the main feedback lanes (ambiguity, conformance edge case, implementation experience, comparison, benchmark, bug) — the "New issue" page will offer them. For anything else (including real-world workflow tests, label `domain`, and translation coordination), open a blank issue and include the information above.
 
 ## Review lanes (for the contribution types we DO accept as PRs)
 

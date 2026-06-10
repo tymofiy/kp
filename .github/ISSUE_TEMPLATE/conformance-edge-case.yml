@@ -1,0 +1,32 @@
+name: Conformance edge case
+description: A pack shape the spec or fixtures under-specify — accepted/rejected for unclear reasons
+labels: ["conformance"]
+body:
+  - type: input
+    id: rule
+    attributes:
+      label: Governing rule
+      description: The spec section, SC/AR identifier, or grammar rule in question
+      placeholder: "SC-05 / spec/CORE.md §9 / kp-claims.peg ClaimLine"
+    validations:
+      required: true
+  - type: textarea
+    id: edge-case
+    attributes:
+      label: The edge case
+      description: What input is under-specified, and what do you think should happen?
+    validations:
+      required: true
+  - type: textarea
+    id: fragment
+    attributes:
+      label: Minimal pack fragment
+      description: The smallest claims.md / PACK.yaml fragment that triggers the question
+      render: text
+    validations:
+      required: true
+  - type: textarea
+    id: behavior
+    attributes:
+      label: Observed vs expected
+      description: What does `conformance/run.py` (or your implementation) do with it today, and what did you expect?
