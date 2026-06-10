@@ -14,7 +14,7 @@ abstract: >
   history, and a three-surface architecture (claims for AI reasoning,
   display views for visual reading, voice views for spoken delivery).
 type: software
-version: "0.8.2-preview"
+version: "0.8.3-preview"
 date-released: "2026-06-10"
 authors:
   - family-names: "Kompanchenko"

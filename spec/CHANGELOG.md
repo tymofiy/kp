@@ -5,6 +5,82 @@
 
 ---
 
+## v0.8.3-preview — 2026-06-10
+
+**The grammar becomes executable: PEG-driven strict validation, a packaged CLI, `kpack new`, and anchor-aware link checking.**
+
+This patch preview machine-executes the normative PEG grammar for the first
+time (`conformance/run.py --strict`), packages the reference CLI as an
+installable console script with argparse end-to-end, implements `kpack new`
+(scaffold a validated pack from the starter), verifies documentation anchors
+against GitHub heading slugs, and sharpens the README's first-screen
+storefront. Monotonic: no breaking changes; the default validation path is
+unchanged and existing v0.8.2-preview packs continue to validate. AR-17
+records two document-structure tolerances the shipped corpus already used.
+
+### Added
+
+- **`--strict` (PEG layer)** — the runner parses each pack's `claims.md`
+  through `grammar/kp-claims.peg` itself, loaded at runtime via a mechanical
+  Ford-PEG → parsimonious translation (documented in `run.py`; the shipped
+  grammar stays implementation-neutral). Strict errors append after the
+  regex/semantic layer; composition packs are exempt (narrative `claims.md`
+  by design); the runner exits loudly if `parsimonious` is absent rather
+  than degrading silently. `requirements.txt` pins `parsimonious>=0.11`,
+  and CI runs the strict suite in both jobs (Python 3.11–3.14). Making
+  strict the default is deferred to a later release.
+- **AR-17** (CORE Appendix B, `grammar/README.md`) — blank lines are
+  permitted between structural elements, and a section MAY open with a
+  blockquote description mirroring the document heading. Both surfaced by
+  the grammar's first machine execution; both already used throughout the
+  fixtures and examples. CORE §5's sections prose updated to match.
+- **Packaging** — minimal `pyproject.toml`; `pip install -e .` from a
+  checkout puts `kpack` on PATH (console script). The CLI implementation
+  moved to `reference/kpack_cli.py` with argparse end-to-end: unknown
+  flags and subcommands fail loudly with exit 2 (the previous dispatcher
+  silently dropped unrecognized `lint` flags). `kpack lint` forwards
+  `--strict`. Editable installs are the supported layout; a plain
+  site-packages install refuses `lint` with a message naming that.
+- **`kpack new <name> [--from hello-world]`** — copies the starter,
+  rewrites the pack identity in lockstep (PACK.yaml name/version and the
+  claims.md frontmatter per SC-07/SC-08, titles, metadata/captured dates),
+  validates the scaffold strict before reporting success, and warns if
+  starter identity ever survives the rename.
+- **Anchor-aware link checking** — `scripts/check_links.py` verifies
+  `#fragments` against the target document's real anchors: GitHub heading
+  slugs (underscores preserved, fence-character tracking, `-N` dedup) and
+  explicit HTML anchors. Same-file fragment links, titled links, absolute
+  paths, and percent-encoded targets are all covered.
+- **README storefront** — a prose-vs-KP:1 before/after panel under "What
+  is KP:1?", the metadata-block legend beside the relation legend, an
+  "If you are an AI agent" routing subsection, and MAPPING grade counts
+  (4 clean / 8 lossy / 9 none of 21 concepts) in Interoperability.
+
+### Changed
+
+- The `compat` (3.11/3.12/3.13) CI jobs are now required status checks on
+  `main` alongside `ci` — the published Python floor is enforced on every
+  merge, not merely reported.
+- README Status section resequenced: published artifacts first, editor's-
+  draft caveats second (same sentences).
+- ACKNOWLEDGMENTS: AI drafting assistance is attributed at the vendor/
+  product level, and a line notes the format was drafted in workflows of
+  exactly the kind it addresses.
+
+### Fixed
+
+- `dangling-relation-target.kpack` carried an accidental second violation —
+  a mid-line relation followed by prose, illegal per AR-04, which the
+  permissive regex layer never noticed. The relation now ends its line, so
+  the fixture fails for exactly its declared reason (SC-05).
+- Three stale documentation anchors, surfaced by the first anchor-aware
+  link check and verified against GitHub's rendered HTML: ARCHIVE.md →
+  CORE §4 (Rosetta header), EXTENSIONS.md → CORE Appendix B (AR-09), and
+  EXTENSIONS.md §3.3 → STORAGE.md §3.2 (where `KPClaim` is actually
+  defined; the cited CORE section never defined it).
+
+---
+
 ## v0.8.2-preview — 2026-06-10
 
 **Conformance hardening, the first runnable `kpack` subcommand, and a cross-document consistency pass.**

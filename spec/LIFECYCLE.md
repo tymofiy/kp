@@ -351,7 +351,7 @@ kpack restore meetings/webb-advisory-2026-03-22.kpack/
 # Moves from _archive/ back to active directory
 ```
 
-> The `kpack` commands above describe planned reference tooling. As of v0.8.2-preview, the commands that ship in this repository are `python3 conformance/run.py` and `./reference/kpack lint` (which delegates to it). See [SPEC.md §13 Tooling](SPEC.md) for status.
+> The `kpack` commands above describe planned reference tooling. As of v0.8.3-preview, the commands that ship in this repository are `python3 conformance/run.py` and `./reference/kpack lint` (which delegates to it). See [SPEC.md §13 Tooling](SPEC.md) for status.
 
 ---
 
@@ -408,7 +408,7 @@ The cascade decisions are recorded in `history.md` alongside the supersession en
 
 Supersession is local to a pack. A claim in pack A superseded with `⊘` does not propagate to claims in pack B that referenced the original via `↔` (cross-pack see-also). Cross-pack effects are a [`RECONCILIATION.md`](RECONCILIATION.md) concern (currently a stub; full design deferred to v0.9 / v1.0).
 
-The conservative reading for v0.8.2-preview: a cross-pack `↔` reference is a navigational pointer, not a binding dependency. Pack B's claim with `↔packA#section` does not require pack A to be reconciled before pack B is published. If pack A's referenced claim is superseded, pack B's `↔` continues to point at the same heading; the heading typically contains the successor claim by then.
+The conservative reading for v0.8.3-preview: a cross-pack `↔` reference is a navigational pointer, not a binding dependency. Pack B's claim with `↔packA#section` does not require pack A to be reconciled before pack B is published. If pack A's referenced claim is superseded, pack B's `↔` continues to point at the same heading; the heading typically contains the successor claim by then.
 
 ---
 

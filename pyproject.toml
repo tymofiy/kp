@@ -14,9 +14,9 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "kpack-reference"
-# Tracks the spec tag (v0.8.2-preview → 0.8.2a0 per PEP 440); part of the
+# Tracks the spec tag (v0.8.3-preview → 0.8.3a0 per PEP 440); part of the
 # release status-marker sweep.
-version = "0.8.2a0"
+version = "0.8.3a0"
 description = "KP:1 Knowledge Pack reference CLI (kpack lint + contract pointers)"
 readme = "reference/README.md"
 requires-python = ">=3.11"
