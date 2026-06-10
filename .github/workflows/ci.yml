@@ -3,12 +3,48 @@ on:
   push:
     branches: [main]
   pull_request:
+  workflow_dispatch:
 jobs:
   ci:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+      # Public repo: fail if AI-consultation process language appears in
+      # tracked text. Mirrors the lefthook pre-commit `deny-list` step —
+      # the local hook scans staged files, while this gate scans the full
+      # tree so PRs from clones without hooks installed are still covered.
+      # Same generic, public-safe pattern set as lefthook.yml; keep the
+      # two in sync when editing either. lefthook.yml and this workflow
+      # file are excluded because they carry the patterns themselves.
+      - name: Leak scan (tracked text)
+        run: |
+          if grep -rinE \
+            --include='*.md' --include='*.txt' --include='*.yml' --include='*.yaml' \
+            --include='*.json' --include='*.cff' --include='*.toml' \
+            --exclude='lefthook.yml' --exclude='ci.yml' --exclude-dir='.git' \
+            'cross-model (review|consultation|spec review)|multi-model (synthesis|analysis|consultation|spec review)|three-model consultation|two-model consultation|round [0-9]+ (review|verify|cross-model|findings)|consulted (codex|gemini|claude)|adversarial review|(codex|gemini|claude) feedback|reviewer [0-9]+\b|session handover|model attributions' \
+            .; then
+            echo "::error::Process-language match in tracked content. This is a PUBLIC repo. Describe what changed, not which models reviewed it."
+            exit 1
+          fi
+      # Same gate for the commit messages a PR would merge (the local
+      # commit-msg hook is bypassable with --no-verify and absent on
+      # fresh clones). Allowed Co-Authored-By trailers are stripped
+      # before scanning, mirroring the lefthook commit-msg step.
+      - name: Leak scan (PR commit messages)
+        if: github.event_name == 'pull_request'
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          msgs=$(git log --format=%B "origin/${BASE_REF}..HEAD" \
+            | sed -E '/^Co-Authored-By: (Claude|Codex|Gemini|Antigravity|Cursor) <noreply@[^>]+>$/d')
+          if echo "$msgs" | grep -iE 'cross-model|multi-model (synthesis|analysis|consultation|review)|round [0-9]+ (review|verify|findings)|consulted (codex|gemini|claude)|(codex|gemini|claude) (feedback|suggested|reviewed)|adversarial review|reviewer [0-9]+\b|session handover|model attributions'; then
+            echo "::error::Process language in a commit message on this PR. Describe what changed, not which models reviewed it."
+            exit 1
+          fi
       - name: Setup Node.js
         uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
         with:
@@ -28,6 +64,29 @@ jobs:
           find . -name '*.yaml' -o -name '*.yml' | while read -r file; do
             python3 -c "import yaml; yaml.safe_load(open('$file'))" || exit 1
           done
+      - name: Check relative links
+        run: python3 scripts/check_links.py
+      - name: Run conformance suite
+        run: python3 conformance/run.py
+    timeout-minutes: 5
+  # Portability signal for implementers: the conformance suite on the
+  # supported Python floor and intermediate versions. Informational —
+  # not a required status check (`ci` above is the required one).
+  compat:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12", "3.13"]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Setup Python ${{ matrix.python-version }}
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install Python dependencies
+        run: pip install -r requirements.txt
       - name: Run conformance suite
         run: python3 conformance/run.py
     timeout-minutes: 5

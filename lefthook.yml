@@ -46,9 +46,14 @@ pre-commit:
     # containing workspace. Workspace-specific codename and path patterns
     # live in that workspace's hooks; this file only carries generic
     # process-language patterns that are safe to expose publicly.
+    # Mirrored by the "Leak scan" steps in .github/workflows/ci.yml —
+    # keep the two pattern sets in sync. ci.yml is excluded below for the
+    # same reason this file is: it carries the patterns themselves.
     deny-list:
       glob: "*.{md,txt,yml,yaml,json,cff,toml}"
-      exclude: "lefthook.yml"
+      exclude:
+        - "lefthook.yml"
+        - ".github/workflows/ci.yml"
       run: |
         found=0
         for file in {staged_files}; do
@@ -74,7 +79,12 @@ pre-commit:
     # is the behavioral rule in AGENTS.md §"What you MUST NOT do".
     client-names:
       glob: "*.{md,txt,yml,yaml,json,cff,toml}"
-      exclude: "lefthook.yml|.lefthookrc|.private-deny-list*"
+      # Array-of-globs form: a bare string here is a glob, not a regex,
+      # so pipe-delimited lists silently exclude nothing.
+      exclude:
+        - "lefthook.yml"
+        - ".lefthookrc"
+        - ".private-deny-list*"
       run: |
         if [ -z "$DENY_PATTERNS_CLIENT_NAMES" ]; then exit 0; fi
         found=0
