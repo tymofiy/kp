@@ -195,6 +195,7 @@ Run from a fresh checkout:
 python3 -m venv .venv && source .venv/bin/activate  # if your Python is externally managed (PEP 668)
 pip install -r requirements.txt
 python3 conformance/run.py                       # full suite (23/23 expected)
+python3 conformance/run.py --strict              # also parse claims.md through the PEG grammar
 python3 conformance/run.py --pack path/to/x.kpack  # validate a single pack
 ```
 

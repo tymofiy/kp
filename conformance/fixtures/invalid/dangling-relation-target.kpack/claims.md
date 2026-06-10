@@ -20,8 +20,8 @@ confidence: simple | normalized
 ## Claims
 
 - [C001] Claim referencing a non-existent target
-  {0.80|o|E001|2026-05-09} →C999 The target C999 is not defined anywhere
-  in this pack and is not a cross-pack reference (would need pack#id form).
+  {0.80|o|E001|2026-05-09} The target C999 is not defined anywhere in this
+  pack and is not a cross-pack reference (would need pack#id form). →C999
 
 - [C002] Valid sibling claim
   {0.75|i|E001|2026-05-09|investigated} This one is fine.
