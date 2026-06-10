@@ -13,11 +13,15 @@ constraints SC-01 through SC-12 are also enforced. See
 conformance/README.md for the grammar-vs-runner contract.
 
 Dependencies: pyyaml, jsonschema (see requirements.txt)
-Usage: python3 conformance/run.py
+Usage:
+    python3 conformance/run.py                                # full suite
+    python3 conformance/run.py --pack PATH [--json] [--no-color]
+Color is auto-disabled when output is not a terminal or NO_COLOR is set.
 """
 
 import datetime
 import json
+import os
 import re
 import sys
 from pathlib import Path
@@ -460,17 +464,41 @@ def validate_pack(pack_dir: Path) -> list[Err]:
 
 
 def main():
+    argv = sys.argv[1:]
+    as_json = "--json" in argv
+    no_color = "--no-color" in argv
+    argv = [a for a in argv if a not in ("--json", "--no-color")]
+
+    # Color is for humans at a terminal: disabled when output is piped or
+    # redirected (so CI logs stay clean), when NO_COLOR is set
+    # (https://no-color.org), with --no-color, or in --json mode.
+    if as_json or no_color or os.environ.get("NO_COLOR") or not sys.stdout.isatty():
+        global GREEN, RED, BOLD, DIM, RESET
+        GREEN = RED = BOLD = DIM = RESET = ""
+
     # `--pack PATH` validates a single pack directory and exits.
     # The natural workflow for an external author validating their own pack.
-    if len(sys.argv) >= 2 and sys.argv[1] == "--pack":
-        if len(sys.argv) < 3:
-            print(f"{RED}usage: run.py --pack PATH{RESET}")
+    # `--json` emits a machine-readable result object instead of prose.
+    if argv and argv[0] == "--pack":
+        if len(argv) < 2:
+            print(f"{RED}usage: run.py --pack PATH [--json] [--no-color]{RESET}")
             sys.exit(2)
-        pack_path = Path(sys.argv[2])
+        pack_path = Path(argv[1])
         if not pack_path.is_dir():
-            print(f"{RED}Pack directory not found: {pack_path}{RESET}")
+            if as_json:
+                print(json.dumps({"path": str(pack_path), "ok": False, "errors": [
+                    {"category": "usage", "message": "pack directory not found"}]}))
+            else:
+                print(f"{RED}Pack directory not found: {pack_path}{RESET}")
             sys.exit(2)
         errs = validate_pack(pack_path)
+        if as_json:
+            print(json.dumps({
+                "path": str(pack_path),
+                "ok": not errs,
+                "errors": [{"category": e.cat, "message": e.msg} for e in errs],
+            }))
+            sys.exit(0 if not errs else 1)
         if not errs:
             print(f"{GREEN}{BOLD}{pack_path}: PASS{RESET}")
             sys.exit(0)
@@ -478,6 +506,10 @@ def main():
         for e in errs:
             print(f"  {e}")
         sys.exit(1)
+
+    if as_json:
+        print("--json requires --pack PATH", file=sys.stderr)
+        sys.exit(2)
 
     print(f"\n{BOLD}KP:1 Conformance Test Runner{RESET}")
     print("=" * 29)

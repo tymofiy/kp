@@ -48,6 +48,10 @@ pip install -r requirements.txt
 
 # Validate a single pack:
 python3 conformance/run.py --pack path/to/my-pack.kpack
+
+# Equivalent via the reference CLI (same validation, same exit codes;
+# add --json for a machine-readable result):
+./reference/kpack lint path/to/my-pack.kpack
 ```
 
 Or in Python directly:
@@ -104,7 +108,7 @@ These exist in the repository but are not load-bearing for any of Tasks A–F:
 - `research/` — benchmark design and prior-art analysis, not normative
 - `decisions/` — decision records, useful for understanding *why* but not *what*
 - `scripts/` — git hooks and validation helpers, not normative
-- `reference/` — `reference/kpack` is a contract-pointer stub for the planned `kpack` CLI (run it to see which spec section defines each subcommand); the actual reference parser/tooling ships separately
+- `reference/` — `reference/kpack` implements `kpack lint` (it delegates to the conformance runner); every other subcommand is a contract-pointer stub naming the spec section that defines it
 - `GOVERNANCE.md`, `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`, `LICENSE*`, `DCO.txt` — governance, not format
 
 ---
@@ -116,7 +120,7 @@ The KP:1 specification is an **editor's draft**. The substantive format (claim g
 - [`spec/RECONCILIATION.md`](spec/RECONCILIATION.md) — concept-only stub. Full design deferred to v0.9 / v1.0 contingent on observing real cross-pack drift in ≥3 packs.
 - [`spec/PLAYBACK.md`](spec/PLAYBACK.md) — experimental. Schema may evolve before v0.9.
 
-The CLI tool sketches in `spec/SPEC.md` §13 (`kpack render`, `kpack reconcile`, `kpack lint`, etc.) describe **planned reference tooling**. The only command that exists today is `python3 conformance/run.py`. A contract-pointer stub at [`reference/kpack`](reference/kpack) tells you which spec section defines each subcommand's contract — run `./reference/kpack <subcommand>` to find out where to look. References to `kpack <command>` in the spec should be read as "the eventual reference tool will offer this command" — they are not currently runnable.
+The CLI tool sketches in `spec/SPEC.md` §13 (`kpack render`, `kpack reconcile`, `kpack lint`, etc.) describe **planned reference tooling**. Two commands run today: `python3 conformance/run.py` and `./reference/kpack lint` (which delegates to it). For every other subcommand, [`reference/kpack`](reference/kpack) is a contract pointer — run `./reference/kpack <subcommand>` to see which spec section defines its contract. References to other `kpack <command>` forms in the spec should be read as "the eventual reference tool will offer this command" — they are not currently runnable.
 
 ---
 
