@@ -69,9 +69,10 @@ jobs:
       - name: Run conformance suite
         run: python3 conformance/run.py
     timeout-minutes: 5
-  # Portability signal for implementers: the conformance suite on the
-  # supported Python floor and intermediate versions. Informational —
-  # not a required status check (`ci` above is the required one).
+  # Portability gate for implementers: the conformance suite on the
+  # supported Python floor and intermediate versions. Required status
+  # checks on `main` alongside `ci` — the 3.11 floor is enforced, not
+  # merely reported.
   compat:
     runs-on: ubuntu-latest
     strategy:
