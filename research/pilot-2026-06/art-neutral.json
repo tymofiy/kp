@@ -1,0 +1,444 @@
+{
+  "domain": "art-acquisition-decision",
+  "version": "2026.05.09",
+  "confidence_note": "confidence values are normalized floats from 0.0 to 1.0",
+  "claims": [
+    {
+      "id": "1",
+      "statement": "The work is offered for sale by Gallery K, dated 2026-05-08, with asking price stated in writing.",
+      "confidence": 0.99,
+      "type": "observed",
+      "nature": "factual",
+      "evidence": [
+        "E1"
+      ],
+      "date_established": "2026-05-08",
+      "context": "Direct receipt of offer letter; the offer's existence is verifiable from the document."
+    },
+    {
+      "id": "2",
+      "statement": "The asking price is 950,000 euro.",
+      "confidence": 0.99,
+      "type": "observed",
+      "nature": "factual",
+      "evidence": [
+        "E1"
+      ],
+      "date_established": "2026-05-08",
+      "context": "Stated explicitly in the offer letter."
+    },
+    {
+      "id": "3",
+      "statement": "Authorship is attributed to Artist X by the gallery and corroborated by the museum catalog raisonné.",
+      "confidence": 0.91,
+      "type": "reported",
+      "depth": "investigated",
+      "nature": "factual",
+      "evidence": [
+        "E1",
+        "E3"
+      ],
+      "date_established": "2026-05-09",
+      "context": "Two-source corroboration; the raisonné is the field-authoritative reference."
+    },
+    {
+      "id": "4",
+      "statement": "The work is dated 1957 in the auction-house specialist's report prepared for the prior owner.",
+      "confidence": 0.83,
+      "type": "reported",
+      "depth": "investigated",
+      "nature": "factual",
+      "evidence": [
+        "E2"
+      ],
+      "date_established": "2025-11-15",
+      "context": "Single-source assertion; the specialist's qualifications are stated in the report header."
+    },
+    {
+      "id": "5",
+      "statement": "The work is dated 1962 in the museum catalog raisonné.",
+      "confidence": 0.93,
+      "type": "reported",
+      "depth": "exhaustive",
+      "nature": "factual",
+      "evidence": [
+        "E3"
+      ],
+      "date_established": "2020-04-30",
+      "context": "The catalog raisonné is field-authoritative; its dating reflects multi-year scholarly consensus. Confidence is at the high end of the corroborated-multi-source band. As written, this claim is *reported source content* (what the catalog says) — not a judgment. The downstream judgment that the catalog's dating should be preferred over the specialist report's (E2) 1957 dating is captured by the error-type contradiction entry (claim 5 is correct, claim 4 is the prior wrong dating)."
+    },
+    {
+      "id": "6",
+      "statement": "The auction-house specialist accepts the catalog dating as authoritative and withdrew the 1957 attribution in November 2025.",
+      "confidence": 0.95,
+      "type": "reported",
+      "depth": "investigated",
+      "nature": "factual",
+      "evidence": [
+        "E9"
+      ],
+      "date_established": "2025-11-20",
+      "context": "Email correspondence from the specialist to the prior owner; archived as part of the transaction file."
+    },
+    {
+      "id": "7",
+      "statement": "Provenance is documented continuously from 1962 to the present consignor (Gallery K's vendor).",
+      "confidence": 0.87,
+      "type": "reported",
+      "depth": "investigated",
+      "nature": "factual",
+      "evidence": [
+        "E5"
+      ],
+      "date_established": "2026-05-09",
+      "context": "The 1962-onwards chain is recorded in the catalog raisonné and corroborated by the gallery's own ownership records."
+    },
+    {
+      "id": "8",
+      "statement": "There is a gap in the documented provenance from 1953 to 1962, with no party identified as having owned or held the work during that period.",
+      "confidence": 0.91,
+      "type": "reported",
+      "depth": "exhaustive",
+      "nature": "factual",
+      "evidence": [
+        "E5"
+      ],
+      "date_established": "2026-05-09",
+      "context": "Exhaustive search of the catalog raisonné, two relevant national art-loss registries, and one specialized archive returned no record. The gap is itself a documented finding."
+    },
+    {
+      "id": "9",
+      "statement": "The work has not been the subject of any restitution claim or recovery filing as of 2026-05-09.",
+      "confidence": 0.91,
+      "type": "reported",
+      "depth": "investigated",
+      "nature": "factual",
+      "evidence": [
+        "E10"
+      ],
+      "date_established": "2026-05-09",
+      "context": "Confirmed against the major loss registries and the publicly searchable claim databases."
+    },
+    {
+      "id": "10",
+      "statement": "Three comparable works by Artist X sold at auction between 2024-Q1 and 2025-Q3.",
+      "confidence": 0.99,
+      "type": "reported",
+      "nature": "factual",
+      "evidence": [
+        "E6"
+      ],
+      "date_established": "2026-05-09",
+      "context": "Lot results published in the public auction record."
+    },
+    {
+      "id": "11",
+      "statement": "The hammer-price range across the three comparable lots was 820,000 to 1,180,000 euro.",
+      "confidence": 0.99,
+      "type": "computed",
+      "nature": "factual",
+      "evidence": [
+        "E6"
+      ],
+      "date_established": "2026-05-09",
+      "context": "Computed directly from the lot results."
+    },
+    {
+      "id": "12",
+      "statement": "The current asking price of 950,000 euro falls within the comparable hammer-price range.",
+      "confidence": 0.99,
+      "type": "computed",
+      "nature": "factual",
+      "evidence": [
+        "E6"
+      ],
+      "date_established": "2026-05-09",
+      "context": "Computed: 820,000 ≤ 950,000 ≤ 1,180,000."
+    },
+    {
+      "id": "13",
+      "statement": "An independent appraisal commissioned by the prior owner in 2023 valued the work at 1,400,000 euro.",
+      "confidence": 0.85,
+      "type": "reported",
+      "depth": "investigated",
+      "nature": "factual",
+      "evidence": [
+        "E7"
+      ],
+      "date_established": "2023-09-12",
+      "context": "The 2023 appraisal predates the dating revision (claim 5) and used a comparable set that has since been partly invalidated by subsequent reattributions in the field."
+    },
+    {
+      "id": "14",
+      "statement": "An updated appraisal commissioned by Gallery K in 2025 valued the work at 950,000 euro, matching the current asking price.",
+      "confidence": 0.91,
+      "type": "reported",
+      "depth": "investigated",
+      "nature": "factual",
+      "evidence": [
+        "E8"
+      ],
+      "date_established": "2025-12-15",
+      "context": "The 2025 appraisal incorporates the dating revision and a refreshed comparable set."
+    },
+    {
+      "id": "15",
+      "statement": "X-ray fluorescence of the surface layer is consistent with Artist X's documented palette for the 1960-1965 period.",
+      "confidence": 0.87,
+      "type": "observed",
+      "depth": "investigated",
+      "nature": "factual",
+      "evidence": [
+        "E4"
+      ],
+      "date_established": "2025-12-04",
+      "context": "Direct laboratory observation; consistency assessed by reference to four documented works of the period."
+    },
+    {
+      "id": "16",
+      "statement": "Underdrawing visible in infrared imaging is consistent with the artist's known compositional method.",
+      "confidence": 0.83,
+      "type": "observed",
+      "depth": "investigated",
+      "nature": "factual",
+      "evidence": [
+        "E4"
+      ],
+      "date_established": "2025-12-04",
+      "context": "Single examination; conclusions qualified by the laboratory technician."
+    },
+    {
+      "id": "17",
+      "statement": "The 1953-1962 provenance gap creates a material risk that an earlier good-faith holder may emerge with a claim against the present ownership chain.",
+      "confidence": 0.45,
+      "type": "inferred",
+      "depth": "investigated",
+      "nature": "judgment",
+      "evidence": [
+        "E5",
+        "E10"
+      ],
+      "date_established": "2026-05-09",
+      "context": "A judgment, not a measurement; another reasonable analyst could place this risk lower given the absence of any current claim. Confidence reflects genuine uncertainty."
+    },
+    {
+      "id": "18",
+      "statement": "Comparable mid-century works with documented 5-10 year provenance gaps have not historically been the subject of successful restitution claims when the post-gap chain is well-documented.",
+      "confidence": 0.65,
+      "type": "reported",
+      "depth": "investigated",
+      "nature": "judgment",
+      "evidence": [
+        "E11"
+      ],
+      "date_established": "2026-05-09",
+      "context": "Reported judgment from a field analyst; weight is moderate because the analyst's sample is limited."
+    },
+    {
+      "id": "19",
+      "statement": "Recommended action: conditional acquisition.",
+      "confidence": 0.78,
+      "type": "inferred",
+      "depth": "investigated",
+      "nature": "judgment",
+      "evidence": [
+        "E1",
+        "E4",
+        "E5",
+        "E6",
+        "E8",
+        "E10"
+      ],
+      "date_established": "2026-05-09",
+      "context": "Synthesis of the supporting and risk claims. The recommendation is a judgment, not a fact; another buyer with different risk tolerance might decline."
+    },
+    {
+      "id": "20",
+      "statement": "Recommended condition: completion of supplementary provenance research targeting the 1953-1962 period before close of escrow, with a contractual right to withdraw if a prior good-faith holder is identified.",
+      "confidence": 0.91,
+      "type": "inferred",
+      "depth": "investigated",
+      "nature": "meta",
+      "evidence": [
+        "E5"
+      ],
+      "date_established": "2026-05-09",
+      "context": "A condition on claim 19. Frames what \"conditional\" requires operationally."
+    },
+    {
+      "id": "21",
+      "statement": "If the supplementary provenance research concludes without identifying a prior good-faith holder, the residual risk falls within the buyer's stated tolerance.",
+      "confidence": 0.55,
+      "type": "inferred",
+      "depth": "investigated",
+      "nature": "prediction",
+      "evidence": [
+        "E5"
+      ],
+      "date_established": "2026-05-09",
+      "context": "Prediction nature: the research outcome is not yet known; this is the conditional implication."
+    },
+    {
+      "id": "22",
+      "statement": "The dating revision (claim 5) reduces the comparable set's relevance for valuation by approximately one third, since lots dated 1955-1959 in Artist X's market are now distinct from lots dated 1960-1965.",
+      "confidence": 0.65,
+      "type": "inferred",
+      "depth": "investigated",
+      "nature": "judgment",
+      "evidence": [
+        "E6"
+      ],
+      "date_established": "2026-05-09",
+      "context": "Judgment about market segmentation. The 2025 appraisal (claim 14) accounts for this; the prior appraisal (claim 13) does not, which is part of why claim 14 supersedes claim 13."
+    }
+  ],
+  "contradictions": [
+    {
+      "claims": [
+        "5",
+        "4"
+      ],
+      "type": "error"
+    },
+    {
+      "claims": [
+        "8",
+        "7"
+      ],
+      "type": "tension"
+    },
+    {
+      "claims": [
+        "19",
+        "17"
+      ],
+      "type": "tension"
+    }
+  ],
+  "dependencies": [
+    {
+      "from": "6",
+      "to": "5",
+      "relation": "supports"
+    },
+    {
+      "from": "12",
+      "to": "2",
+      "relation": "requires"
+    },
+    {
+      "from": "12",
+      "to": "11",
+      "relation": "requires"
+    },
+    {
+      "from": "14",
+      "to": "13",
+      "relation": "supersedes"
+    },
+    {
+      "from": "15",
+      "to": "5",
+      "relation": "supports"
+    },
+    {
+      "from": "16",
+      "to": "3",
+      "relation": "supports"
+    },
+    {
+      "from": "20",
+      "to": "19",
+      "relation": "refines"
+    },
+    {
+      "from": "22",
+      "to": "14",
+      "relation": "supports"
+    },
+    {
+      "from": "22",
+      "to": "12",
+      "relation": "supports"
+    }
+  ],
+  "evidence": [
+    {
+      "id": "E1",
+      "type": "offer",
+      "captured": "2026-05-08",
+      "source": "Gallery K offer letter (signed, on letterhead)",
+      "description": "Written offer of sale for the work, listing asking price, terms, and a short attribution paragraph. Establishes the existence of the offering and the asking price."
+    },
+    {
+      "id": "E2",
+      "type": "specialist_report",
+      "captured": "2025-11-15",
+      "source": "Auction-house specialist's pre-consignment report",
+      "description": "Twelve-page report prepared for the prior owner ahead of an attempted consignment in late 2025. Includes the specialist's original 1957 dating, since withdrawn (see E009)."
+    },
+    {
+      "id": "E3",
+      "type": "reference_work",
+      "captured": "2020-04-30",
+      "source": "Museum catalog raisonné, 2020 edition (vol. II, p. 184)",
+      "description": "Field-authoritative reference for Artist X. Lists the work with a 1962 date, derived from documentary evidence cited in the entry. The raisonné is updated periodically; the 2020 edition is current as of 2026-05-09."
+    },
+    {
+      "id": "E4",
+      "type": "technical_examination",
+      "captured": "2025-12-04",
+      "source": "Conservation laboratory technical report",
+      "description": "Laboratory examination of the work. Includes X-ray fluorescence of the surface layer (palette analysis) and infrared reflectography (underdrawing analysis). The report concludes both layers are consistent with Artist X's documented method for the 1960-1965 period."
+    },
+    {
+      "id": "E5",
+      "type": "provenance_file",
+      "captured": "2026-05-09",
+      "source": "Compiled provenance documentation (Gallery K + buyer's diligence)",
+      "description": "Compiled documentation of the ownership chain. Records continuous ownership 1962 to present (post-gap chain). The 1953-1962 period is unrecorded in any source consulted."
+    },
+    {
+      "id": "E6",
+      "type": "auction_record",
+      "captured": "2026-05-09",
+      "source": "Public auction record — three comparable lots, 2024-Q1 to 2025-Q3",
+      "description": "Tabulated lot results for three works by Artist X sold at established auction houses in the eighteen months preceding this assessment. Each lot is dated within the 1960-1965 period (matching the catalog raisonné dating of the work under review)."
+    },
+    {
+      "id": "E7",
+      "type": "appraisal",
+      "captured": "2023-09-12",
+      "source": "Independent appraisal commissioned by the prior owner, 2023",
+      "description": "Single-appraiser valuation of the work at 1,400,000 euro, prepared under the (since-withdrawn) 1957 dating. Methodology and comparable set are documented in the appraisal report. This appraisal has been superseded by E008."
+    },
+    {
+      "id": "E8",
+      "type": "appraisal",
+      "captured": "2025-12-15",
+      "source": "Independent appraisal commissioned by Gallery K, 2025",
+      "description": "Single-appraiser valuation of the work at 950,000 euro, prepared under the catalog-raisonné 1962 dating, using a refreshed comparable set that excludes lots dated 1955-1959. The 2025 appraisal supersedes the 2023 appraisal of record."
+    },
+    {
+      "id": "E9",
+      "type": "correspondence",
+      "captured": "2025-11-20",
+      "source": "Email from auction-house specialist to prior owner",
+      "description": "Specialist's written acknowledgment of the catalog raisonné as authoritative and withdrawal of the 1957 dating. The email is part of the consignment file passed forward to the present transaction."
+    },
+    {
+      "id": "E10",
+      "type": "registry_search",
+      "captured": "2026-05-09",
+      "source": "Loss-registry and claim-database screening (six databases)",
+      "description": "Screening across the major art-loss registries and the publicly searchable claim databases. As of the screen date, the work is not listed."
+    },
+    {
+      "id": "E11",
+      "type": "analyst_note",
+      "captured": "2026-05-09",
+      "source": "Internal field-analyst note (anonymized buyer-side advisor)",
+      "description": "Short note prepared by the buyer's advisor summarizing the historical behavior of restitution claims against mid-century works with similar provenance gaps. The note's sample is small; conclusions are qualified accordingly."
+    }
+  ]
+}

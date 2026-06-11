@@ -3,7 +3,9 @@
 
 # KP:1 Empirical Benchmark: Pre-Structured vs Inference-Time Epistemic Reasoning
 
-> **Status:** Design specification (ready for implementation)
+> **Status:** Design specification — first pilot executed 2026-06
+> ([results](benchmark-pilot-2026-06.md): ceiling at small scale, no format
+> signal; full run gated on a headroom probe)
 > **Date:** 2026-04-04
 > **Purpose:** Executable benchmark for testing KP:1's core empirical claim
 > **Tradeoffs:** Key design decisions and the alternatives considered are recorded in Appendix A.
@@ -144,8 +146,8 @@ from its own extracted structure.
 
 ### 3.4 Models
 
-Run on four frontier models (e.g., Claude Opus, GPT-5, Gemini Ultra,
-Grok) to enable a clean Latin square with four conditions. Each model is
+Run on four frontier models (e.g., Claude, GPT, Gemini, Grok — model
+families, not pinned versions) to enable a clean Latin square with four conditions. Each model is
 assigned to conditions via Latin square rotation across *domains* (not
 tasks), so every model sees every condition and every domain, but no model
 sees the same domain content in more than one condition. This is a
