@@ -1,0 +1,216 @@
+{
+  "domain": "solar-energy-market",
+  "version": "2026.03.18",
+  "confidence_note": "confidence values are normalized floats from 0.0 to 1.0",
+  "claims": [
+    {
+      "id": "1",
+      "statement": "Cost decline is structural, not cyclical — driven by manufacturing scale",
+      "confidence": 0.95,
+      "type": "inferred",
+      "depth": "exhaustive",
+      "nature": "judgment",
+      "evidence": [
+        "E1",
+        "E2"
+      ],
+      "date_established": "2026-03-01",
+      "context": "10/10 analyses converged. Learning curve (22% cost reduction per doubling) has held for 40 years."
+    },
+    {
+      "id": "2",
+      "statement": "Grid parity already achieved in 75% of global markets",
+      "confidence": 0.9,
+      "type": "inferred",
+      "depth": "investigated",
+      "nature": "judgment",
+      "evidence": [
+        "E1"
+      ],
+      "date_established": "2026-03-01",
+      "context": "IRENA/BloombergNEF data. Subsidy removal in mature markets has not reversed adoption."
+    },
+    {
+      "id": "3",
+      "statement": "Cost floor approaching — further declines will slow significantly",
+      "confidence": 0.3,
+      "type": "reported",
+      "depth": "investigated",
+      "nature": "judgment",
+      "evidence": [
+        "E3"
+      ],
+      "date_established": "2026-02-14",
+      "context": "Silicon material costs impose theoretical floor. 3/10 analyses supported this framing. Tension with claim 1 is informative — reveals the timeline question."
+    },
+    {
+      "id": "4",
+      "statement": "Bifacial modules now 70% of new installations globally",
+      "confidence": 0.99,
+      "type": "observed",
+      "nature": "factual",
+      "evidence": [
+        "E10"
+      ],
+      "date_established": "2026-03-18",
+      "context": "Rear-side gain 5-25% depending on albedo. Bankability established. Monofacial declining to niche applications."
+    },
+    {
+      "id": "5",
+      "statement": "Perovskite tandem cells: 33.7% lab efficiency (Oxford PV)",
+      "confidence": 0.99,
+      "type": "observed",
+      "nature": "factual",
+      "evidence": [
+        "E11"
+      ],
+      "date_established": "2026-03-18",
+      "context": "Lab-to-fab gap remains. Commercial viability estimated 2028-2030 for utility scale."
+    },
+    {
+      "id": "6",
+      "statement": "Durability is the unsolved risk for perovskite commercialization",
+      "confidence": 0.75,
+      "type": "inferred",
+      "nature": "factual",
+      "evidence": [
+        "E12",
+        "E13"
+      ],
+      "date_established": "2026-03-10",
+      "context": "Moisture/heat degradation pathways known but not fully mitigated. 25-year warranty requirement is the hard gate."
+    },
+    {
+      "id": "7",
+      "statement": "Utility-scale solar is now the cheapest new electricity source globally",
+      "confidence": 0.92,
+      "type": "observed",
+      "depth": "investigated",
+      "nature": "factual",
+      "evidence": [
+        "E1",
+        "E2"
+      ],
+      "date_established": "2026-03-01",
+      "context": "LCOE below gas and wind in most markets. Subsidy-independent growth trajectory confirmed."
+    },
+    {
+      "id": "8",
+      "statement": "Supply chain concentration in China is the highest systemic risk",
+      "confidence": 0.9,
+      "type": "inferred",
+      "depth": "exhaustive",
+      "nature": "meta",
+      "evidence": [
+        "E1",
+        "E30"
+      ],
+      "date_established": "2026-03-01",
+      "context": "80% of polysilicon, 95% of wafers. Tariff/geopolitical disruption could create 12-18 month supply gaps. 8/10 analyses flagged this. Not a technology problem — a trade policy and diversification problem."
+    }
+  ],
+  "contradictions": [
+    {
+      "claims": [
+        "1",
+        "3"
+      ],
+      "type": "tension"
+    }
+  ],
+  "dependencies": [
+    {
+      "from": "1",
+      "to": "2",
+      "relation": "supports"
+    },
+    {
+      "from": "2",
+      "to": "1",
+      "relation": "supports"
+    },
+    {
+      "from": "5",
+      "to": "6",
+      "relation": "supports"
+    },
+    {
+      "from": "6",
+      "to": "5",
+      "relation": "requires"
+    },
+    {
+      "from": "7",
+      "to": "1",
+      "relation": "supports"
+    },
+    {
+      "from": "7",
+      "to": "2",
+      "relation": "supports"
+    },
+    {
+      "from": "8",
+      "to": "7",
+      "relation": "requires"
+    }
+  ],
+  "evidence": [
+    {
+      "id": "E1",
+      "type": "multi_source_synthesis",
+      "captured": "2026-03-01",
+      "source": "Internal analysis — 10 independent assessments across multiple AI models",
+      "description": "Multi-source synthesis across 10 analyses and 8 distinct models. All converged on cost decline being structural (manufacturing learning curve) rather than cyclical (subsidy-driven)."
+    },
+    {
+      "id": "E2",
+      "type": "research",
+      "captured": "2026-03-01",
+      "source": "IRENA Renewable Power Generation Costs 2025",
+      "description": "Comprehensive dataset on utility-scale solar PV LCOE trends across 40 countries. Learning rate of 22% per capacity doubling confirmed across 1976-2025 data."
+    },
+    {
+      "id": "E3",
+      "type": "research",
+      "captured": "2026-02-14",
+      "source": "MIT Energy Initiative — The Future of Solar Energy (updated 2025)",
+      "description": "Analysis of silicon cost floors and theoretical efficiency limits. Argues that polysilicon pricing has limited room for further reduction, implying LCOE declines will increasingly depend on balance-of-system and soft costs."
+    },
+    {
+      "id": "E10",
+      "type": "observed",
+      "captured": "2026-03-18",
+      "source": "IEA Photovoltaic Power Systems Programme — Trends Report 2026",
+      "description": "Global installed PV capacity figures and market share by technology type. Bifacial module share crossed 70% in Q4 2025."
+    },
+    {
+      "id": "E11",
+      "type": "observed",
+      "captured": "2026-03-18",
+      "source": "Oxford PV press release — certified tandem efficiency record",
+      "description": "33.7% certified efficiency for perovskite-silicon tandem cell. Certification by Fraunhofer ISE CalLab. Commercial module target: 2028."
+    },
+    {
+      "id": "E12",
+      "type": "research",
+      "captured": "2026-03-10",
+      "source": "Nature Energy — \"Stability challenges for perovskite photovoltaics\" (2025)",
+      "description": "Review of degradation mechanisms: moisture ingress, thermal cycling, UV exposure. Encapsulation advances extend lab lifetime to 5,000+ hours but field validation at 25-year scale is absent."
+    },
+    {
+      "id": "E13",
+      "type": "research",
+      "captured": "2026-03-10",
+      "source": "NREL Perovskite Stability Assessment 2025",
+      "description": "Accelerated aging tests on 12 encapsulation methods. Best-performing samples retained >90% efficiency at simulated 10-year equivalent. Gap to 25-year warranty requirement remains the commercialization gate."
+    },
+    {
+      "id": "E30",
+      "type": "research",
+      "captured": "2026-03-01",
+      "source": "BloombergNEF — Solar Supply Chain Vulnerability Index 2026",
+      "description": "Quantitative assessment of geographic concentration in polysilicon, wafer, cell, and module production. China's share exceeds 80% at every stage except module assembly (65%). No diversification trend visible in 2025 data."
+    }
+  ]
+}

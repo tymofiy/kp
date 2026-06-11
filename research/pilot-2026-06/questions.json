@@ -1,0 +1,224 @@
+{
+  "_meta": {
+    "title": "KP:1 benchmark pilot — pre-registered question set",
+    "date": "2026-06-10",
+    "bands": {
+      "recall": "factual-recall control — no format effect expected; if KP:1 hurts recall that is a finding",
+      "calibration": "confidence calibration — reading and comparing the analysis's stated confidence levels",
+      "contradiction": "contradiction awareness — identifying conflicts and their declared class (productive tension vs error)",
+      "dynamics": "belief structure & dynamics — supersession history (art) and dependency structure (solar); the solar pack contains no supersession, so its dynamics item probes a declared dependency instead"
+    },
+    "scoring": "each item scored 0, 0.5, or 1 against the per-item rubric; grader blind to condition and model",
+    "note": "gold answers are the packs' own encoded epistemic state — the pilot tests format readability, not world-accuracy (see the pilot report, Section 2.3)"
+  },
+  "questions": [
+    {
+      "id": "solar-r1",
+      "domain": "solar",
+      "band": "recall",
+      "question": "According to the analysis, what share of new installations globally are bifacial modules?",
+      "gold": "70%",
+      "rubric": "1 = states 70% (or 'roughly 70%'). 0.5 = says a majority/most without the number. 0 = wrong number or absent."
+    },
+    {
+      "id": "solar-r2",
+      "domain": "solar",
+      "band": "recall",
+      "question": "What certified lab efficiency has been achieved for perovskite tandem cells, and by which company?",
+      "gold": "33.7%, Oxford PV",
+      "rubric": "1 = both 33.7% and Oxford PV. 0.5 = exactly one of the two. 0 = neither."
+    },
+    {
+      "id": "solar-r3",
+      "domain": "solar",
+      "band": "recall",
+      "question": "In what fraction of global markets has grid parity already been achieved, per the analysis?",
+      "gold": "75%",
+      "rubric": "1 = 75%. 0.5 = 'three quarters'/'most' without the number. 0 = wrong or absent."
+    },
+    {
+      "id": "solar-r4",
+      "domain": "solar",
+      "band": "recall",
+      "question": "What learning rate (cost reduction per capacity doubling) does the analysis cite, and over what historical span has it held?",
+      "gold": "22% per doubling, held for 40 years (1976-2025 acceptable as the span)",
+      "rubric": "1 = both 22% and ~40 years (or 1976-2025). 0.5 = exactly one of the two. 0 = neither."
+    },
+    {
+      "id": "solar-c1",
+      "domain": "solar",
+      "band": "calibration",
+      "question": "Which single finding does this analysis hold with the LOWEST confidence? State the finding and its approximate confidence level.",
+      "gold": "The cost-floor view (a cost floor is approaching; further declines will slow significantly), held at roughly 0.30 / 30%",
+      "rubric": "1 = identifies the cost-floor claim AND gives ~30% (within ±0.15) or calls it low-confidence with the value. 0.5 = right claim but no/wrong confidence value. 0 = wrong claim."
+    },
+    {
+      "id": "solar-c2",
+      "domain": "solar",
+      "band": "calibration",
+      "question": "Rank these three findings from highest to lowest confidence as held by the analysis: (a) bifacial modules are 70% of new installations; (b) supply-chain concentration in China is the highest systemic risk; (c) a cost floor is approaching.",
+      "gold": "a > b > c (0.99 > 0.90 > 0.30)",
+      "rubric": "1 = exact order a,b,c. 0.5 = one adjacent transposition (a,c,b or b,a,c). 0 = otherwise."
+    },
+    {
+      "id": "solar-c3",
+      "domain": "solar",
+      "band": "calibration",
+      "question": "How confident is the analysis that durability is the unsolved risk for perovskite commercialization? Give a numeric estimate.",
+      "gold": "0.75 / 75%",
+      "rubric": "1 = within ±0.05 of 0.75. 0.5 = within ±0.15. 0 = otherwise or no number."
+    },
+    {
+      "id": "solar-c4",
+      "domain": "solar",
+      "band": "calibration",
+      "question": "Which does the analysis hold with higher confidence: that cost decline is structural, or that utility-scale solar is the cheapest new electricity source?",
+      "gold": "That cost decline is structural (0.95 vs 0.92)",
+      "rubric": "1 = picks the structural-decline thesis (citing values is a plus but not required). 0.5 = says they are essentially equal / cannot be determined. 0 = picks cheapest-source. (Hard item: 0.03 gap.)"
+    },
+    {
+      "id": "solar-x1",
+      "domain": "solar",
+      "band": "contradiction",
+      "question": "Are any two findings in this analysis in direct conflict with each other? If so, which two?",
+      "gold": "Yes: the structural-cost-decline thesis vs the cost-floor-approaching view",
+      "rubric": "1 = identifies both sides of the structural-decline vs cost-floor conflict. 0.5 = says a conflict exists and names one side. 0 = says none, or names a wrong pair."
+    },
+    {
+      "id": "solar-x2",
+      "domain": "solar",
+      "band": "contradiction",
+      "question": "Does the analysis treat the disagreement between the structural-decline thesis and the cost-floor view as a productive tension or as an error? And what does the disagreement reveal, according to the analysis?",
+      "gold": "Productive tension (both sides credible/informative); it reveals the timeline question",
+      "rubric": "1 = tension AND the timeline question. 0.5 = tension only. 0 = calls it an error or neither."
+    },
+    {
+      "id": "solar-x3",
+      "domain": "solar",
+      "band": "contradiction",
+      "question": "On what evidential basis does the analysis weight the structural-decline thesis over the cost-floor view? Cite the specific support each side has.",
+      "gold": "Structural: 10/10 analyses converged, 22% learning curve held 40 years, ~0.95 confidence, exhaustive investigation. Cost floor: 3/10 analyses, single MIT Energy Initiative source, ~0.30 confidence.",
+      "rubric": "1 = gives both sides' support including the 10/10-vs-3/10 analysis asymmetry (or the explicit confidence asymmetry 0.95 vs 0.30). 0.5 = support for one side only, or asymmetry asserted without specifics. 0 = neither."
+    },
+    {
+      "id": "solar-s1",
+      "domain": "solar",
+      "band": "dynamics",
+      "question": "Which claim in the analysis is declared to depend on (require) the finding that utility-scale solar is the cheapest new electricity source?",
+      "gold": "The supply-chain-concentration risk claim (China concentration as the highest systemic risk presupposes/requires the cost-leadership finding)",
+      "rubric": "1 = the supply-chain/China-concentration risk claim. 0.5 = points at the Risks section or the systemic-risk discussion without naming the claim. 0 = any other claim."
+    },
+    {
+      "id": "art-r1",
+      "domain": "art",
+      "band": "recall",
+      "question": "What is the asking price for the work?",
+      "gold": "950,000 euro",
+      "rubric": "1 = 950,000 euro. 0 = anything else."
+    },
+    {
+      "id": "art-r2",
+      "domain": "art",
+      "band": "recall",
+      "question": "What was the hammer-price range across the three comparable auction lots?",
+      "gold": "820,000 to 1,180,000 euro",
+      "rubric": "1 = both ends correct. 0.5 = one end correct. 0 = neither."
+    },
+    {
+      "id": "art-r3",
+      "domain": "art",
+      "band": "recall",
+      "question": "Which years does the provenance gap span?",
+      "gold": "1953 to 1962",
+      "rubric": "1 = 1953-1962. 0.5 = approximately right (e.g. 'the 1950s until 1962', or one endpoint). 0 = wrong."
+    },
+    {
+      "id": "art-r4",
+      "domain": "art",
+      "band": "recall",
+      "question": "What did the X-ray fluorescence of the surface layer show?",
+      "gold": "The surface layer is consistent with Artist X's documented palette for the 1960-1965 period",
+      "rubric": "1 = consistency with the artist's documented palette AND the 1960-1965 period. 0.5 = consistency with the palette without the period. 0 = wrong."
+    },
+    {
+      "id": "art-c1",
+      "domain": "art",
+      "band": "calibration",
+      "question": "Which single claim does the analysis hold with the LOWEST confidence? State it and give its approximate confidence.",
+      "gold": "The restitution-risk judgment (the 1953-1962 provenance gap creates a material risk that an earlier good-faith holder may emerge), at roughly 0.45 / 45%",
+      "rubric": "1 = the restitution-risk judgment with ~45% (±0.15). 0.5 = the restitution-risk judgment without/with-wrong value, OR names the 55% conditional-tolerance prediction instead. 0 = any other claim."
+    },
+    {
+      "id": "art-c2",
+      "domain": "art",
+      "band": "calibration",
+      "question": "Which is held with higher confidence: the attribution of the work to Artist X, or the 1962 dating in the catalog raisonné?",
+      "gold": "The 1962 dating (0.93 vs 0.91)",
+      "rubric": "1 = picks the 1962 dating. 0.5 = says essentially equal / cannot be determined. 0 = picks the attribution. (Very hard item: 0.02 gap.)"
+    },
+    {
+      "id": "art-c3",
+      "domain": "art",
+      "band": "calibration",
+      "question": "How confident is the analysis in its recommendation of conditional acquisition? Give a numeric estimate.",
+      "gold": "0.78 / 78%",
+      "rubric": "1 = within ±0.05 of 0.78. 0.5 = within ±0.15. 0 = otherwise or no number."
+    },
+    {
+      "id": "art-c4",
+      "domain": "art",
+      "band": "calibration",
+      "question": "Rank these three from highest to lowest confidence as held by the analysis: (a) no restitution claim has been filed as of 9 May 2026; (b) the 2023 appraisal valued the work at 1,400,000 euro; (c) if the provenance research comes back clean, the residual risk falls within the buyer's tolerance.",
+      "gold": "a > b > c (0.91 > 0.85 > 0.55)",
+      "rubric": "1 = exact order a,b,c. 0.5 = one adjacent transposition. 0 = otherwise."
+    },
+    {
+      "id": "art-x1",
+      "domain": "art",
+      "band": "contradiction",
+      "question": "The record contains two different dates for the work. What are they, where does each come from, and how does the analysis resolve the conflict between them?",
+      "gold": "1957 (auction-house specialist's report) vs 1962 (museum catalog raisonné). Resolved as an error, not a live tension: the 1962 dating is correct; the 1957 dating is the prior, wrong dating, which the specialist withdrew in November 2025.",
+      "rubric": "1 = both dates with sources AND the resolution (1962 correct, 1957 wrong/withdrawn, treated as an error). 0.5 = both dates and the winner without the error-class/withdrawal story. 0 = misses the conflict or resolves it the wrong way."
+    },
+    {
+      "id": "art-x2",
+      "domain": "art",
+      "band": "contradiction",
+      "question": "Is the relationship between the documented post-1962 ownership chain and the 1953-1962 provenance gap treated as an error or as a productive tension? Why?",
+      "gold": "A productive tension: both findings are well-documented and informative; they pull the assessment in different directions without either being wrong",
+      "rubric": "1 = productive tension AND a why (both documented/informative/neither wrong). 0.5 = tension without rationale. 0 = error."
+    },
+    {
+      "id": "art-x3",
+      "domain": "art",
+      "band": "contradiction",
+      "question": "The recommendation of conditional acquisition is explicitly flagged as being in tension with another judgment in the analysis. Which one, and why is that a tension rather than an error?",
+      "gold": "The restitution-risk judgment (the provenance gap creates a material risk of an earlier claimant). It is a tension because both are defensible judgments preserved side by side — another analyst or buyer could weigh the risk differently; neither is wrong.",
+      "rubric": "1 = identifies the restitution-risk judgment AND gives the both-defensible/judgment rationale. 0.5 = identifies it without the rationale. 0 = wrong claim."
+    },
+    {
+      "id": "art-s1",
+      "domain": "art",
+      "band": "dynamics",
+      "question": "The work has been appraised twice. Which valuation is operative for this decision, and what is the status of the other?",
+      "gold": "The 2025 appraisal (950,000 euro, commissioned by Gallery K) is operative; it supersedes the 2023 appraisal (1,400,000 euro), which is no longer operative",
+      "rubric": "1 = 2025/950k operative AND 2023/1.4M superseded (no longer operative). 0.5 = operative one correct without the superseded status of the other. 0 = wrong way round or treats both as live."
+    },
+    {
+      "id": "art-s2",
+      "domain": "art",
+      "band": "dynamics",
+      "question": "Why was the earlier appraisal superseded? Give the specific reasons recorded in the analysis.",
+      "gold": "The 2023 appraisal predates the dating revision (1957 -> 1962) and used a comparable set partly invalidated by subsequent reattributions; the 2025 appraisal incorporates the revision and a refreshed comparable set (excluding 1955-1959 lots). The dating revision cut the old comparable set's relevance by about one third (1955-1959 lots are now a distinct market from 1960-1965).",
+      "rubric": "1 = both reasons: predates the dating revision AND the invalidated/refreshed comparable set. 0.5 = exactly one of the two. 0 = neither."
+    },
+    {
+      "id": "art-s3",
+      "domain": "art",
+      "band": "dynamics",
+      "question": "Trace the history of the 1957 dating: where did it originate, what is its current status, and who changed their position on it?",
+      "gold": "Originated in the auction-house specialist's pre-consignment report prepared for the prior owner (November 2025 capture). The specialist later accepted the catalog raisonné dating as authoritative and withdrew the 1957 dating in November 2025 (email of 20 November 2025). Current status: wrong/withdrawn — the analysis treats it as an error against the 1962 dating.",
+      "rubric": "1 = origin (specialist's report) AND withdrawal by the specialist AND current status (wrong/withdrawn/error). 0.5 = two of the three elements. 0 = fewer."
+    }
+  ]
+}
