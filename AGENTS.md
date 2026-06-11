@@ -113,7 +113,7 @@ These exist in the repository but are not load-bearing for any of Tasks A–F:
 - `research/` — benchmark design and prior-art analysis, not normative
 - `decisions/` — decision records, useful for understanding *why* but not *what*
 - `scripts/` — git hooks and validation helpers, not normative
-- `reference/` — `reference/kpack` implements `kpack lint` (it delegates to the conformance runner); every other subcommand is a contract-pointer stub naming the spec section that defines it
+- `reference/` — `reference/kpack` implements `kpack lint` (it delegates to the conformance runner) and `kpack new` (scaffolds from the hello-world starter); every other subcommand is a contract-pointer stub naming the spec section that defines it
 - `GOVERNANCE.md`, `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`, `LICENSE*`, `DCO.txt` — governance, not format
 
 ---
