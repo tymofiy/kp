@@ -648,3 +648,4 @@ The following normative decisions resolve ambiguities identified during grammar 
 | RECONCILIATION.md | Cross-pack reconciliation protocol (stub — design deferred to v0.9 / v1.0) | Multi-pack drift detection (design pending) |
 | MAPPING.md | RDF / JSON-LD / PROV-O / Nanopublications field-by-field translation (informative) | Interoperability with semantic-web standards |
 | RATIONALE.md | Design principles, style systems rationale, cognitive perception rationale, relationship to existing standards (informative) | Understanding *why* the format is shaped the way it is |
+| INDEPENDENCE.md | Ownership & capture-resistance guarantees — zero-dependency readability, freedom to fork, no required registry, optional cryptography | Understanding the independence commitments and their limits |
