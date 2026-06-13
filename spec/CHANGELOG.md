@@ -5,7 +5,7 @@
 
 ---
 
-## v0.8.4-preview — 2026-06-13 (unreleased)
+## v0.8.4-preview — 2026-06-13
 
 **Independence made explicit: a capture-resistance companion, the offline-validation invariant exercised, and capture-resistance non-goals.**
 
