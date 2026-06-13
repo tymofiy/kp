@@ -48,9 +48,14 @@ identifiers:
       Use this identifier when citing the format generically rather than a
       specific snapshot.
   - type: doi
+    value: "10.5281/zenodo.20683340"
+    description: >
+      Zenodo DOI for the v0.8.4-preview release (the current citable
+      snapshot; the concept DOI above resolves here).
+  - type: doi
     value: "10.5281/zenodo.20100689"
     description: >
-      Zenodo DOI for the v0.8.0-preview release (the previous citable
+      Zenodo DOI for the v0.8.0-preview release (an earlier citable
       snapshot).
   - type: doi
     value: "10.5281/zenodo.19445263"
