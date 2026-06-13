@@ -3,6 +3,10 @@ version: 2026.04.04-rev2
 domain: test/conformance/deep
 kind: claim
 author: KP Conformance Suite
+# spec_uri intentionally unresolvable (RFC 2606 `.invalid` TLD): exercises the
+# CORE.md §3 invariant that validation MUST NOT fetch or depend on spec_uri.
+spec_uri: https://example.invalid/kp
+spec_version: v0.8.3-preview
 
 description: >
   Maximal fixture exercising every optional field in PACK.yaml.

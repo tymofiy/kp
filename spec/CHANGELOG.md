@@ -5,6 +5,20 @@
 
 ---
 
+## v0.8.4-preview — 2026-06-13 (unreleased)
+
+**Independence made explicit: a capture-resistance companion, the offline-validation invariant exercised, and capture-resistance non-goals.**
+
+Adds **`spec/INDEPENDENCE.md`** (NEW companion) — it states, and commits the project to, the ownership and capture-resistance guarantees the format already provides: zero-dependency readability (the directory + Rosetta header alone is sufficient; `spec_uri` is never fetched), freedom to fork (CC-BY-4.0; the `KP:1` mark is defensive only and never used against clean forks), no required registry or central service, optional-not-mandatory cryptography, and portability of accrued knowledge. It is documentary in force — the irrevocable lock is the CC-BY-4.0 license on each published version plus distributed copies — and normative in intent. Throughline: capture-resistance is *subtraction, not addition*.
+
+- **`maximal.kpack`** now declares an intentionally-unresolvable `spec_uri` (`https://example.invalid/kp`), exercising the CORE.md §3 invariant that validation MUST NOT fetch or depend on `spec_uri` (offline-first). The fixture also closes a coverage gap — the "maximal" pack previously omitted the optional `spec_uri`/`spec_version` discovery fields.
+- **`positioning/kp-intent-and-principles.md`** records the capture-resistance Non-Goals (no required registry/index/central service; no model-specific embeddings inside a pack; no read-time cryptography requirement; no external-identity/ledger anchoring; no gating the core read/own/local-model path) and adds an "Independence by design" operating principle.
+- **`spec/CORE.md`** Appendix C lists the new companion; **`spec/RATIONALE.md`** clarifies that contradiction-preservation is epistemic pluralism (paraconsistent at the pack level), not a metaphysical claim, and points to the companion; **`GOVERNANCE.md`** links its trademark/fork rationale to the independence guarantees.
+
+Monotonic: no breaking changes and no new conformance requirement; existing packs continue to validate and the suite result is unchanged (23/23 default and `--strict`).
+
+---
+
 ## v0.8.3-preview — 2026-06-10
 
 **The grammar becomes executable: PEG-driven strict validation, a packaged CLI, `kpack new`, and anchor-aware link checking.**
