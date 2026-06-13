@@ -114,6 +114,8 @@ This policy is enforced through trademark law once the `KP:1` mark is registered
 
 The specification text is intentionally permissively licensed (CC-BY-4.0). This enables translations, annotations, educational excerpts, and ecosystem bridges. During the preview phase, anti-fragmentation is handled through naming and conformance policy, not through a no-derivatives license. This approximates common modern open-standards practice (WHATWG, OWFa 1.0, Rust RFCs, Kubernetes KEPs), but it is not yet a substitute for the contributor and patent framework the Foundation will adopt.
 
+The independence guarantees this naming-and-conformance approach exists to protect — that owning the files remains sufficient to read them, that clean forks are always permitted, and that the `KP:1` mark is defensive only — are stated in [spec/INDEPENDENCE.md](spec/INDEPENDENCE.md). That companion also records the limit this policy must respect: the mark may constrain *who may call a fork "KP:1,"* never *whether a clean fork may exist or be read.*
+
 ## What changes when the Foundation forms
 
 The Knowledge Pack Foundation is in formation as of 2026-04. When it is incorporated and operational:
