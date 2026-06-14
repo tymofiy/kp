@@ -21,8 +21,13 @@ Every Knowledge Pack has a lifecycle type that governs how long it remains in th
 | `permanent` | Standing knowledge. Never auto-archived. Evolves in place through claim supersession. | No | Indefinite | Market analysis, sector coverage, domain expertise |
 | `seasonal` | Relevant for a bounded period. Archived when the period ends. | Yes, on expiry | 90 days (configurable) | Quarterly outlooks, research initiatives, conference prep |
 | `ephemeral` | Short-lived. Created for a specific event or moment. Archived after retention period. | Yes, on expiry | 14 days (configurable) | Meeting prep, call notes, weekly briefings |
+| `experience` | Interactive runtime / keepsake pack — a narration or voice "room." A runtime class rather than an archival duration; retained as a standing artifact. | No | Indefinite | Narration rooms, voice keepsakes, personal experience packs |
+| `working` | Active in-progress knowledge for an ongoing engagement. Reconciled in place; consolidates to a standing home when the engagement closes. | No | Until engagement closes | Diligence working notes, project assessments |
+| `incident` | Time-anchored findings or incident record. Reconciled in place rather than auto-archived. | No | Indefinite | Security findings, incident reports |
 
 **Default:** `permanent`. A pack without an explicit lifecycle type is standing knowledge.
+
+> `permanent`/`seasonal`/`ephemeral` are the canonical archival-duration trio. `experience`, `working`, and `incident` are reference-implementation-emitted types reconciled into the vocabulary on 2026-06-14 (they were already in active use; the schema enum was widened to match). New producers SHOULD prefer the canonical trio unless they target the reference runtime's `experience`-pack behavior.
 
 ### 1.1 Memory Architecture
 
@@ -66,9 +71,9 @@ Examples:
 
 ```yaml
 lifecycle:
-  type: permanent              # permanent | seasonal | ephemeral
+  type: permanent              # permanent | seasonal | ephemeral | experience | working | incident
   archive_after_days: null     # Auto-archive trigger (null = never for permanent)
-  archive_policy: reconcile    # reconcile | auto | manual
+  archive_policy: reconcile    # reconcile | auto | manual | keep
   reconciled_at: null          # ISO timestamp of last reconciliation check
   orphan_claims: []            # Claim IDs with no match in standing packs
 
@@ -88,9 +93,9 @@ visibility: private            # private | shared | public
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `lifecycle.type` | enum | No | `permanent` (default), `seasonal`, `ephemeral` |
+| `lifecycle.type` | enum | No | `permanent` (default), `seasonal`, `ephemeral`, `experience`, `working`, `incident` |
 | `lifecycle.archive_after_days` | integer or null | No | Days after `freshness` date before auto-archive triggers. Defaults: `null` (permanent), `90` (seasonal), `14` (ephemeral) |
-| `lifecycle.archive_policy` | enum | No | What happens when archive triggers. `reconcile` (default), `auto`, `manual` |
+| `lifecycle.archive_policy` | enum | No | What happens when archive triggers. `reconcile` (default), `auto`, `manual`, `keep` |
 | `lifecycle.reconciled_at` | ISO datetime or null | No | Timestamp of last reconciliation. Set by tooling |
 | `lifecycle.orphan_claims` | list of strings | No | Claim IDs flagged as unreconciled. Set by tooling |
 | `consolidation.targets` | list of objects | No | Standing packs that should receive knowledge claims. Each entry: `pack` (name), `claims` (list of source claim IDs) |
@@ -105,6 +110,7 @@ visibility: private            # private | shared | public
 | `reconcile` | **Default.** Run intelligent reconciliation before archiving. Archive only if all claims are reconciled. Flag orphans for human review. |
 | `auto` | Archive immediately when retention expires. No reconciliation. Use for packs where all claims are already reflected in standing packs by design (e.g., generated summaries, derivative views). |
 | `manual` | Never auto-archive. User must explicitly archive. For packs that may need indefinite active access despite being time-bounded. |
+| `keep` | Never auto-archive, and not surfaced for manual-archive prompts. Retain indefinitely as a standing artifact — stronger than `manual`. Pairs with `type: experience` for keepsake / runtime packs. |
 
 ---
 

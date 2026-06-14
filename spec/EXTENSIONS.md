@@ -380,6 +380,80 @@ standalone packs. The user accepts, edits, or rejects the proposal; on
 acceptance, every pack in the batch receives the same `name` and `role:
 member` (or `role: hub` for the spine pack if one exists).
 
+### 2.10 `extensions.audience` — producer-side named recipients
+
+**Owner:** authored manifests + the kp-viewer library (`PackManifest.audience`,
+`PackLibrary` audience badges and the surprise-pack gate's audience check).
+**Status:** active (canonical location as of 2026-06-14; migrated from the legacy
+top-level `audience:` key).
+
+A flat list of opaque producer-defined identifiers naming **who a pack is authored
+for** — the producer-side answer to "who is this for."
+
+```yaml
+extensions:
+  audience: [alice, bob]
+```
+
+**Distinct from the two existing audience mechanisms.** KP:1 already expresses
+audience two other ways; this field is neither:
+
+- **Views** ([CORE.md §11](CORE.md)) — each view is an *aimed surface*
+  (register/voice for a reader). `extensions.audience` names *people*, not surfaces.
+- **PLAYBACK `AudienceProfile`** ([PLAYBACK.md §3](PLAYBACK.md)) — the *session-time*
+  listener context (familiarity, purpose, domain_lens, register) chosen at playback.
+  `extensions.audience` is *authoring-time* recipient identity — an orthogonal axis
+  that deliberately keeps a separate vocabulary.
+
+**Shape.** A flat array of string identifiers, mirroring `PackManifest.audience:
+[String]` in the reference runtime. A richer per-recipient form (`[{id, role, view}]`
+distinguishing recipient vs. operator) was considered and deferred: the surprise gate
+that would consume `role` is currently retired (see §2.11), so the enrichment is not
+yet load-bearing.
+
+**Compatibility.** Consumers that do not understand the block MUST ignore it. The
+reference loader accepts the field in either location — `extensions.audience`
+(canonical) or the legacy top-level `audience:` key — so packs may be migrated one at
+a time without a flag day.
+New packs SHOULD write `extensions.audience`; the top-level `audience:` key is
+**deprecated** — it violated the closed manifest root
+([CORE.md §3 "Manifest Extensions"](CORE.md#manifest-extensions)).
+
+### 2.11 `extensions.sharing` — gift-gating / do-not-share metadata
+
+**Owner:** kp-viewer `SurprisePackGate` + library filtering
+(`PackManifest.lifecycle.surprise`, `.doNotShare`).
+**Status:** active, gate-dormant (canonical location as of 2026-06-14; migrated from
+the legacy `lifecycle.surprise` / `lifecycle.do_not_share` keys).
+
+Marks a pack as a **sealed gift** that must not surface in demos, pack browsers,
+screenshots, or shared contexts until a human has presented it to its recipient.
+
+```yaml
+extensions:
+  sharing:
+    surprise: true
+    do_not_share: >
+      This pack is a surprise gift — treat it as a sealed envelope addressed to
+      someone else.
+```
+
+**Gate status.** Per the reference implementation's 2026-05-20 "just on, singular
+solution" directive, `SurprisePackGate.isUnlocked` returns `true` unconditionally —
+the gate is **retired** and these fields are dormant metadata, preserved so a
+re-enable stays a one-line revert. Relocating them changes no live behavior.
+
+**Why not `lifecycle`.** These were authored under `lifecycle.{surprise,do_not_share}`,
+but `lifecycle` is a *closed* core object (CORE §3 / the schema) reserved for
+archive-management fields. Gift-gating is implementation-specific viewer behavior, so
+it belongs under `extensions` per the closed-root rule.
+
+**Compatibility.** Consumers that do not understand the block MUST ignore it. The
+reference loader accepts these fields in either location — `extensions.sharing.*`
+(canonical) or the legacy `lifecycle.surprise` / `lifecycle.do_not_share` keys — so
+packs may be migrated one at a time. New packs SHOULD write `extensions.sharing`; the
+`lifecycle.*` gift-gate keys are **deprecated**.
+
 ---
 
 ## 3. Cross-cutting concerns

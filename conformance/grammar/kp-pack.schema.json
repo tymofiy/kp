@@ -177,8 +177,8 @@
       "properties": {
         "type": {
           "type": "string",
-          "enum": ["permanent", "seasonal", "ephemeral"],
-          "description": "Lifecycle classification."
+          "enum": ["permanent", "seasonal", "ephemeral", "experience", "working", "incident"],
+          "description": "Lifecycle classification. permanent/seasonal/ephemeral are the archival-duration trio (see LIFECYCLE.md §1); experience (interactive runtime/keepsake pack), working (active in-progress engagement knowledge), and incident (time-anchored findings record) are reference-implementation-emitted types reconciled into the enum 2026-06-14."
         },
         "archive_after_days": {
           "type": ["integer", "null"],
@@ -187,8 +187,8 @@
         },
         "archive_policy": {
           "type": "string",
-          "enum": ["reconcile", "auto", "manual"],
-          "description": "How archiving is triggered."
+          "enum": ["reconcile", "auto", "manual", "keep"],
+          "description": "How archiving is triggered. keep = retain indefinitely, never auto-archive (stronger than manual); pairs with type: experience for keepsake packs."
         },
         "reconciled_at": {
           "type": ["string", "null"],

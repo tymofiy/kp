@@ -314,9 +314,9 @@ style: null                            # External style system reference (see §
                                        #   style-id string | null = unstyled markdown
 
 lifecycle:                             # Pack lifecycle management (see spec/LIFECYCLE.md)
-  type: permanent                      #   permanent | seasonal | ephemeral
+  type: permanent                      #   permanent | seasonal | ephemeral | experience | working | incident
   archive_after_days: null             #   Auto-archive after N days (ephemeral packs)
-  archive_policy: reconcile            #   reconcile | auto | manual
+  archive_policy: reconcile            #   reconcile | auto | manual | keep
   reconciled_at: null                  #   Timestamp of last reconciliation check
   orphan_claims: []                    #   Unreconciled claims found during review
 
