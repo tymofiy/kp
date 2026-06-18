@@ -8,13 +8,14 @@
 PYTHON ?= python3
 PACK   ?=
 
-.PHONY: help install conformance pack lint clean
+.PHONY: help install conformance compiler-test pack lint clean
 
 help:
 	@echo "KP:1 conformance targets"
 	@echo ""
 	@echo "  make install        Install Python dependencies (pyyaml, jsonschema)"
 	@echo "  make conformance    Run the full conformance suite (expects 23/23)"
+	@echo "  make compiler-test  Run the experimental graph compiler unit tests"
 	@echo "  make pack PACK=path Validate a single pack at PATH"
 	@echo "  make lint           Same as conformance (alias)"
 	@echo "  make clean          Remove __pycache__ and .pyc files"
@@ -28,6 +29,9 @@ install:
 
 conformance:
 	$(PYTHON) conformance/run.py
+
+compiler-test:
+	$(PYTHON) -m unittest compiler.tests.test_graph_compiler
 
 lint: conformance
 
