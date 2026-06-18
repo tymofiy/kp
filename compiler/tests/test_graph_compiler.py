@@ -3,10 +3,16 @@ import sqlite3
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
+import compiler.embed_openai_compatible as reference_adapter
 from compiler.graph_compiler import (
-    claim_search_text,
+    EMBEDDING_PREFIX_SCHEME,
+    EMBEDDING_SURFACE_VERSION,
+    VECTOR_CONTRACT_VERSION,
     compile_bundle,
+    claim_embedding_text,
+    embedding_input_text,
     load_sqlite_vec,
     parse_pack,
     project_for_export_tier,
@@ -16,6 +22,14 @@ from compiler.graph_compiler import (
     VECTOR_INDEX_TABLE,
     vector_text_hash,
 )
+from compiler.embed_openai_compatible import (
+    load_surfaces as reference_load_surfaces,
+    validate_manifest as reference_validate_manifest,
+    write_vectors as reference_write_vectors,
+)
+
+
+TEST_MODEL_FINGERPRINT = "sha256:" + "a" * 64
 
 
 ROSETTA = """<!-- KP:1 — Knowledge Pack Format
@@ -120,26 +134,59 @@ Synthetic review note.
         for parsed_pack in parsed_packs:
             for claim in parsed_pack.claims:
                 embedding = vectors_by_local_id[claim.local_claim_id]
-                search_text = claim_search_text(claim, evidence_by_uid)
-                source_hash = vector_text_hash(search_text)
+                embedding_text = claim_embedding_text(claim, evidence_by_uid)
+                source_text = embedding_input_text(embedding_text, role="document")
+                source_hash = vector_text_hash(source_text)
                 if claim.claim_uid == stale_claim_uid:
                     source_hash = "sha256:" + "0" * 64
                 rows.append(
                     {
-                        "contract_version": 1,
+                        "contract_version": VECTOR_CONTRACT_VERSION,
                         "claim_uid": claim.claim_uid,
                         "model_id": model_id,
+                        "model_fingerprint": TEST_MODEL_FINGERPRINT,
+                        "embedding_prefix_scheme": EMBEDDING_PREFIX_SCHEME,
                         "dimensions": len(embedding),
                         "distance": "cosine",
-                        "embedding_surface_version": "claim-search-text-v1",
+                        "embedding_surface_version": EMBEDDING_SURFACE_VERSION,
                         "normalized": False,
                         "source_text_hash": source_hash,
                         "embedding": embedding,
                     }
                 )
-        rows.extend(extra_rows or [])
+        for row in extra_rows or []:
+            rows.append(
+                {
+                    "contract_version": VECTOR_CONTRACT_VERSION,
+                    "model_id": model_id,
+                    "model_fingerprint": TEST_MODEL_FINGERPRINT,
+                    "embedding_prefix_scheme": EMBEDDING_PREFIX_SCHEME,
+                    "dimensions": len(row.get("embedding", [])),
+                    "distance": "cosine",
+                    "embedding_surface_version": EMBEDDING_SURFACE_VERSION,
+                    "normalized": False,
+                    **row,
+                }
+            )
         path.write_text("\n".join(json.dumps(row, sort_keys=True) for row in rows) + "\n")
         return path
+
+    def query_vector(
+        self,
+        embedding: list[float],
+        *,
+        model_id: str = "test-embedder-v1",
+        model_fingerprint: str = TEST_MODEL_FINGERPRINT,
+    ) -> dict[str, object]:
+        return {
+            "contract_version": VECTOR_CONTRACT_VERSION,
+            "model_id": model_id,
+            "model_fingerprint": model_fingerprint,
+            "embedding_prefix_scheme": EMBEDDING_PREFIX_SCHEME,
+            "dimensions": len(embedding),
+            "distance": "cosine",
+            "embedding": embedding,
+        }
 
     def write_cross_pack_fixtures(self, root: Path) -> tuple[Path, Path]:
         pack_a = root / "example-a.kpack"
@@ -330,7 +377,7 @@ Synthetic internal-only note.
             try:
                 self.assertEqual(
                     conn.execute("SELECT value FROM graph_meta WHERE key = 'schema_version'").fetchone()[0],
-                    "3",
+                    "4",
                 )
                 self.assertEqual(
                     conn.execute("SELECT count(*) FROM kp_claim_evidence_links").fetchone()[0],
@@ -651,6 +698,247 @@ Synthetic internal-only note.
             self.assertEqual(summary["search_mode"], "fts5")
             self.assertEqual(summary["search_reports"][0]["hits"][0]["search_engine"], "fts5")
 
+    def test_compile_bundle_emits_embedding_surfaces_and_manifest(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            pack = self.write_fixture(root)
+            out = root / "embedding-inputs"
+
+            summary = compile_bundle(pack, out)
+
+            artifacts = summary["embedding"]["artifacts"]
+            surfaces_path = Path(artifacts["claim_surfaces"])
+            manifest_path = Path(artifacts["embedding_manifest"])
+            self.assertTrue(surfaces_path.exists())
+            self.assertTrue(manifest_path.exists())
+
+            rows = [
+                json.loads(line)
+                for line in surfaces_path.read_text().splitlines()
+                if line.strip()
+            ]
+            manifest = json.loads(manifest_path.read_text())
+            self.assertEqual(len(rows), 3)
+            self.assertEqual(manifest["kind"], "kp-embedding-manifest")
+            self.assertEqual(manifest["claim_count"], 3)
+            self.assertEqual(manifest["export_tier"], "client")
+            self.assertEqual(manifest["embedding_surface_version"], EMBEDDING_SURFACE_VERSION)
+            self.assertEqual(manifest["embedding_prefix_scheme"], EMBEDDING_PREFIX_SCHEME)
+            self.assertEqual(manifest["embedding"]["status"], "surfaces-ready")
+            self.assertFalse(summary["embedding"]["sealed"])
+
+            row_by_uid = {row["claim_uid"]: row for row in rows}
+            parsed_packs, _projection = project_for_export_tier([parse_pack(pack)], "client")
+            evidence_by_uid = {
+                evidence.evidence_uid: evidence
+                for parsed_pack in parsed_packs
+                for evidence in parsed_pack.evidence
+            }
+            claim = next(
+                claim
+                for parsed_pack in parsed_packs
+                for claim in parsed_pack.claims
+                if claim.local_claim_id == "C002"
+            )
+            self.assertEqual(
+                row_by_uid["example-supersession#C002"]["source_text_hash"],
+                vector_text_hash(
+                    embedding_input_text(
+                        claim_embedding_text(claim, evidence_by_uid),
+                        role="document",
+                    )
+                ),
+            )
+            self.assertEqual(
+                row_by_uid["example-supersession#C002"]["embedding_prefix_scheme"],
+                EMBEDDING_PREFIX_SCHEME,
+            )
+            self.assertEqual(
+                row_by_uid["example-supersession#C002"]["embedding_role"],
+                "document",
+            )
+            self.assertTrue(
+                row_by_uid["example-supersession#C002"]["source_text"].startswith(
+                    "search_document: "
+                )
+            )
+
+    def test_reference_embedding_adapter_writes_sealable_vectors(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            pack = self.write_fixture(root)
+            out = root / "embedding-inputs"
+            summary = compile_bundle(pack, out)
+
+            surfaces_path = Path(summary["embedding"]["artifacts"]["claim_surfaces"])
+            manifest_path = Path(summary["embedding"]["artifacts"]["embedding_manifest"])
+            surfaces = reference_load_surfaces(surfaces_path)
+            manifest = json.loads(manifest_path.read_text())
+            reference_validate_manifest(
+                manifest,
+                surfaces_path=surfaces_path,
+                surface_count=len(surfaces),
+            )
+
+            vectors_path = root / "adapter" / "claim-vectors.jsonl"
+            dimensions = reference_write_vectors(
+                surfaces=surfaces,
+                vectors=[[3.0, 4.0, 0.0], [0.0, 5.0, 0.0], [0.0, 0.0, 6.0]],
+                output_path=vectors_path,
+                model="test-embedder-v1",
+                model_fingerprint=TEST_MODEL_FINGERPRINT,
+                distance="cosine",
+                normalize=True,
+            )
+
+            self.assertEqual(dimensions, 3)
+            rows = [
+                json.loads(line)
+                for line in vectors_path.read_text().splitlines()
+                if line.strip()
+            ]
+            self.assertEqual(rows[0]["model_fingerprint"], TEST_MODEL_FINGERPRINT)
+            self.assertEqual(rows[0]["embedding_prefix_scheme"], EMBEDDING_PREFIX_SCHEME)
+            self.assertEqual(rows[0]["embedding_surface_version"], EMBEDDING_SURFACE_VERSION)
+            self.assertTrue(rows[0]["normalized"])
+            self.assertAlmostEqual(rows[0]["embedding"][0], 0.6)
+            self.assertAlmostEqual(rows[0]["embedding"][1], 0.8)
+
+    def test_reference_embedding_adapter_prefixes_query_vectors(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            query_vector_path = root / "query-vector.json"
+            captured_inputs = []
+
+            def fake_request_embeddings(**kwargs: object) -> list[list[float]]:
+                captured_inputs.extend(kwargs["inputs"])  # type: ignore[arg-type]
+                return [[0.0, 3.0, 4.0]]
+
+            with patch.object(reference_adapter, "request_embeddings", fake_request_embeddings):
+                reference_adapter.write_query_vector(
+                    query_text="current reading",
+                    output_path=query_vector_path,
+                    endpoint="http://localhost:1234/v1",
+                    model="test-embedder-v1",
+                    model_fingerprint=TEST_MODEL_FINGERPRINT,
+                    dimensions=3,
+                    distance="cosine",
+                    timeout=1,
+                    normalize=True,
+                )
+
+            row = json.loads(query_vector_path.read_text())
+            self.assertEqual(captured_inputs, ["search_query: current reading"])
+            self.assertEqual(row["model_fingerprint"], TEST_MODEL_FINGERPRINT)
+            self.assertEqual(row["embedding_prefix_scheme"], EMBEDDING_PREFIX_SCHEME)
+            self.assertAlmostEqual(row["embedding"][1], 0.6)
+            self.assertAlmostEqual(row["embedding"][2], 0.8)
+
+    def test_sealed_bundle_validates_manifest_and_writes_seal(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            pack = self.write_fixture(root)
+            input_summary = compile_bundle(pack, root / "embedding-inputs")
+            manifest_path = Path(input_summary["embedding"]["artifacts"]["embedding_manifest"])
+            vectors_path = self.write_vectors(
+                root / "claim-vectors.jsonl",
+                pack,
+                {
+                    "C001": [0.0, 1.0, 0.0],
+                    "C002": [1.0, 0.0, 0.0],
+                    "C003": [0.0, 0.0, 1.0],
+                },
+            )
+
+            summary = compile_bundle(
+                pack,
+                root / "sealed",
+                vectors_jsonl=vectors_path,
+                embedding_manifest=manifest_path,
+                seal_bundle=True,
+                query_texts=["semantic current reading"],
+                query_vectors=[
+                    self.query_vector([1.0, 0.0, 0.0])
+                ],
+                search_mode="vector",
+                query_limit=1,
+            )
+
+            self.assertTrue(summary["embedding"]["validated_input_manifest"])
+            self.assertTrue(summary["embedding"]["sealed"])
+            self.assertTrue(summary["bundle_seal"]["sealed"])
+            self.assertEqual(summary["graph_meta"]["bundle_sealed"], "true")
+            self.assertEqual(summary["graph_meta"]["vector_ignored_row_count"], "0")
+            self.assertEqual(
+                summary["embedding"]["manifest"]["embedding"]["status"],
+                "vectors-imported",
+            )
+            self.assertTrue(Path(summary["embedding"]["artifacts"]["bundle_seal"]).exists())
+            self.assertEqual(
+                summary["search_reports"][0]["hits"][0]["claim_uid"],
+                "example-supersession#C002",
+            )
+
+    def test_sealed_bundle_rejects_manifest_mismatch(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            pack = self.write_fixture(root)
+            input_summary = compile_bundle(pack, root / "embedding-inputs")
+            manifest_path = Path(input_summary["embedding"]["artifacts"]["embedding_manifest"])
+            manifest = json.loads(manifest_path.read_text())
+            manifest["export_tier"] = "server"
+            manifest_path.write_text(json.dumps(manifest, indent=2, sort_keys=True) + "\n")
+            vectors_path = self.write_vectors(
+                root / "claim-vectors.jsonl",
+                pack,
+                {
+                    "C001": [0.0, 1.0, 0.0],
+                    "C002": [1.0, 0.0, 0.0],
+                    "C003": [0.0, 0.0, 1.0],
+                },
+            )
+
+            with self.assertRaisesRegex(ValueError, "embedding manifest mismatch for export_tier"):
+                compile_bundle(
+                    pack,
+                    root / "sealed",
+                    vectors_jsonl=vectors_path,
+                    embedding_manifest=manifest_path,
+                    seal_bundle=True,
+                )
+
+    def test_sealed_bundle_rejects_filtered_vector_rows(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            pack = self.write_tier_fixture(root)
+            input_summary = compile_bundle(
+                pack,
+                root / "client-inputs",
+                export_tier="client",
+            )
+            manifest_path = Path(input_summary["embedding"]["artifacts"]["embedding_manifest"])
+            vectors_path = self.write_vectors(
+                root / "tier-vectors.jsonl",
+                pack,
+                {
+                    "C001": [1.0, 0.0, 0.0],
+                    "C002": [0.0, 1.0, 0.0],
+                    "C003": [0.0, 0.0, 1.0],
+                    "C004": [1.0, 1.0, 0.0],
+                },
+                export_tier="internal",
+            )
+
+            with self.assertRaisesRegex(ValueError, "outside the projected embedding manifest"):
+                compile_bundle(
+                    pack,
+                    root / "sealed-client",
+                    export_tier="client",
+                    vectors_jsonl=vectors_path,
+                    embedding_manifest=manifest_path,
+                    seal_bundle=True,
+                )
+
     def test_vector_query_uses_imported_claim_vectors(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
@@ -666,13 +954,7 @@ Synthetic internal-only note.
             )
             out = root / "vector-search"
 
-            query_vector = {
-                "contract_version": 1,
-                "model_id": "test-embedder-v1",
-                "dimensions": 3,
-                "distance": "cosine",
-                "embedding": [1.0, 0.0, 0.0],
-            }
+            query_vector = self.query_vector([1.0, 0.0, 0.0])
             summary = compile_bundle(
                 pack,
                 out,
@@ -690,6 +972,8 @@ Synthetic internal-only note.
             self.assertEqual(hit["claim_uid"], "example-supersession#C002")
             self.assertEqual(hit["search_engine"], "vector")
             self.assertEqual(hit["vector_model_id"], "test-embedder-v1")
+            self.assertEqual(hit["vector_model_fingerprint"], TEST_MODEL_FINGERPRINT)
+            self.assertEqual(hit["embedding_prefix_scheme"], EMBEDDING_PREFIX_SCHEME)
             self.assertEqual(hit["vector_index_engine"], "sqlite-vec")
             self.assertEqual(hit["vector_distance"], 0.0)
 
@@ -749,13 +1033,7 @@ Synthetic internal-only note.
                 vectors_jsonl=vectors_path,
                 query_texts=["current reading"],
                 query_vectors=[
-                    {
-                        "contract_version": 1,
-                        "model_id": "test-embedder-v1",
-                        "dimensions": 3,
-                        "distance": "cosine",
-                        "embedding": [1.0, 0.0, 0.0],
-                    }
+                    self.query_vector([1.0, 0.0, 0.0])
                 ],
                 query_limit=1,
                 search_mode="hybrid",
@@ -764,6 +1042,8 @@ Synthetic internal-only note.
             hit = summary["search_reports"][0]["hits"][0]
             self.assertEqual(hit["claim_uid"], "example-supersession#C002")
             self.assertEqual(hit["search_engine"], "hybrid")
+            self.assertEqual(hit["vector_model_fingerprint"], TEST_MODEL_FINGERPRINT)
+            self.assertEqual(hit["embedding_prefix_scheme"], EMBEDDING_PREFIX_SCHEME)
             self.assertEqual(hit["component_ranks"]["fts5"], 1)
             self.assertEqual(hit["component_ranks"]["vector"], 1)
 
@@ -798,12 +1078,7 @@ Synthetic internal-only note.
                     "current reading",
                     limit=1,
                     mode="hybrid",
-                    query_vector={
-                        "contract_version": 1,
-                        "model_id": "test-embedder-v1",
-                        "dimensions": 3,
-                        "embedding": [1.0, 0.0, 0.0],
-                    },
+                    query_vector=self.query_vector([1.0, 0.0, 0.0]),
                 )
 
     def test_vector_search_fails_when_index_is_missing(self) -> None:
@@ -821,12 +1096,7 @@ Synthetic internal-only note.
                     "semantic current reading",
                     limit=1,
                     mode="vector",
-                    query_vector={
-                        "contract_version": 1,
-                        "model_id": "test-embedder-v1",
-                        "dimensions": 3,
-                        "embedding": [1.0, 0.0, 0.0],
-                    },
+                    query_vector=self.query_vector([1.0, 0.0, 0.0]),
                 )
 
     def test_vector_search_fails_when_sqlite_vec_table_is_missing(self) -> None:
@@ -861,12 +1131,7 @@ Synthetic internal-only note.
                     "semantic current reading",
                     limit=1,
                     mode="vector",
-                    query_vector={
-                        "contract_version": 1,
-                        "model_id": "test-embedder-v1",
-                        "dimensions": 3,
-                        "embedding": [1.0, 0.0, 0.0],
-                    },
+                    query_vector=self.query_vector([1.0, 0.0, 0.0]),
                 )
 
     def test_vector_search_requires_query_vector(self) -> None:
@@ -916,12 +1181,7 @@ Synthetic internal-only note.
                 vectors_jsonl=vectors_path,
                 query_texts=["client safe conclusion"],
                 query_vectors=[
-                    {
-                        "contract_version": 1,
-                        "model_id": "test-embedder-v1",
-                        "dimensions": 3,
-                        "embedding": [1.0, 0.0, 0.0],
-                    }
+                    self.query_vector([1.0, 0.0, 0.0])
                 ],
                 query_limit=1,
                 search_mode="vector",
@@ -961,7 +1221,7 @@ Synthetic internal-only note.
                         "model_id": "test-embedder-v1",
                         "dimensions": 3,
                         "distance": "cosine",
-                        "embedding_surface_version": "claim-search-text-v1",
+                        "embedding_surface_version": EMBEDDING_SURFACE_VERSION,
                         "normalized": False,
                         "source_text_hash": "sha256:" + "1" * 64,
                         "embedding": [1.0, 0.0, 0.0],
@@ -1019,12 +1279,36 @@ Synthetic internal-only note.
                     vectors_jsonl=vectors_path,
                     query_texts=["current reading"],
                     query_vectors=[
-                        {
-                            "contract_version": 1,
-                            "model_id": "other-embedder",
-                            "dimensions": 3,
-                            "embedding": [1.0, 0.0, 0.0],
-                        }
+                        self.query_vector([1.0, 0.0, 0.0], model_id="other-embedder")
+                    ],
+                    search_mode="vector",
+                )
+
+    def test_query_vector_model_fingerprint_mismatch_fails_fast(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            pack = self.write_fixture(root)
+            vectors_path = self.write_vectors(
+                root / "claim-vectors.jsonl",
+                pack,
+                {
+                    "C001": [0.0, 1.0, 0.0],
+                    "C002": [1.0, 0.0, 0.0],
+                    "C003": [0.0, 0.0, 1.0],
+                },
+            )
+
+            with self.assertRaisesRegex(ValueError, "query vector model_fingerprint mismatch"):
+                compile_bundle(
+                    pack,
+                    root / "bad-query-fingerprint",
+                    vectors_jsonl=vectors_path,
+                    query_texts=["current reading"],
+                    query_vectors=[
+                        self.query_vector(
+                            [1.0, 0.0, 0.0],
+                            model_fingerprint="sha256:" + "b" * 64,
+                        )
                     ],
                     search_mode="vector",
                 )

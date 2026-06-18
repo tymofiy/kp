@@ -22,16 +22,22 @@ from typing import Any
 import yaml
 
 
-SCHEMA_VERSION = 3
-COMPILER_VERSION = "0.7.0"
+SCHEMA_VERSION = 4
+COMPILER_VERSION = "0.8.0"
 DEFAULT_QUERY_LIMIT = 3
 SEARCH_MODES = ("fts5", "vector", "hybrid", "lexical")
 VECTOR_SEARCH_MODES = ("vector", "hybrid")
 RRF_K = 60
 VECTOR_CONTRACT_VERSION = 1
-EMBEDDING_SURFACE_VERSION = "claim-search-text-v1"
+EMBEDDING_SURFACE_VERSION = "claim-embedding-text-v1"
+EMBEDDING_MANIFEST_VERSION = 1
+EMBEDDING_PREFIX_SCHEME = "nomic-search-v1"
+EMBEDDING_DOCUMENT_PREFIX = "search_document: "
+EMBEDDING_QUERY_PREFIX = "search_query: "
+BUNDLE_SEAL_VERSION = 1
 VECTOR_INDEX_ENGINE = "sqlite-vec"
 VECTOR_INDEX_TABLE = "kp_claim_vector_index"
+SHA256_PATTERN = re.compile(r"^sha256:[0-9a-f]{64}$")
 
 RELATION_RE = re.compile(
     r"(\u2297~|\u2297!|\u2297|\u2192|\u2190|\u2298|\u2194|~)"
@@ -202,6 +208,8 @@ class ParsedPack:
 class ClaimVector:
     claim_uid: str
     model_id: str
+    model_fingerprint: str
+    embedding_prefix_scheme: str
     dimensions: int
     vector: list[float]
     source_text_hash: str
@@ -807,6 +815,30 @@ def write_jsonl(path: Path, rows: list[Any]) -> None:
             handle.write(json.dumps(as_jsonable(row), sort_keys=True) + "\n")
 
 
+def jsonl_rows_sha256(rows: list[Any]) -> str:
+    digest = hashlib.sha256()
+    for row in rows:
+        digest.update(json.dumps(as_jsonable(row), sort_keys=True).encode("utf-8"))
+        digest.update(b"\n")
+    return "sha256:" + digest.hexdigest()
+
+
+def file_sha256(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return "sha256:" + digest.hexdigest()
+
+
+def string_list_sha256(values: list[str]) -> str:
+    digest = hashlib.sha256()
+    for value in values:
+        digest.update(value.encode("utf-8"))
+        digest.update(b"\n")
+    return "sha256:" + digest.hexdigest()
+
+
 def claim_search_text(claim: Claim, evidence_by_uid: dict[str, Evidence]) -> str:
     evidence_parts = []
     for local_evidence_id in claim.evidence_ids:
@@ -841,8 +873,267 @@ def claim_search_text(claim: Claim, evidence_by_uid: dict[str, Evidence]) -> str
     )
 
 
+def claim_embedding_text(claim: Claim, evidence_by_uid: dict[str, Evidence]) -> str:
+    evidence_parts = []
+    for local_evidence_id in claim.evidence_ids:
+        evidence = evidence_by_uid.get(evidence_uid(claim.pack_id, local_evidence_id))
+        if evidence is None:
+            continue
+        evidence_parts.extend(
+            part
+            for part in [
+                f"Evidence title: {evidence.title}",
+                f"Evidence type: {evidence.source_type}" if evidence.source_type else "",
+                f"Evidence reliability: {evidence.reliability}" if evidence.reliability else "",
+                evidence.summary,
+            ]
+            if part
+        )
+    return "\n".join(
+        part
+        for part in [
+            f"Claim: {claim.text}",
+            f"Detail: {claim.detail}" if claim.detail else "",
+            "Evidence:",
+            *evidence_parts,
+        ]
+        if part
+    )
+
+
+def embedding_input_text(text: str, *, role: str) -> str:
+    if role == "document":
+        return f"{EMBEDDING_DOCUMENT_PREFIX}{text}"
+    if role == "query":
+        return f"{EMBEDDING_QUERY_PREFIX}{text}"
+    raise ValueError(f"unsupported embedding role: {role}")
+
+
 def vector_text_hash(text: str) -> str:
     return "sha256:" + hashlib.sha256(text.encode("utf-8")).hexdigest()
+
+
+def is_sha256_digest(value: Any) -> bool:
+    return isinstance(value, str) and bool(SHA256_PATTERN.match(value))
+
+
+def embedding_surface_rows(parsed_packs: list[ParsedPack]) -> list[dict[str, Any]]:
+    evidence_rows = [
+        evidence
+        for parsed_pack in parsed_packs
+        for evidence in parsed_pack.evidence
+    ]
+    evidence_by_uid = {evidence.evidence_uid: evidence for evidence in evidence_rows}
+    rows = []
+    for claim in sorted(
+        (claim for parsed_pack in parsed_packs for claim in parsed_pack.claims),
+        key=lambda item: item.claim_uid,
+    ):
+        embedding_text = claim_embedding_text(claim, evidence_by_uid)
+        source_text = embedding_input_text(embedding_text, role="document")
+        rows.append(
+            {
+                "contract_version": VECTOR_CONTRACT_VERSION,
+                "embedding_surface_version": EMBEDDING_SURFACE_VERSION,
+                "embedding_prefix_scheme": EMBEDDING_PREFIX_SCHEME,
+                "embedding_role": "document",
+                "claim_uid": claim.claim_uid,
+                "pack_id": claim.pack_id,
+                "local_claim_id": claim.local_claim_id,
+                "source_text_hash": vector_text_hash(source_text),
+                "source_text": source_text,
+                "embedding_text": embedding_text,
+                "source_locator": claim.source_locator,
+            }
+        )
+    return rows
+
+
+def vector_meta_from_graph_meta(graph_meta: dict[str, str]) -> dict[str, Any]:
+    if graph_meta.get("vector_search_available") != "true":
+        return {
+            "status": "surfaces-ready",
+            "model_id": None,
+            "model_fingerprint": None,
+            "embedding_prefix_scheme": EMBEDDING_PREFIX_SCHEME,
+            "dimensions": None,
+            "distance": None,
+            "normalized": None,
+            "vector_index_engine": None,
+            "vector_claim_count": 0,
+            "vector_claim_coverage": graph_meta.get("vector_claim_coverage", "0/0"),
+        }
+    return {
+        "status": "vectors-imported",
+        "model_id": graph_meta.get("vector_model_id") or None,
+        "model_fingerprint": graph_meta.get("vector_model_fingerprint") or None,
+        "embedding_prefix_scheme": graph_meta.get("embedding_prefix_scheme") or None,
+        "dimensions": int(graph_meta.get("vector_dimensions", "0")),
+        "distance": graph_meta.get("vector_distance") or None,
+        "normalized": graph_meta.get("vector_normalized") == "true",
+        "vector_index_engine": graph_meta.get("vector_index_engine") or None,
+        "vector_claim_count": int(graph_meta.get("vector_claim_count", "0")),
+        "vector_claim_coverage": graph_meta.get("vector_claim_coverage", "0/0"),
+        "sqlite_vec_version": graph_meta.get("vector_sqlite_vec_version") or None,
+    }
+
+
+def build_embedding_manifest(
+    parsed_packs: list[ParsedPack],
+    *,
+    export_tier: str,
+    projection_report: dict[str, Any],
+    surface_rows: list[dict[str, Any]],
+    graph_meta: dict[str, str] | None = None,
+    sealed: bool = False,
+) -> dict[str, Any]:
+    claim_uids = sorted(row["claim_uid"] for row in surface_rows)
+    return {
+        "kind": "kp-embedding-manifest",
+        "manifest_version": EMBEDDING_MANIFEST_VERSION,
+        "schema_version": SCHEMA_VERSION,
+        "compiler_version": COMPILER_VERSION,
+        "created_at": datetime.datetime.now(datetime.UTC).isoformat(),
+        "source_hash": bundle_source_hash(parsed_packs),
+        "export_tier": export_tier,
+        "claim_count": len(surface_rows),
+        "claim_uid_set_sha256": string_list_sha256(claim_uids),
+        "claim_surfaces_sha256": jsonl_rows_sha256(surface_rows),
+        "vector_contract_version": VECTOR_CONTRACT_VERSION,
+        "embedding_surface_version": EMBEDDING_SURFACE_VERSION,
+        "embedding_prefix_scheme": EMBEDDING_PREFIX_SCHEME,
+        "embedding_surfaces_path": "claim-surfaces.jsonl",
+        "projection": {
+            "filtered_claims": projection_report["filtered_claims"],
+            "filtered_evidence": projection_report["filtered_evidence"],
+            "filtered_relations": projection_report["filtered_relations"],
+            "require_explicit_boundary": bool(
+                projection_report.get("require_explicit_boundary", False)
+            ),
+        },
+        "embedding": vector_meta_from_graph_meta(graph_meta or {}),
+        "bundle_sealed": sealed,
+    }
+
+
+def load_embedding_manifest(path: Path) -> dict[str, Any]:
+    if not path.exists():
+        raise ValueError(f"embedding manifest does not exist: {path}")
+    try:
+        raw = json.loads(path.read_text())
+    except json.JSONDecodeError as exc:
+        raise ValueError(f"embedding manifest is not valid JSON: {exc}") from exc
+    if not isinstance(raw, dict):
+        raise ValueError("embedding manifest must be a JSON object")
+    if raw.get("kind") != "kp-embedding-manifest":
+        raise ValueError("embedding manifest has unsupported kind")
+    return raw
+
+
+def validate_embedding_manifest(
+    manifest_path: Path,
+    expected_manifest: dict[str, Any],
+) -> dict[str, Any]:
+    observed = load_embedding_manifest(manifest_path)
+    keys = [
+        "kind",
+        "manifest_version",
+        "schema_version",
+        "compiler_version",
+        "source_hash",
+        "export_tier",
+        "claim_count",
+        "claim_uid_set_sha256",
+        "claim_surfaces_sha256",
+        "vector_contract_version",
+        "embedding_surface_version",
+        "embedding_prefix_scheme",
+    ]
+    for key in keys:
+        if observed.get(key) != expected_manifest.get(key):
+            raise ValueError(
+                "embedding manifest mismatch for "
+                f"{key}: {observed.get(key)!r} != {expected_manifest.get(key)!r}"
+            )
+
+    observed_projection = observed.get("projection")
+    expected_projection = expected_manifest.get("projection")
+    if observed_projection != expected_projection:
+        raise ValueError(
+            "embedding manifest mismatch for projection: "
+            f"{observed_projection!r} != {expected_projection!r}"
+        )
+    return observed
+
+
+def write_embedding_artifacts(
+    output_dir: Path,
+    manifest: dict[str, Any],
+    surface_rows: list[dict[str, Any]],
+) -> dict[str, str]:
+    embeddings_dir = output_dir / "embeddings"
+    surfaces_path = embeddings_dir / "claim-surfaces.jsonl"
+    manifest_path = embeddings_dir / "embedding-manifest.json"
+    write_jsonl(surfaces_path, surface_rows)
+    write_json(manifest_path, manifest)
+    return {
+        "claim_surfaces": str(surfaces_path),
+        "embedding_manifest": str(manifest_path),
+    }
+
+
+def write_graph_meta_values(db_path: Path, values: dict[str, str]) -> dict[str, str]:
+    conn = sqlite3.connect(db_path)
+    try:
+        conn.executemany(
+            "INSERT OR REPLACE INTO graph_meta (key, value) VALUES (?, ?)",
+            sorted(values.items()),
+        )
+        conn.commit()
+        return read_graph_meta(conn)
+    finally:
+        conn.close()
+
+
+def build_bundle_seal(
+    *,
+    db_path: Path,
+    vectors_jsonl: Path,
+    embedding_manifest_path: Path,
+    current_manifest: dict[str, Any],
+    graph_meta: dict[str, str],
+) -> dict[str, Any]:
+    claim_count = current_manifest["claim_count"]
+    expected_coverage = f"{claim_count}/{claim_count}"
+    checks = {
+        "embedding_manifest_matches_current_projection": True,
+        "vectors_present": graph_meta.get("vector_search_available") == "true",
+        "sqlite_vec_index_present": graph_meta.get("vector_index") == "sqlite-vec",
+        "vector_coverage_complete": graph_meta.get("vector_claim_coverage") == expected_coverage,
+        "no_ignored_vector_rows": graph_meta.get("vector_ignored_row_count") == "0",
+    }
+    if not all(checks.values()):
+        failed = ", ".join(key for key, value in checks.items() if not value)
+        raise ValueError(f"bundle seal failed checks: {failed}")
+    return {
+        "kind": "kp-bundle-seal",
+        "seal_version": BUNDLE_SEAL_VERSION,
+        "sealed": True,
+        "sealed_at": datetime.datetime.now(datetime.UTC).isoformat(),
+        "db_path": str(db_path),
+        "source_hash": current_manifest["source_hash"],
+        "export_tier": current_manifest["export_tier"],
+        "schema_version": SCHEMA_VERSION,
+        "compiler_version": COMPILER_VERSION,
+        "embedding_manifest_path": str(embedding_manifest_path),
+        "embedding_manifest_sha256": file_sha256(embedding_manifest_path),
+        "vectors_jsonl_path": str(vectors_jsonl),
+        "vectors_jsonl_sha256": file_sha256(vectors_jsonl),
+        "claim_surfaces_sha256": current_manifest["claim_surfaces_sha256"],
+        "claim_count": claim_count,
+        "vector_contract": vector_meta_from_graph_meta(graph_meta),
+        "checks": checks,
+    }
 
 
 def normalize_vector_values(raw: Any, *, label: str) -> list[float]:
@@ -892,12 +1183,20 @@ def parse_claim_vector_row(raw: dict[str, Any], *, line_number: int) -> ClaimVec
 
     claim_uid_value = raw.get("claim_uid")
     model_id = raw.get("model_id")
+    model_fingerprint = raw.get("model_fingerprint")
+    embedding_prefix_scheme = raw.get("embedding_prefix_scheme")
     source_text_hash = raw.get("source_text_hash")
     if not isinstance(claim_uid_value, str) or not claim_uid_value:
         raise ValueError(f"vector row {line_number} must include claim_uid")
     if not isinstance(model_id, str) or not model_id:
         raise ValueError(f"vector row {line_number} must include model_id")
-    if not isinstance(source_text_hash, str) or not source_text_hash.startswith("sha256:"):
+    if not is_sha256_digest(model_fingerprint):
+        raise ValueError(f"vector row {line_number} must include model_fingerprint")
+    if embedding_prefix_scheme != EMBEDDING_PREFIX_SCHEME:
+        raise ValueError(
+            f"vector row {line_number} must use embedding_prefix_scheme {EMBEDDING_PREFIX_SCHEME}"
+        )
+    if not is_sha256_digest(source_text_hash):
         raise ValueError(f"vector row {line_number} must include source_text_hash")
 
     vector = normalize_vector_values(
@@ -923,6 +1222,8 @@ def parse_claim_vector_row(raw: dict[str, Any], *, line_number: int) -> ClaimVec
     return ClaimVector(
         claim_uid=claim_uid_value,
         model_id=model_id,
+        model_fingerprint=model_fingerprint,
+        embedding_prefix_scheme=embedding_prefix_scheme,
         dimensions=dimensions,
         vector=vector,
         source_text_hash=source_text_hash,
@@ -957,6 +1258,14 @@ def query_vector_from_json(raw: Any) -> dict[str, Any]:
     model_id = raw.get("model_id")
     if not isinstance(model_id, str) or not model_id:
         raise ValueError("query vector must include model_id")
+    model_fingerprint = raw.get("model_fingerprint")
+    if not is_sha256_digest(model_fingerprint):
+        raise ValueError("query vector must include model_fingerprint")
+    embedding_prefix_scheme = raw.get("embedding_prefix_scheme")
+    if embedding_prefix_scheme != EMBEDDING_PREFIX_SCHEME:
+        raise ValueError(
+            f"query vector must use embedding_prefix_scheme {EMBEDDING_PREFIX_SCHEME}"
+        )
     vector = normalize_vector_values(
         raw.get("embedding", raw.get("vector")),
         label="query vector embedding",
@@ -970,6 +1279,8 @@ def query_vector_from_json(raw: Any) -> dict[str, Any]:
     return {
         "contract_version": contract_version,
         "model_id": model_id,
+        "model_fingerprint": model_fingerprint,
+        "embedding_prefix_scheme": embedding_prefix_scheme,
         "dimensions": dimensions,
         "vector": vector,
         "distance": distance,
@@ -1096,6 +1407,7 @@ def compile_sqlite(
     projection_report: dict[str, Any],
     vectors_jsonl: Path | None = None,
     source_claim_uids: set[str] | None = None,
+    allow_filtered_vector_rows: bool = True,
 ) -> None:
     parsed_packs = parsed if isinstance(parsed, list) else [parsed]
     parsed_packs = resolve_relations(parsed_packs)
@@ -1109,7 +1421,7 @@ def compile_sqlite(
         conn.executescript(
             """
             PRAGMA foreign_keys = ON;
-            PRAGMA user_version = 3;
+            PRAGMA user_version = 4;
 
             CREATE TABLE graph_meta (
               key TEXT PRIMARY KEY,
@@ -1199,6 +1511,8 @@ def compile_sqlite(
               vector_rowid INTEGER PRIMARY KEY,
               claim_uid TEXT NOT NULL UNIQUE,
               model_id TEXT NOT NULL,
+              model_fingerprint TEXT NOT NULL,
+              embedding_prefix_scheme TEXT NOT NULL,
               dimensions INTEGER NOT NULL,
               distance TEXT NOT NULL,
               normalized INTEGER NOT NULL DEFAULT 0,
@@ -1217,7 +1531,9 @@ def compile_sqlite(
             CREATE INDEX idx_kp_relations_type ON kp_claim_relations(relation_type);
             CREATE INDEX idx_kp_claim_search_pack ON kp_claim_search(pack_id, local_claim_id);
             CREATE INDEX idx_kp_claim_vectors_claim_uid ON kp_claim_vectors(claim_uid);
-            CREATE INDEX idx_kp_claim_vectors_model ON kp_claim_vectors(model_id, dimensions);
+            CREATE INDEX idx_kp_claim_vectors_model ON kp_claim_vectors(
+              model_id, model_fingerprint, embedding_prefix_scheme, dimensions
+            );
             """
         )
         unresolved_relation_count = sum(
@@ -1312,9 +1628,9 @@ def compile_sqlite(
             )
             for claim in claims
         ]
-        search_text_by_claim_uid = {
-            claim_uid_value: search_text
-            for claim_uid_value, _pack_id, _local_claim_id, search_text in search_rows
+        embedding_surface_by_claim_uid = {
+            row["claim_uid"]: row
+            for row in embedding_surface_rows(parsed_packs)
         }
         conn.executemany(
             """
@@ -1342,6 +1658,8 @@ def compile_sqlite(
             "vector_claim_coverage": f"0/{len(claims)}",
             "vector_ignored_row_count": "0",
             "vector_model_id": "",
+            "vector_model_fingerprint": "",
+            "embedding_prefix_scheme": EMBEDDING_PREFIX_SCHEME,
             "vector_dimensions": "0",
             "vector_distance": "",
             "vector_normalized": "",
@@ -1356,6 +1674,8 @@ def compile_sqlite(
             vectors_by_claim_uid: dict[str, ClaimVector] = {}
             ignored_rows = 0
             model_id: str | None = None
+            model_fingerprint: str | None = None
+            embedding_prefix_scheme: str | None = None
             dimensions: int | None = None
             normalized: bool | None = None
             distance: str | None = None
@@ -1364,22 +1684,31 @@ def compile_sqlite(
                 if vector.claim_uid not in known_claim_uids:
                     raise ValueError(f"unknown claim vector for {vector.claim_uid}")
                 if vector.claim_uid not in claim_uids:
+                    if not allow_filtered_vector_rows:
+                        raise ValueError(
+                            "sealed vector file contains a row outside the projected "
+                            f"embedding manifest: {vector.claim_uid}"
+                        )
                     ignored_rows += 1
                     continue
                 if vector.claim_uid in vectors_by_claim_uid:
                     raise ValueError(f"duplicate claim vector for {vector.claim_uid}")
-                expected_hash = vector_text_hash(search_text_by_claim_uid[vector.claim_uid])
+                expected_hash = embedding_surface_by_claim_uid[vector.claim_uid]["source_text_hash"]
                 if vector.source_text_hash != expected_hash:
                     raise ValueError(
                         f"stale claim vector for {vector.claim_uid}: source_text_hash mismatch"
                     )
                 if model_id is None:
                     model_id = vector.model_id
+                    model_fingerprint = vector.model_fingerprint
+                    embedding_prefix_scheme = vector.embedding_prefix_scheme
                     dimensions = vector.dimensions
                     normalized = vector.normalized
                     distance = vector.distance
                 elif (
                     vector.model_id != model_id
+                    or vector.model_fingerprint != model_fingerprint
+                    or vector.embedding_prefix_scheme != embedding_prefix_scheme
                     or vector.dimensions != dimensions
                     or vector.normalized != normalized
                     or vector.distance != distance
@@ -1408,6 +1737,8 @@ def compile_sqlite(
                         vector_rowid,
                         vector.claim_uid,
                         vector.model_id,
+                        vector.model_fingerprint,
+                        vector.embedding_prefix_scheme,
                         vector.dimensions,
                         vector.distance,
                         1 if vector.normalized else 0,
@@ -1421,9 +1752,10 @@ def compile_sqlite(
             conn.executemany(
                 """
                 INSERT INTO kp_claim_vectors (
-                  vector_rowid, claim_uid, model_id, dimensions, distance, normalized,
+                  vector_rowid, claim_uid, model_id, model_fingerprint,
+                  embedding_prefix_scheme, dimensions, distance, normalized,
                   contract_version, embedding_surface_version, source_text_hash, vector_blob
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 vector_rows,
             )
@@ -1437,6 +1769,8 @@ def compile_sqlite(
                 "vector_claim_coverage": f"{len(vectors_by_claim_uid)}/{len(claim_uids)}",
                 "vector_ignored_row_count": str(ignored_rows),
                 "vector_model_id": model_id or "",
+                "vector_model_fingerprint": model_fingerprint or "",
+                "embedding_prefix_scheme": embedding_prefix_scheme or "",
                 "vector_dimensions": str(dimensions or 0),
                 "vector_distance": distance or "",
                 "vector_normalized": str(normalized).lower() if normalized is not None else "",
@@ -1897,10 +2231,12 @@ def vector_search_contract(conn: sqlite3.Connection) -> dict[str, Any]:
         )
     rows = conn.execute(
         """
-        SELECT model_id, dimensions, distance, normalized, contract_version,
+        SELECT model_id, model_fingerprint, embedding_prefix_scheme,
+               dimensions, distance, normalized, contract_version,
                embedding_surface_version, count(*) AS count
         FROM kp_claim_vectors
-        GROUP BY model_id, dimensions, distance, normalized, contract_version,
+        GROUP BY model_id, model_fingerprint, embedding_prefix_scheme,
+                 dimensions, distance, normalized, contract_version,
                  embedding_surface_version
         """
     ).fetchall()
@@ -1911,8 +2247,12 @@ def vector_search_contract(conn: sqlite3.Connection) -> dict[str, Any]:
         raise ValueError("vector search requested but the vector contract version is unsupported")
     if row["embedding_surface_version"] != EMBEDDING_SURFACE_VERSION:
         raise ValueError("vector search requested but the embedding surface version is unsupported")
+    if row["embedding_prefix_scheme"] != EMBEDDING_PREFIX_SCHEME:
+        raise ValueError("vector search requested but the embedding prefix scheme is unsupported")
     return {
         "model_id": row["model_id"],
+        "model_fingerprint": row["model_fingerprint"],
+        "embedding_prefix_scheme": row["embedding_prefix_scheme"],
         "dimensions": int(row["dimensions"]),
         "distance": row["distance"],
         "normalized": bool(row["normalized"]),
@@ -1931,6 +2271,17 @@ def validate_query_vector(query_vector: dict[str, Any] | None, contract: dict[st
         raise ValueError(
             "query vector model_id mismatch: "
             f"{normalized_query_vector['model_id']} != {contract['model_id']}"
+        )
+    if normalized_query_vector["model_fingerprint"] != contract["model_fingerprint"]:
+        raise ValueError(
+            "query vector model_fingerprint mismatch: "
+            f"{normalized_query_vector['model_fingerprint']} != {contract['model_fingerprint']}"
+        )
+    if normalized_query_vector["embedding_prefix_scheme"] != contract["embedding_prefix_scheme"]:
+        raise ValueError(
+            "query vector embedding_prefix_scheme mismatch: "
+            f"{normalized_query_vector['embedding_prefix_scheme']} != "
+            f"{contract['embedding_prefix_scheme']}"
         )
     if normalized_query_vector["dimensions"] != contract["dimensions"]:
         raise ValueError(
@@ -1988,6 +2339,8 @@ def search_claims_vector(
                 "vector_distance": round(vector_distance, 6),
                 "vector_similarity": round(vector_similarity, 6),
                 "vector_model_id": contract["model_id"],
+                "vector_model_fingerprint": contract["model_fingerprint"],
+                "embedding_prefix_scheme": contract["embedding_prefix_scheme"],
                 "vector_index_engine": VECTOR_INDEX_ENGINE,
             }
         )
@@ -2050,6 +2403,8 @@ def search_claims_hybrid(
                             "vector_distance",
                             "vector_similarity",
                             "vector_model_id",
+                            "vector_model_fingerprint",
+                            "embedding_prefix_scheme",
                             "vector_index_engine",
                         }
                     },
@@ -2071,6 +2426,8 @@ def search_claims_hybrid(
                 combined_hit["vector_distance"] = hit.get("vector_distance")
                 combined_hit["vector_similarity"] = hit.get("vector_similarity")
                 combined_hit["vector_model_id"] = hit.get("vector_model_id")
+                combined_hit["vector_model_fingerprint"] = hit.get("vector_model_fingerprint")
+                combined_hit["embedding_prefix_scheme"] = hit.get("embedding_prefix_scheme")
                 combined_hit["vector_index_engine"] = hit.get("vector_index_engine")
             combined_hit["matched_terms"] = sorted(
                 set(combined_hit["matched_terms"]) | set(hit.get("matched_terms", []))
@@ -2577,6 +2934,8 @@ def compile_bundle(
     export_tier: str = "client",
     require_explicit_boundary: bool = False,
     vectors_jsonl: Path | None = None,
+    embedding_manifest: Path | None = None,
+    seal_bundle: bool = False,
     query_claims: list[str] | None = None,
     query_texts: list[str] | None = None,
     query_vectors: list[dict[str, Any]] | None = None,
@@ -2605,6 +2964,22 @@ def compile_bundle(
         export_tier,
     )
     projection_report["require_explicit_boundary"] = require_explicit_boundary
+    if seal_bundle and vectors_jsonl is None:
+        raise ValueError("bundle sealing requires --vectors-jsonl")
+    if seal_bundle and embedding_manifest is None:
+        raise ValueError("bundle sealing requires --embedding-manifest")
+    surface_rows = embedding_surface_rows(parsed_packs)
+    expected_input_manifest = build_embedding_manifest(
+        parsed_packs,
+        export_tier=export_tier,
+        projection_report=projection_report,
+        surface_rows=surface_rows,
+    )
+    validated_embedding_manifest = (
+        validate_embedding_manifest(embedding_manifest, expected_input_manifest)
+        if embedding_manifest is not None
+        else None
+    )
     db_path = output_dir / "indices" / "claim-graph.sqlite"
     compile_sqlite(
         parsed_packs,
@@ -2613,6 +2988,7 @@ def compile_bundle(
         projection_report=projection_report,
         vectors_jsonl=vectors_jsonl,
         source_claim_uids=source_claim_uids,
+        allow_filtered_vector_rows=not seal_bundle,
     )
 
     write_jsonl(
@@ -2701,6 +3077,8 @@ def compile_bundle(
                         "vector_distance",
                         "vector_similarity",
                         "vector_model_id",
+                        "vector_model_fingerprint",
+                        "embedding_prefix_scheme",
                         "vector_index_engine",
                         "component_ranks",
                         "component_scores",
@@ -2729,6 +3107,50 @@ def compile_bundle(
     validation = validate_projection(db_path, export_tier)
     if not validation["valid"]:
         raise ValueError(f"{export_tier} projection failed validation: {validation['checks']}")
+    output_embedding_manifest = build_embedding_manifest(
+        parsed_packs,
+        export_tier=export_tier,
+        projection_report=projection_report,
+        surface_rows=surface_rows,
+        graph_meta=graph_meta,
+        sealed=seal_bundle,
+    )
+    embedding_artifacts = write_embedding_artifacts(
+        output_dir,
+        output_embedding_manifest,
+        surface_rows,
+    )
+    bundle_seal = None
+    if seal_bundle:
+        assert vectors_jsonl is not None
+        assert embedding_manifest is not None
+        bundle_seal = build_bundle_seal(
+            db_path=db_path,
+            vectors_jsonl=vectors_jsonl,
+            embedding_manifest_path=embedding_manifest,
+            current_manifest=expected_input_manifest,
+            graph_meta=graph_meta,
+        )
+        bundle_seal_path = output_dir / "embeddings" / "bundle-seal.json"
+        write_json(bundle_seal_path, bundle_seal)
+        embedding_artifacts["bundle_seal"] = str(bundle_seal_path)
+        graph_meta = write_graph_meta_values(
+            db_path,
+            {
+                "bundle_sealed": "true",
+                "bundle_seal_version": str(BUNDLE_SEAL_VERSION),
+                "embedding_manifest_sha256": bundle_seal["embedding_manifest_sha256"],
+                "claim_surfaces_sha256": bundle_seal["claim_surfaces_sha256"],
+            },
+        )
+    else:
+        graph_meta = write_graph_meta_values(
+            db_path,
+            {
+                "bundle_sealed": "false",
+                "claim_surfaces_sha256": expected_input_manifest["claim_surfaces_sha256"],
+            },
+        )
     summary = {
         "output_dir": str(output_dir),
         "db_path": str(db_path),
@@ -2750,6 +3172,13 @@ def compile_bundle(
         "projection": projection_report,
         "boundary": boundary_report,
         "validation": validation,
+        "embedding": {
+            "artifacts": embedding_artifacts,
+            "manifest": output_embedding_manifest,
+            "validated_input_manifest": validated_embedding_manifest is not None,
+            "sealed": bundle_seal is not None,
+        },
+        "bundle_seal": bundle_seal,
         "query_claims": query_claims,
         "query_texts": query_texts,
         "search_mode": search_mode,
@@ -2783,6 +3212,22 @@ def main() -> int:
         "--vectors-jsonl",
         type=Path,
         help="Optional claim vector JSONL file to import as a derived vector index.",
+    )
+    parser.add_argument(
+        "--embedding-manifest",
+        type=Path,
+        help=(
+            "Optional embedding manifest to validate against the current projected "
+            "claim surfaces. Required with --seal-bundle."
+        ),
+    )
+    parser.add_argument(
+        "--seal-bundle",
+        action="store_true",
+        help=(
+            "Require vectors and an embedding manifest, then write a bundle seal "
+            "only if every vector belongs to this exact projected bundle."
+        ),
     )
     parser.add_argument(
         "--query-claim",
@@ -2831,6 +3276,8 @@ def main() -> int:
         export_tier=args.export_tier,
         require_explicit_boundary=args.require_explicit_boundary,
         vectors_jsonl=args.vectors_jsonl,
+        embedding_manifest=args.embedding_manifest,
+        seal_bundle=args.seal_bundle,
         query_claims=args.query_claim,
         query_texts=args.query_text,
         query_vectors=query_vectors,
