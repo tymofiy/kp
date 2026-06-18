@@ -1,5 +1,8 @@
+import contextlib
+import io
 import json
 import sqlite3
+import sys
 import tempfile
 import unittest
 from pathlib import Path
@@ -831,6 +834,51 @@ Synthetic internal-only note.
             self.assertEqual(captured_inputs, ["search_query: current reading"])
             self.assertEqual(row["model_fingerprint"], TEST_MODEL_FINGERPRINT)
             self.assertEqual(row["embedding_prefix_scheme"], EMBEDDING_PREFIX_SCHEME)
+            self.assertAlmostEqual(row["embedding"][1], 0.6)
+            self.assertAlmostEqual(row["embedding"][2], 0.8)
+
+    def test_reference_embedding_adapter_query_only_cli_writes_query_vector(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            query_vector_path = root / "query-vector.json"
+            captured_inputs = []
+
+            def fake_request_embeddings(**kwargs: object) -> list[list[float]]:
+                captured_inputs.extend(kwargs["inputs"])  # type: ignore[arg-type]
+                return [[0.0, 3.0, 4.0]]
+
+            with (
+                patch.object(reference_adapter, "request_embeddings", fake_request_embeddings),
+                patch.object(
+                    sys,
+                    "argv",
+                    [
+                        "embed_openai_compatible.py",
+                        "--query-only",
+                        "--query-text",
+                        "current reading",
+                        "--query-output",
+                        str(query_vector_path),
+                        "--endpoint",
+                        "http://localhost:1234/v1",
+                        "--model",
+                        "test-embedder-v1",
+                        "--model-fingerprint",
+                        TEST_MODEL_FINGERPRINT,
+                        "--dimensions",
+                        "3",
+                        "--normalize",
+                    ],
+                ),
+                contextlib.redirect_stdout(io.StringIO()),
+            ):
+                exit_code = reference_adapter.main()
+
+            self.assertEqual(exit_code, 0)
+            row = json.loads(query_vector_path.read_text())
+            self.assertEqual(captured_inputs, ["search_query: current reading"])
+            self.assertEqual(row["dimensions"], 3)
+            self.assertEqual(row["model_fingerprint"], TEST_MODEL_FINGERPRINT)
             self.assertAlmostEqual(row["embedding"][1], 0.6)
             self.assertAlmostEqual(row["embedding"][2], 0.8)
 

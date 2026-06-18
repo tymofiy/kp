@@ -246,9 +246,9 @@ def main() -> int:
     parser = argparse.ArgumentParser(
         description="Generate KP claim vectors from an OpenAI-compatible embedding endpoint."
     )
-    parser.add_argument("--surfaces", type=Path, required=True)
-    parser.add_argument("--manifest", type=Path, required=True)
-    parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--surfaces", type=Path)
+    parser.add_argument("--manifest", type=Path)
+    parser.add_argument("--output", type=Path)
     parser.add_argument("--endpoint", required=True)
     parser.add_argument("--model", required=True)
     parser.add_argument("--model-fingerprint", required=True)
@@ -258,6 +258,8 @@ def main() -> int:
     parser.add_argument("--normalize", action="store_true")
     parser.add_argument("--query-text")
     parser.add_argument("--query-output", type=Path)
+    parser.add_argument("--query-only", action="store_true")
+    parser.add_argument("--dimensions", type=int)
     parser.add_argument("--report", type=Path)
     args = parser.parse_args()
 
@@ -265,7 +267,57 @@ def main() -> int:
         parser.error("--batch-size must be positive")
     if bool(args.query_text) != bool(args.query_output):
         parser.error("--query-text and --query-output must be provided together")
+    if args.query_only and (args.surfaces or args.manifest or args.output):
+        parser.error("--query-only cannot be combined with --surfaces, --manifest, or --output")
+    if args.query_only and not (args.query_text and args.query_output):
+        parser.error("--query-only requires --query-text and --query-output")
+    if args.query_only and (args.dimensions is None or args.dimensions < 1):
+        parser.error("--query-only requires a positive --dimensions")
     require_sha256(args.model_fingerprint, label="--model-fingerprint")
+
+    if args.query_only:
+        assert args.query_text is not None
+        assert args.query_output is not None
+        assert args.dimensions is not None
+        write_query_vector(
+            query_text=args.query_text,
+            output_path=args.query_output,
+            endpoint=args.endpoint,
+            model=args.model,
+            model_fingerprint=args.model_fingerprint,
+            dimensions=args.dimensions,
+            distance=args.distance,
+            timeout=args.timeout,
+            normalize=args.normalize,
+        )
+        report = {
+            "model_id": args.model,
+            "model_fingerprint": args.model_fingerprint,
+            "embedding_prefix_scheme": EMBEDDING_PREFIX_SCHEME,
+            "endpoint": args.endpoint,
+            "claim_count": 0,
+            "dimensions": args.dimensions,
+            "distance": args.distance,
+            "normalized": args.normalize,
+            "manifest_path": None,
+            "manifest_claim_surfaces_sha256": None,
+            "surfaces_path": None,
+            "vectors_path": None,
+            "query_output": str(args.query_output),
+            "query_only": True,
+        }
+        if args.report:
+            args.report.parent.mkdir(parents=True, exist_ok=True)
+            args.report.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n")
+        print(json.dumps(report, sort_keys=True))
+        return 0
+
+    if not args.surfaces:
+        parser.error("--surfaces is required unless --query-only is set")
+    if not args.manifest:
+        parser.error("--manifest is required unless --query-only is set")
+    if not args.output:
+        parser.error("--output is required unless --query-only is set")
 
     manifest = load_json(args.manifest)
     surfaces = load_surfaces(args.surfaces)
