@@ -7,11 +7,13 @@ from pathlib import Path
 from compiler.graph_compiler import (
     claim_search_text,
     compile_bundle,
+    load_sqlite_vec,
     parse_pack,
     project_for_export_tier,
     render_dossier,
     retrieve_packet,
     search_claims,
+    VECTOR_INDEX_TABLE,
     vector_text_hash,
 )
 
@@ -328,7 +330,7 @@ Synthetic internal-only note.
             try:
                 self.assertEqual(
                     conn.execute("SELECT value FROM graph_meta WHERE key = 'schema_version'").fetchone()[0],
-                    "2",
+                    "3",
                 )
                 self.assertEqual(
                     conn.execute("SELECT count(*) FROM kp_claim_evidence_links").fetchone()[0],
@@ -423,8 +425,11 @@ Synthetic internal-only note.
                     "dangling_relations": 0,
                     "dangling_search_rows": 0,
                     "dangling_vector_rows": 0,
+                    "dangling_vector_index_rows": 0,
                     "dangling_fts_rows": 0,
+                    "missing_vector_index": 0,
                     "incomplete_vector_coverage": 0,
+                    "incomplete_vector_index_coverage": 0,
                     "blocked_unresolved_relations": 0,
                 },
             )
@@ -678,14 +683,30 @@ Synthetic internal-only note.
                 search_mode="vector",
             )
 
-            self.assertEqual(summary["graph_meta"]["vector_index"], "imported")
+            self.assertEqual(summary["graph_meta"]["vector_index"], "sqlite-vec")
+            self.assertEqual(summary["graph_meta"]["vector_index_engine"], "sqlite-vec")
             self.assertEqual(summary["graph_meta"]["vector_claim_count"], "3")
             hit = summary["search_reports"][0]["hits"][0]
             self.assertEqual(hit["claim_uid"], "example-supersession#C002")
             self.assertEqual(hit["search_engine"], "vector")
             self.assertEqual(hit["vector_model_id"], "test-embedder-v1")
+            self.assertEqual(hit["vector_index_engine"], "sqlite-vec")
+            self.assertEqual(hit["vector_distance"], 0.0)
 
             db_path = out / "indices" / "claim-graph.sqlite"
+            conn = sqlite3.connect(db_path)
+            try:
+                load_sqlite_vec(conn)
+                self.assertEqual(
+                    conn.execute("SELECT typeof(vector_blob) FROM kp_claim_vectors LIMIT 1").fetchone()[0],
+                    "blob",
+                )
+                self.assertEqual(
+                    conn.execute(f"SELECT count(*) FROM {VECTOR_INDEX_TABLE}").fetchone()[0],
+                    3,
+                )
+            finally:
+                conn.close()
             direct_hits = search_claims(
                 db_path,
                 "semantic current reading",
@@ -694,6 +715,18 @@ Synthetic internal-only note.
                 query_vector=query_vector,
             )
             self.assertEqual(direct_hits[0]["claim_uid"], "example-supersession#C002")
+
+            conn = sqlite3.connect(db_path)
+            try:
+                load_sqlite_vec(conn)
+                conn.execute("DELETE FROM kp_claim_vectors WHERE claim_uid = 'example-supersession#C003'")
+                conn.commit()
+                self.assertEqual(
+                    conn.execute(f"SELECT count(*) FROM {VECTOR_INDEX_TABLE}").fetchone()[0],
+                    2,
+                )
+            finally:
+                conn.close()
 
     def test_hybrid_query_requires_and_fuses_fts5_and_vectors(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -783,6 +816,46 @@ Synthetic internal-only note.
 
             db_path = out / "indices" / "claim-graph.sqlite"
             with self.assertRaisesRegex(ValueError, "no claim vector index"):
+                search_claims(
+                    db_path,
+                    "semantic current reading",
+                    limit=1,
+                    mode="vector",
+                    query_vector={
+                        "contract_version": 1,
+                        "model_id": "test-embedder-v1",
+                        "dimensions": 3,
+                        "embedding": [1.0, 0.0, 0.0],
+                    },
+                )
+
+    def test_vector_search_fails_when_sqlite_vec_table_is_missing(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            pack = self.write_fixture(root)
+            vectors_path = self.write_vectors(
+                root / "claim-vectors.jsonl",
+                pack,
+                {
+                    "C001": [0.0, 1.0, 0.0],
+                    "C002": [1.0, 0.0, 0.0],
+                    "C003": [0.0, 0.0, 1.0],
+                },
+            )
+            out = root / "missing-vec0"
+
+            compile_bundle(pack, out, vectors_jsonl=vectors_path)
+
+            db_path = out / "indices" / "claim-graph.sqlite"
+            conn = sqlite3.connect(db_path)
+            try:
+                load_sqlite_vec(conn)
+                conn.execute(f"DROP TABLE {VECTOR_INDEX_TABLE}")
+                conn.commit()
+            finally:
+                conn.close()
+
+            with self.assertRaisesRegex(ValueError, "no sqlite-vec index"):
                 search_claims(
                     db_path,
                     "semantic current reading",

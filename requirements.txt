@@ -10,3 +10,7 @@ jsonschema[format-nongpl]>=4.26
 # grammar/kp-claims.peg. Chosen for faithful PEG semantics (ordered
 # choice, and/not predicates) — see the strict layer in conformance/run.py.
 parsimonious>=0.11
+# SQLite vector search extension for the experimental graph compiler's
+# derived vector index. Pre-v1: keep this range tight until the vec0
+# table contract is stable enough for broader compatibility.
+sqlite-vec>=0.1.9,<0.2

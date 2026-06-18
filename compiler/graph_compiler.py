@@ -22,14 +22,16 @@ from typing import Any
 import yaml
 
 
-SCHEMA_VERSION = 2
-COMPILER_VERSION = "0.6.0"
+SCHEMA_VERSION = 3
+COMPILER_VERSION = "0.7.0"
 DEFAULT_QUERY_LIMIT = 3
 SEARCH_MODES = ("fts5", "vector", "hybrid", "lexical")
 VECTOR_SEARCH_MODES = ("vector", "hybrid")
 RRF_K = 60
 VECTOR_CONTRACT_VERSION = 1
 EMBEDDING_SURFACE_VERSION = "claim-search-text-v1"
+VECTOR_INDEX_ENGINE = "sqlite-vec"
+VECTOR_INDEX_TABLE = "kp_claim_vector_index"
 
 RELATION_RE = re.compile(
     r"(\u2297~|\u2297!|\u2297|\u2192|\u2190|\u2298|\u2194|~)"
@@ -980,6 +982,47 @@ def load_query_vector(path: Path) -> dict[str, Any]:
     return query_vector_from_json(json.loads(path.read_text()))
 
 
+def load_sqlite_vec(conn: sqlite3.Connection) -> str:
+    try:
+        return conn.execute("SELECT vec_version()").fetchone()[0]
+    except sqlite3.Error:
+        pass
+
+    try:
+        import sqlite_vec
+    except ModuleNotFoundError as exc:
+        raise ValueError(
+            "sqlite-vec backend requested but the sqlite-vec package is not installed"
+        ) from exc
+
+    try:
+        conn.enable_load_extension(True)
+        sqlite_vec.load(conn)
+    except AttributeError as exc:
+        raise ValueError(
+            "sqlite-vec backend requested but this Python SQLite build cannot load extensions"
+        ) from exc
+    except sqlite3.Error as exc:
+        raise ValueError(f"failed to load sqlite-vec extension: {exc}") from exc
+    finally:
+        try:
+            conn.enable_load_extension(False)
+        except (AttributeError, sqlite3.Error):
+            pass
+
+    return conn.execute("SELECT vec_version()").fetchone()[0]
+
+
+def serialize_float32_vector(vector: list[float]) -> bytes:
+    try:
+        import sqlite_vec
+    except ModuleNotFoundError as exc:
+        raise ValueError(
+            "sqlite-vec backend requested but the sqlite-vec package is not installed"
+        ) from exc
+    return sqlite_vec.serialize_float32(vector)
+
+
 def create_fts5_claim_search(conn: sqlite3.Connection, search_rows: list[tuple[str, str, str, str]]) -> bool:
     try:
         conn.execute(
@@ -1006,6 +1049,45 @@ def create_fts5_claim_search(conn: sqlite3.Connection, search_rows: list[tuple[s
     return True
 
 
+def create_sqlite_vec_claim_index(conn: sqlite3.Connection, dimensions: int) -> str:
+    sqlite_vec_version = load_sqlite_vec(conn)
+    conn.execute(
+        f"""
+        CREATE VIRTUAL TABLE {VECTOR_INDEX_TABLE} USING vec0(
+          vector_rowid integer primary key,
+          embedding float[{dimensions}] distance_metric=cosine
+        )
+        """
+    )
+    conn.executescript(
+        f"""
+        CREATE TRIGGER kp_claim_vectors_ai
+        AFTER INSERT ON kp_claim_vectors
+        BEGIN
+          INSERT INTO {VECTOR_INDEX_TABLE} (vector_rowid, embedding)
+          VALUES (new.vector_rowid, new.vector_blob);
+        END;
+
+        CREATE TRIGGER kp_claim_vectors_ad
+        AFTER DELETE ON kp_claim_vectors
+        BEGIN
+          DELETE FROM {VECTOR_INDEX_TABLE}
+          WHERE vector_rowid = old.vector_rowid;
+        END;
+
+        CREATE TRIGGER kp_claim_vectors_au
+        AFTER UPDATE OF vector_rowid, vector_blob ON kp_claim_vectors
+        BEGIN
+          DELETE FROM {VECTOR_INDEX_TABLE}
+          WHERE vector_rowid = old.vector_rowid;
+          INSERT INTO {VECTOR_INDEX_TABLE} (vector_rowid, embedding)
+          VALUES (new.vector_rowid, new.vector_blob);
+        END;
+        """
+    )
+    return sqlite_vec_version
+
+
 def compile_sqlite(
     parsed: ParsedPack | list[ParsedPack],
     db_path: Path,
@@ -1027,7 +1109,7 @@ def compile_sqlite(
         conn.executescript(
             """
             PRAGMA foreign_keys = ON;
-            PRAGMA user_version = 2;
+            PRAGMA user_version = 3;
 
             CREATE TABLE graph_meta (
               key TEXT PRIMARY KEY,
@@ -1114,7 +1196,8 @@ def compile_sqlite(
             );
 
             CREATE TABLE kp_claim_vectors (
-              claim_uid TEXT PRIMARY KEY,
+              vector_rowid INTEGER PRIMARY KEY,
+              claim_uid TEXT NOT NULL UNIQUE,
               model_id TEXT NOT NULL,
               dimensions INTEGER NOT NULL,
               distance TEXT NOT NULL,
@@ -1122,7 +1205,7 @@ def compile_sqlite(
               contract_version INTEGER NOT NULL,
               embedding_surface_version TEXT NOT NULL,
               source_text_hash TEXT NOT NULL,
-              vector_json TEXT NOT NULL,
+              vector_blob BLOB NOT NULL,
               FOREIGN KEY (claim_uid) REFERENCES kp_claims(claim_uid)
             );
 
@@ -1133,6 +1216,7 @@ def compile_sqlite(
             CREATE INDEX idx_kp_relations_to ON kp_claim_relations(to_claim_uid);
             CREATE INDEX idx_kp_relations_type ON kp_claim_relations(relation_type);
             CREATE INDEX idx_kp_claim_search_pack ON kp_claim_search(pack_id, local_claim_id);
+            CREATE INDEX idx_kp_claim_vectors_claim_uid ON kp_claim_vectors(claim_uid);
             CREATE INDEX idx_kp_claim_vectors_model ON kp_claim_vectors(model_id, dimensions);
             """
         )
@@ -1250,6 +1334,7 @@ def compile_sqlite(
         )
         vector_meta = {
             "vector_index": "absent",
+            "vector_index_engine": "",
             "vector_search_available": "false",
             "vector_contract_version": str(VECTOR_CONTRACT_VERSION),
             "embedding_surface_version": EMBEDDING_SURFACE_VERSION,
@@ -1260,10 +1345,13 @@ def compile_sqlite(
             "vector_dimensions": "0",
             "vector_distance": "",
             "vector_normalized": "",
+            "vector_sqlite_vec_version": "",
         }
         if vectors_jsonl is not None:
             raw_vectors = load_claim_vectors(vectors_jsonl)
             claim_uids = {claim.claim_uid for claim in claims}
+            if not claim_uids:
+                raise ValueError("claim vector import requested but the projected graph has no claims")
             known_claim_uids = source_claim_uids or claim_uids
             vectors_by_claim_uid: dict[str, ClaimVector] = {}
             ignored_rows = 0
@@ -1308,15 +1396,16 @@ def compile_sqlite(
                     + (f" (examples: {examples})" if examples else "")
                 )
 
-            conn.executemany(
-                """
-                INSERT INTO kp_claim_vectors (
-                  claim_uid, model_id, dimensions, distance, normalized, contract_version,
-                  embedding_surface_version, source_text_hash, vector_json
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-                """,
-                [
+            if dimensions is None:
+                raise ValueError("claim vector file contains no vectors for the projected graph")
+            sqlite_vec_version = create_sqlite_vec_claim_index(conn, dimensions)
+            ordered_vectors = sorted(vectors_by_claim_uid.values(), key=lambda item: item.claim_uid)
+            vector_rows = []
+            for vector_rowid, vector in enumerate(ordered_vectors, start=1):
+                vector_blob = serialize_float32_vector(vector.vector)
+                vector_rows.append(
                     (
+                        vector_rowid,
                         vector.claim_uid,
                         vector.model_id,
                         vector.dimensions,
@@ -1325,13 +1414,22 @@ def compile_sqlite(
                         VECTOR_CONTRACT_VERSION,
                         EMBEDDING_SURFACE_VERSION,
                         vector.source_text_hash,
-                        json.dumps(vector.vector, separators=(",", ":")),
+                        vector_blob,
                     )
-                    for vector in sorted(vectors_by_claim_uid.values(), key=lambda item: item.claim_uid)
-                ],
+                )
+
+            conn.executemany(
+                """
+                INSERT INTO kp_claim_vectors (
+                  vector_rowid, claim_uid, model_id, dimensions, distance, normalized,
+                  contract_version, embedding_surface_version, source_text_hash, vector_blob
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                vector_rows,
             )
             vector_meta = {
-                "vector_index": "imported",
+                "vector_index": "sqlite-vec",
+                "vector_index_engine": VECTOR_INDEX_ENGINE,
                 "vector_search_available": "true",
                 "vector_contract_version": str(VECTOR_CONTRACT_VERSION),
                 "embedding_surface_version": EMBEDDING_SURFACE_VERSION,
@@ -1342,6 +1440,7 @@ def compile_sqlite(
                 "vector_dimensions": str(dimensions or 0),
                 "vector_distance": distance or "",
                 "vector_normalized": str(normalized).lower() if normalized is not None else "",
+                "vector_sqlite_vec_version": sqlite_vec_version,
             }
         conn.executemany(
             "INSERT OR REPLACE INTO graph_meta (key, value) VALUES (?, ?)",
@@ -1445,6 +1544,23 @@ def validate_projection(db_path: Path, export_tier: str) -> dict[str, Any]:
         graph_meta = read_graph_meta(conn)
         claim_count = conn.execute("SELECT count(*) FROM kp_claims").fetchone()[0]
         vector_count = conn.execute("SELECT count(*) FROM kp_claim_vectors").fetchone()[0]
+        vector_index_expected = graph_meta.get("vector_index") == "sqlite-vec"
+        if vector_index_expected:
+            load_sqlite_vec(conn)
+        vector_index_exists = sqlite_table_exists(conn, VECTOR_INDEX_TABLE)
+        if vector_index_expected and vector_index_exists:
+            vector_index_count = conn.execute(f"SELECT count(*) FROM {VECTOR_INDEX_TABLE}").fetchone()[0]
+            dangling_vector_index_rows = conn.execute(
+                f"""
+                SELECT count(*)
+                FROM {VECTOR_INDEX_TABLE} index_row
+                LEFT JOIN kp_claim_vectors vector ON vector.vector_rowid = index_row.vector_rowid
+                WHERE vector.vector_rowid IS NULL
+                """
+            ).fetchone()[0]
+        else:
+            vector_index_count = 0
+            dangling_vector_index_rows = 0
         claim_policy_violations = conn.execute(
             f"""
             SELECT count(*)
@@ -1535,10 +1651,17 @@ def validate_projection(db_path: Path, export_tier: str) -> dict[str, Any]:
         "dangling_relations": dangling_relations,
         "dangling_search_rows": dangling_search_rows,
         "dangling_vector_rows": dangling_vector_rows,
+        "dangling_vector_index_rows": dangling_vector_index_rows,
         "dangling_fts_rows": dangling_fts_rows,
+        "missing_vector_index": 1 if vector_index_expected and not vector_index_exists else 0,
         "incomplete_vector_coverage": (
             max(0, claim_count - vector_count)
-            if graph_meta.get("vector_index") == "imported"
+            if vector_index_expected
+            else 0
+        ),
+        "incomplete_vector_index_coverage": (
+            max(0, claim_count - vector_index_count)
+            if vector_index_expected
             else 0
         ),
         "blocked_unresolved_relations": blocked_unresolved_relations,
@@ -1763,6 +1886,15 @@ def vector_search_contract(conn: sqlite3.Connection) -> dict[str, Any]:
         raise ValueError(
             f"vector search requested but vector coverage is incomplete: {vector_count}/{claim_count}"
         )
+    sqlite_vec_version = load_sqlite_vec(conn)
+    if not sqlite_table_exists(conn, VECTOR_INDEX_TABLE):
+        raise ValueError("vector search requested but the compiled graph has no sqlite-vec index")
+    vector_index_count = conn.execute(f"SELECT count(*) FROM {VECTOR_INDEX_TABLE}").fetchone()[0]
+    if vector_index_count != claim_count:
+        raise ValueError(
+            "vector search requested but sqlite-vec index coverage is incomplete: "
+            f"{vector_index_count}/{claim_count}"
+        )
     rows = conn.execute(
         """
         SELECT model_id, dimensions, distance, normalized, contract_version,
@@ -1787,6 +1919,7 @@ def vector_search_contract(conn: sqlite3.Connection) -> dict[str, Any]:
         "contract_version": int(row["contract_version"]),
         "embedding_surface_version": row["embedding_surface_version"],
         "claim_count": int(row["count"]),
+        "sqlite_vec_version": sqlite_vec_version,
     }
 
 
@@ -1821,39 +1954,48 @@ def search_claims_vector(
 ) -> list[dict[str, Any]]:
     contract = vector_search_contract(conn)
     normalized_query_vector = validate_query_vector(query_vector, contract)
+    query_blob = serialize_float32_vector(normalized_query_vector["vector"])
+    candidate_limit = max(limit * 8, 20)
     rows = conn.execute(
-        """
-        SELECT claim.*, search.search_text, vector.vector_json
-        FROM kp_claim_vectors vector
+        f"""
+        SELECT claim.*, search.search_text, vec.distance AS vector_distance
+        FROM {VECTOR_INDEX_TABLE} AS vec
+        JOIN kp_claim_vectors vector ON vector.vector_rowid = vec.vector_rowid
         JOIN kp_claims claim ON claim.claim_uid = vector.claim_uid
         JOIN kp_claim_search search ON search.claim_uid = vector.claim_uid
-        ORDER BY claim.pack_id, claim.local_claim_id
+        WHERE vec.embedding MATCH ?
+          AND k = ?
+        ORDER BY vec.distance ASC, claim.confidence DESC, claim.claim_uid ASC
         """
+        ,
+        (query_blob, candidate_limit),
     ).fetchall()
     hits = []
     for row in rows:
         claim = row_to_dict(row)
         search_text = claim.pop("search_text")
-        vector = json.loads(claim.pop("vector_json"))
-        similarity = cosine_similarity(normalized_query_vector["vector"], vector)
+        vector_distance = float(claim.pop("vector_distance"))
+        vector_similarity = 1.0 - vector_distance
         _lexical_score, matched_terms = lexical_score(query, search_text, claim["confidence"])
         structured_bonus = structured_search_bonus(query, claim, search_text)
-        score = similarity + (structured_bonus * 0.05)
+        score = -vector_distance + (structured_bonus * 0.05)
         hits.append(
             {
                 **claim,
                 "score": round(score, 6),
                 "matched_terms": matched_terms,
                 "search_engine": "vector",
-                "vector_similarity": round(similarity, 6),
+                "vector_distance": round(vector_distance, 6),
+                "vector_similarity": round(vector_similarity, 6),
                 "vector_model_id": contract["model_id"],
+                "vector_index_engine": VECTOR_INDEX_ENGINE,
             }
         )
     return sorted(
         hits,
         key=lambda hit: (
             -hit["score"],
-            -hit["vector_similarity"],
+            hit["vector_distance"],
             -float(hit.get("confidence") or 0.0),
             hit["claim_uid"],
         ),
@@ -1905,8 +2047,10 @@ def search_claims_hybrid(
                             "score",
                             "search_engine",
                             "bm25_rank",
+                            "vector_distance",
                             "vector_similarity",
                             "vector_model_id",
+                            "vector_index_engine",
                         }
                     },
                     "_rrf_score": 0.0,
@@ -1922,9 +2066,12 @@ def search_claims_hybrid(
                 combined_hit["component_scores"]["bm25_rank"] = hit.get("bm25_rank")
             else:
                 combined_hit["component_scores"]["vector_score"] = hit["score"]
+                combined_hit["component_scores"]["vector_distance"] = hit.get("vector_distance")
                 combined_hit["component_scores"]["vector_similarity"] = hit.get("vector_similarity")
+                combined_hit["vector_distance"] = hit.get("vector_distance")
                 combined_hit["vector_similarity"] = hit.get("vector_similarity")
                 combined_hit["vector_model_id"] = hit.get("vector_model_id")
+                combined_hit["vector_index_engine"] = hit.get("vector_index_engine")
             combined_hit["matched_terms"] = sorted(
                 set(combined_hit["matched_terms"]) | set(hit.get("matched_terms", []))
             )
@@ -2551,8 +2698,10 @@ def compile_bundle(
                     key: hit[key]
                     for key in [
                         "bm25_rank",
+                        "vector_distance",
                         "vector_similarity",
                         "vector_model_id",
+                        "vector_index_engine",
                         "component_ranks",
                         "component_scores",
                     ]

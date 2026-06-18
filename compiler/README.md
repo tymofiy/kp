@@ -19,8 +19,8 @@ The current compiler is intentionally small. It can:
 - validate tier projections for forbidden nodes, dangling evidence links,
   dangling relations, search-table leaks, and unresolved relation pointers;
 - search compiled, export-tier-safe claims with fail-fast SQLite FTS5/BM25,
-  imported claim vectors, or hybrid FTS5/vector fusion, and map text queries to
-  `claim_uid` results;
+  imported sqlite-vec claim vectors, or hybrid FTS5/vector fusion, and map text
+  queries to `claim_uid` results;
 - retrieve a bounded one-hop claim neighborhood;
 - render a dossier for a selected claim;
 - emit OpenAI-compatible, Ollama-style, and MCP-style adapter artifacts.
@@ -50,6 +50,7 @@ It is not yet a stable public API. Current limits:
 
 - exact claim-ID retrieval;
 - vector import rather than provider-native embedding generation;
+- sqlite-vec is the current vector search backend;
 - approximate token counting;
 - no encrypted bundle output;
 - no redacted evidence stubs for claims that depend on filtered evidence.
@@ -109,7 +110,9 @@ explicit debug/test path; it is not used as a silent fallback.
 
 Vector and hybrid search are first-class retrieval modes, but they require
 explicit derived vector artifacts. The compiler does not call an embedding
-provider directly. Instead, pass a claim-vector JSONL file:
+provider directly. Instead, pass a claim-vector JSONL file; the compiler
+validates it, stores compact float32 vector blobs in SQLite, and builds a
+sqlite-vec `vec0` index for KNN search:
 
 ```json
 {"contract_version":1,"claim_uid":"hello-world#C001","model_id":"text-embedding-nomic-embed-text-v1.5","dimensions":768,"distance":"cosine","embedding_surface_version":"claim-search-text-v1","normalized":false,"source_text_hash":"sha256:...","embedding":[0.01,0.02]}
@@ -123,6 +126,12 @@ FTS5 indexing. If any compiled claim is missing a vector, if the vector file is
 stale, if unknown claim IDs appear, or if contracts are mixed, compilation
 fails. Rows for source claims filtered out by an export tier are ignored and
 counted in graph metadata; they are not written into the compiled graph.
+
+The compiled graph stores vector contract metadata in `kp_claim_vectors` and the
+actual KNN index in `kp_claim_vector_index`, a sqlite-vec `vec0` virtual table.
+SQLite triggers keep the `vec0` index synchronized with `kp_claim_vectors`.
+Vector and hybrid search fail if sqlite-vec cannot be loaded or if the `vec0`
+index is missing/incomplete.
 
 Run vector search with one query-vector JSON object per `--query-text`:
 
