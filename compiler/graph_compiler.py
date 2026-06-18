@@ -22,7 +22,7 @@ import yaml
 
 
 SCHEMA_VERSION = 1
-COMPILER_VERSION = "0.2.0"
+COMPILER_VERSION = "0.3.0"
 
 RELATION_RE = re.compile(
     r"(\u2297~|\u2297!|\u2297|\u2192|\u2190|\u2298|\u2194|~)"
@@ -35,6 +35,35 @@ VERBOSE_RELATION_RE = re.compile(
 CLAIM_START_RE = re.compile(r"^- (?:\*\*)?\[(C\d+(?:-v\d+)?)\](?:\*\*)?\s+(.+)")
 EVIDENCE_HEADING_RE = re.compile(r"^##\s+(E\d+)(?:\s+(?:[-\u2014]\s*)?(.+))?$")
 FIELD_RE = re.compile(r"\*\*([^:*]+):\*\*\s*(.+)")
+ANNOTATION_RE = re.compile(r"<!--\s*kp-compiler:\s*(.*?)\s*-->")
+
+EXPORT_TIERS = ("client", "server", "internal")
+EXPORT_POLICIES = {
+    "client": {
+        "tiers": {"client"},
+        "sensitivities": {"public"},
+        "visibilities": {"public"},
+        "allow_unresolved_relations": False,
+    },
+    "server": {
+        "tiers": {"client", "server"},
+        "sensitivities": {"public", "internal", "confidential"},
+        "visibilities": {"public", "shared", "private"},
+        "allow_unresolved_relations": False,
+    },
+    "internal": {
+        "tiers": {"client", "server", "internal"},
+        "sensitivities": {"public", "internal", "confidential", "restricted"},
+        "visibilities": {"public", "shared", "private"},
+        "allow_unresolved_relations": True,
+    },
+}
+DEFAULT_TIER_BY_SENSITIVITY = {
+    "public": "client",
+    "internal": "server",
+    "confidential": "server",
+    "restricted": "internal",
+}
 
 TYPE_MAP = {
     "o": "observed",
@@ -206,7 +235,60 @@ def parse_verbose_metadata(metadata: str) -> dict[str, str]:
     return fields
 
 
-def parse_claims(pack_id: str, claims_text: str) -> tuple[list[Claim], list[Relation]]:
+def parse_annotation_fields(raw: str) -> dict[str, str]:
+    fields: dict[str, str] = {}
+    for part in re.split(r"[|,]\s*|\s+", raw.strip()):
+        if not part:
+            continue
+        if "=" in part:
+            key, value = part.split("=", 1)
+        elif ":" in part:
+            key, value = part.split(":", 1)
+        else:
+            continue
+        fields[key.strip().lower()] = value.strip().lower()
+    return fields
+
+
+def remove_compiler_annotations(text: str) -> tuple[str, dict[str, str]]:
+    fields: dict[str, str] = {}
+    for match in ANNOTATION_RE.finditer(text):
+        fields.update(parse_annotation_fields(match.group(1)))
+    cleaned = ANNOTATION_RE.sub("", text)
+    return re.sub(r"\s+", " ", cleaned).strip(), fields
+
+
+def default_boundary_tier(sensitivity: str | None) -> str:
+    return DEFAULT_TIER_BY_SENSITIVITY.get((sensitivity or "public").lower(), "client")
+
+
+def normalized_boundary_metadata(
+    raw: dict[str, str],
+    *,
+    default_tier: str,
+    default_sensitivity: str,
+    default_visibility: str,
+) -> tuple[str, str, str]:
+    tier = raw.get("tier", default_tier).lower()
+    sensitivity = raw.get("sensitivity", default_sensitivity).lower()
+    visibility = raw.get("visibility", default_visibility).lower()
+    if tier not in EXPORT_POLICIES["internal"]["tiers"]:
+        raise ValueError(f"unsupported compiler tier: {tier}")
+    if sensitivity not in EXPORT_POLICIES["internal"]["sensitivities"]:
+        raise ValueError(f"unsupported sensitivity: {sensitivity}")
+    if visibility not in EXPORT_POLICIES["internal"]["visibilities"]:
+        raise ValueError(f"unsupported visibility: {visibility}")
+    return tier, sensitivity, visibility
+
+
+def parse_claims(
+    pack_id: str,
+    claims_text: str,
+    *,
+    default_tier: str,
+    default_sensitivity: str,
+    default_visibility: str,
+) -> tuple[list[Claim], list[Relation]]:
     raw_claims: list[dict[str, Any]] = []
     raw_relations: list[tuple[str, str, str, str]] = []
 
@@ -277,17 +359,30 @@ def parse_claims(pack_id: str, claims_text: str) -> tuple[list[Claim], list[Rela
         else:
             raise ValueError(f"{local_id} has unsupported metadata syntax")
 
+        detail, annotations = remove_compiler_annotations(
+            " ".join(part for part in detail_parts if part).strip()
+        )
+        tier, sensitivity, visibility = normalized_boundary_metadata(
+            annotations,
+            default_tier=default_tier,
+            default_sensitivity=default_sensitivity,
+            default_visibility=default_visibility,
+        )
+
         raw_claims.append(
             {
                 "local_claim_id": local_id,
                 "text": block["statement"],
-                "detail": " ".join(part for part in detail_parts if part).strip(),
+                "detail": detail,
                 "confidence": confidence,
                 "claim_type": claim_type,
                 "evidence_ids": evidence_ids,
                 "since": since,
                 "depth": depth,
                 "nature": nature,
+                "tier": tier,
+                "sensitivity": sensitivity,
+                "visibility": visibility,
                 "source_locator": f"claims.md:{block['line']}",
             }
         )
@@ -313,9 +408,9 @@ def parse_claims(pack_id: str, claims_text: str) -> tuple[list[Claim], list[Rela
             depth=raw["depth"],
             nature=raw["nature"],
             status="superseded" if raw["local_claim_id"] in superseded_ids else "active",
-            tier="client",
-            sensitivity="public",
-            visibility="public",
+            tier=raw["tier"],
+            sensitivity=raw["sensitivity"],
+            visibility=raw["visibility"],
             source_locator=raw["source_locator"],
         )
         for raw in raw_claims
@@ -340,7 +435,14 @@ def parse_claims(pack_id: str, claims_text: str) -> tuple[list[Claim], list[Rela
     return claims, relations
 
 
-def parse_evidence(pack_id: str, evidence_text: str) -> list[Evidence]:
+def parse_evidence(
+    pack_id: str,
+    evidence_text: str,
+    *,
+    default_tier: str,
+    default_sensitivity: str,
+    default_visibility: str,
+) -> list[Evidence]:
     sections: list[dict[str, Any]] = []
     current: dict[str, Any] | None = None
 
@@ -379,6 +481,15 @@ def parse_evidence(pack_id: str, evidence_text: str) -> list[Evidence]:
     for section in sections:
         metadata = section["metadata"]
         credibility = metadata.get("credibility")
+        body, body_annotations = remove_compiler_annotations(
+            " ".join(section["body"]).strip()
+        )
+        tier, sensitivity, visibility = normalized_boundary_metadata(
+            {**metadata, **body_annotations},
+            default_tier=default_tier,
+            default_sensitivity=default_sensitivity,
+            default_visibility=default_visibility,
+        )
         evidence.append(
             Evidence(
                 evidence_uid=evidence_uid(pack_id, section["id"]),
@@ -390,10 +501,10 @@ def parse_evidence(pack_id: str, evidence_text: str) -> list[Evidence]:
                 captured_at=metadata.get("captured"),
                 reliability=metadata.get("reliability"),
                 credibility=int(credibility) if credibility and credibility.isdigit() else None,
-                summary=" ".join(section["body"]).strip(),
-                tier="client",
-                sensitivity="public",
-                visibility="public",
+                summary=body,
+                tier=tier,
+                sensitivity=sensitivity,
+                visibility=visibility,
                 source_locator=f"evidence.md:{section['line']}",
             )
         )
@@ -404,8 +515,23 @@ def parse_evidence(pack_id: str, evidence_text: str) -> list[Evidence]:
 def parse_pack(pack_dir: Path) -> ParsedPack:
     pack = yaml.safe_load((pack_dir / "PACK.yaml").read_text())
     pack_id = pack["name"]
-    claims, relations = parse_claims(pack_id, (pack_dir / "claims.md").read_text())
-    evidence = parse_evidence(pack_id, (pack_dir / "evidence.md").read_text())
+    default_sensitivity = str(pack.get("sensitivity", "public")).lower()
+    default_visibility = str(pack.get("visibility", "public")).lower()
+    default_tier = default_boundary_tier(default_sensitivity)
+    claims, relations = parse_claims(
+        pack_id,
+        (pack_dir / "claims.md").read_text(),
+        default_tier=default_tier,
+        default_sensitivity=default_sensitivity,
+        default_visibility=default_visibility,
+    )
+    evidence = parse_evidence(
+        pack_id,
+        (pack_dir / "evidence.md").read_text(),
+        default_tier=default_tier,
+        default_sensitivity=default_sensitivity,
+        default_visibility=default_visibility,
+    )
     return ParsedPack(
         pack=pack,
         source_hash=stable_pack_hash(pack_dir),
@@ -454,6 +580,120 @@ def bundle_source_hash(parsed_packs: list[ParsedPack]) -> str:
     return digest.hexdigest()
 
 
+def is_allowed_for_export(row: Claim | Evidence, export_tier: str) -> bool:
+    policy = EXPORT_POLICIES[export_tier]
+    return (
+        row.tier in policy["tiers"]
+        and row.sensitivity in policy["sensitivities"]
+        and row.visibility in policy["visibilities"]
+    )
+
+
+def increment_reason(reasons: dict[str, int], reason: str) -> None:
+    reasons[reason] = reasons.get(reason, 0) + 1
+
+
+def project_for_export_tier(
+    parsed_packs: list[ParsedPack],
+    export_tier: str,
+) -> tuple[list[ParsedPack], dict[str, Any]]:
+    if export_tier not in EXPORT_POLICIES:
+        raise ValueError(f"unsupported export tier: {export_tier}")
+
+    parsed_packs = resolve_relations(parsed_packs)
+    policy = EXPORT_POLICIES[export_tier]
+    allowed_claim_uids: set[str] = set()
+    allowed_evidence_uids: set[str] = set()
+    claim_filter_reasons: dict[str, int] = {}
+    evidence_filter_reasons: dict[str, int] = {}
+    relation_filter_reasons: dict[str, int] = {}
+
+    all_evidence = {
+        evidence.evidence_uid: evidence
+        for parsed in parsed_packs
+        for evidence in parsed.evidence
+    }
+
+    for parsed in parsed_packs:
+        for evidence in parsed.evidence:
+            if is_allowed_for_export(evidence, export_tier):
+                allowed_evidence_uids.add(evidence.evidence_uid)
+            else:
+                increment_reason(evidence_filter_reasons, "boundary_policy")
+
+    for parsed in parsed_packs:
+        for claim in parsed.claims:
+            if not is_allowed_for_export(claim, export_tier):
+                increment_reason(claim_filter_reasons, "boundary_policy")
+                continue
+            blocked_evidence = False
+            for local_evidence_id in claim.evidence_ids:
+                uid = evidence_uid(claim.pack_id, local_evidence_id)
+                if uid not in all_evidence:
+                    increment_reason(claim_filter_reasons, "missing_evidence")
+                    blocked_evidence = True
+                    break
+                if uid not in allowed_evidence_uids:
+                    increment_reason(claim_filter_reasons, "filtered_evidence_dependency")
+                    blocked_evidence = True
+                    break
+            if not blocked_evidence:
+                allowed_claim_uids.add(claim.claim_uid)
+
+    projected: list[ParsedPack] = []
+    filtered_relation_count = 0
+    for parsed in parsed_packs:
+        claims = [claim for claim in parsed.claims if claim.claim_uid in allowed_claim_uids]
+        evidence = [
+            evidence
+            for evidence in parsed.evidence
+            if evidence.evidence_uid in allowed_evidence_uids
+        ]
+        relations: list[Relation] = []
+        for relation in parsed.relations:
+            if relation.from_claim_uid not in allowed_claim_uids:
+                filtered_relation_count += 1
+                increment_reason(relation_filter_reasons, "filtered_source_claim")
+                continue
+            if relation.to_claim_uid is None:
+                if policy["allow_unresolved_relations"]:
+                    relations.append(relation)
+                else:
+                    filtered_relation_count += 1
+                    increment_reason(relation_filter_reasons, "unresolved_target")
+                continue
+            if relation.to_claim_uid not in allowed_claim_uids:
+                filtered_relation_count += 1
+                increment_reason(relation_filter_reasons, "filtered_target_claim")
+                continue
+            relations.append(relation)
+        projected.append(
+            ParsedPack(
+                pack=parsed.pack,
+                source_hash=parsed.source_hash,
+                claims=claims,
+                evidence=evidence,
+                relations=relations,
+            )
+        )
+
+    return projected, {
+        "export_tier": export_tier,
+        "policy": {
+            "allowed_tiers": sorted(policy["tiers"]),
+            "allowed_sensitivities": sorted(policy["sensitivities"]),
+            "allowed_visibilities": sorted(policy["visibilities"]),
+            "allow_unresolved_relations": policy["allow_unresolved_relations"],
+        },
+        "filtered_claims": sum(claim_filter_reasons.values()),
+        "filtered_evidence": sum(evidence_filter_reasons.values()),
+        "filtered_relations": filtered_relation_count,
+        "claim_filter_reasons": dict(sorted(claim_filter_reasons.items())),
+        "evidence_filter_reasons": dict(sorted(evidence_filter_reasons.items())),
+        "relation_filter_reasons": dict(sorted(relation_filter_reasons.items())),
+    }
+
+
 def as_jsonable(value: Any) -> Any:
     if dataclasses.is_dataclass(value):
         return dataclasses.asdict(value)
@@ -472,7 +712,13 @@ def write_jsonl(path: Path, rows: list[Any]) -> None:
             handle.write(json.dumps(as_jsonable(row), sort_keys=True) + "\n")
 
 
-def compile_sqlite(parsed: ParsedPack | list[ParsedPack], db_path: Path) -> None:
+def compile_sqlite(
+    parsed: ParsedPack | list[ParsedPack],
+    db_path: Path,
+    *,
+    export_tier: str,
+    projection_report: dict[str, Any],
+) -> None:
     parsed_packs = parsed if isinstance(parsed, list) else [parsed]
     parsed_packs = resolve_relations(parsed_packs)
 
@@ -580,6 +826,10 @@ def compile_sqlite(parsed: ParsedPack | list[ParsedPack], db_path: Path) -> None
             "compiler_version": COMPILER_VERSION,
             "built_at": datetime.datetime.now(datetime.UTC).isoformat(),
             "source_hash": bundle_source_hash(parsed_packs),
+            "export_tier": export_tier,
+            "filtered_claim_count": str(projection_report["filtered_claims"]),
+            "filtered_evidence_count": str(projection_report["filtered_evidence"]),
+            "filtered_relation_count": str(projection_report["filtered_relations"]),
             "unresolved_relation_count": str(unresolved_relation_count),
         }
         conn.executemany(
@@ -722,6 +972,84 @@ def row_to_dict(row: sqlite3.Row) -> dict[str, Any]:
     return {key: row[key] for key in row.keys()}
 
 
+def read_graph_meta(conn: sqlite3.Connection) -> dict[str, str]:
+    rows = conn.execute("SELECT key, value FROM graph_meta ORDER BY key").fetchall()
+    return {row[0]: row[1] for row in rows}
+
+
+def validate_projection(db_path: Path, export_tier: str) -> dict[str, Any]:
+    policy = EXPORT_POLICIES[export_tier]
+    conn = sqlite3.connect(db_path)
+    try:
+        claim_policy_violations = conn.execute(
+            f"""
+            SELECT count(*)
+            FROM kp_claims
+            WHERE tier NOT IN ({",".join("?" for _ in policy["tiers"])})
+               OR sensitivity NOT IN ({",".join("?" for _ in policy["sensitivities"])})
+               OR visibility NOT IN ({",".join("?" for _ in policy["visibilities"])})
+            """,
+            [
+                *sorted(policy["tiers"]),
+                *sorted(policy["sensitivities"]),
+                *sorted(policy["visibilities"]),
+            ],
+        ).fetchone()[0]
+        evidence_policy_violations = conn.execute(
+            f"""
+            SELECT count(*)
+            FROM kp_evidence
+            WHERE tier NOT IN ({",".join("?" for _ in policy["tiers"])})
+               OR sensitivity NOT IN ({",".join("?" for _ in policy["sensitivities"])})
+               OR visibility NOT IN ({",".join("?" for _ in policy["visibilities"])})
+            """,
+            [
+                *sorted(policy["tiers"]),
+                *sorted(policy["sensitivities"]),
+                *sorted(policy["visibilities"]),
+            ],
+        ).fetchone()[0]
+        dangling_evidence_links = conn.execute(
+            """
+            SELECT count(*)
+            FROM kp_claim_evidence_links link
+            LEFT JOIN kp_claims claim ON claim.claim_uid = link.claim_uid
+            LEFT JOIN kp_evidence evidence ON evidence.evidence_uid = link.evidence_uid
+            WHERE claim.claim_uid IS NULL OR evidence.evidence_uid IS NULL
+            """
+        ).fetchone()[0]
+        dangling_relations = conn.execute(
+            """
+            SELECT count(*)
+            FROM kp_claim_relations relation
+            LEFT JOIN kp_claims source_claim ON source_claim.claim_uid = relation.from_claim_uid
+            LEFT JOIN kp_claims target_claim ON target_claim.claim_uid = relation.to_claim_uid
+            WHERE source_claim.claim_uid IS NULL
+               OR (relation.target_resolved = 1 AND target_claim.claim_uid IS NULL)
+            """
+        ).fetchone()[0]
+        unresolved_relations = conn.execute(
+            "SELECT count(*) FROM kp_claim_relations WHERE target_resolved = 0"
+        ).fetchone()[0]
+    finally:
+        conn.close()
+
+    blocked_unresolved_relations = (
+        0 if policy["allow_unresolved_relations"] else unresolved_relations
+    )
+    checks = {
+        "claim_policy_violations": claim_policy_violations,
+        "evidence_policy_violations": evidence_policy_violations,
+        "dangling_evidence_links": dangling_evidence_links,
+        "dangling_relations": dangling_relations,
+        "blocked_unresolved_relations": blocked_unresolved_relations,
+    }
+    return {
+        "valid": all(count == 0 for count in checks.values()),
+        "checks": checks,
+    }
+
+
 def split_evidence_ids(raw: str) -> list[str]:
     return [part for part in raw.split(",") if part]
 
@@ -820,6 +1148,9 @@ def retrieve_packet(
             raise ValueError(f"claim not found: {claim_id}")
 
         matched = row_to_dict(matched_row)
+        graph_meta = read_graph_meta(conn)
+        export_tier = graph_meta.get("export_tier", "client")
+        policy = EXPORT_POLICIES.get(export_tier, EXPORT_POLICIES["client"])
 
         nodes: dict[str, dict[str, Any]] = {matched["claim_uid"]: matched}
         included_by: dict[str, list[str]] = {}
@@ -950,9 +1281,13 @@ def retrieve_packet(
                 "truncated": truncated,
             },
             "policy": {
-                "tier": "client",
-                "filtered_nodes": [],
-                "filtered_edges": [],
+                "export_tier": export_tier,
+                "allowed_tiers": sorted(policy["tiers"]),
+                "allowed_sensitivities": sorted(policy["sensitivities"]),
+                "allowed_visibilities": sorted(policy["visibilities"]),
+                "filtered_claim_count": int(graph_meta.get("filtered_claim_count", "0")),
+                "filtered_evidence_count": int(graph_meta.get("filtered_evidence_count", "0")),
+                "filtered_relation_count": int(graph_meta.get("filtered_relation_count", "0")),
                 "edge_priority": EDGE_PRIORITY,
             },
         }
@@ -1137,6 +1472,7 @@ def compile_bundle(
     pack_dir: Path | list[Path],
     output_dir: Path,
     *,
+    export_tier: str = "client",
     query_claims: list[str] | None = None,
     questions: dict[str, str] | None = None,
 ) -> dict[str, Any]:
@@ -1145,9 +1481,17 @@ def compile_bundle(
         shutil.rmtree(output_dir)
     output_dir.mkdir(parents=True)
 
-    parsed_packs = resolve_relations([parse_pack(path) for path in pack_dirs])
+    parsed_packs, projection_report = project_for_export_tier(
+        [parse_pack(path) for path in pack_dirs],
+        export_tier,
+    )
     db_path = output_dir / "indices" / "claim-graph.sqlite"
-    compile_sqlite(parsed_packs, db_path)
+    compile_sqlite(
+        parsed_packs,
+        db_path,
+        export_tier=export_tier,
+        projection_report=projection_report,
+    )
 
     write_jsonl(
         output_dir / "logical" / "packs.jsonl",
@@ -1206,18 +1550,19 @@ def compile_bundle(
         evidence_link_count = conn.execute(
             "SELECT count(*) FROM kp_claim_evidence_links"
         ).fetchone()[0]
-        graph_meta_rows = conn.execute(
-            "SELECT key, value FROM graph_meta ORDER BY key"
-        ).fetchall()
-        graph_meta = {key: value for key, value in graph_meta_rows}
+        graph_meta = read_graph_meta(conn)
     finally:
         conn.close()
 
+    validation = validate_projection(db_path, export_tier)
+    if not validation["valid"]:
+        raise ValueError(f"{export_tier} projection failed validation: {validation['checks']}")
     summary = {
         "output_dir": str(output_dir),
         "db_path": str(db_path),
         "schema_version": SCHEMA_VERSION,
         "compiler_version": COMPILER_VERSION,
+        "export_tier": export_tier,
         "packs": len(parsed_packs),
         "claims": sum(len(parsed_pack.claims) for parsed_pack in parsed_packs),
         "evidence": sum(len(parsed_pack.evidence) for parsed_pack in parsed_packs),
@@ -1230,6 +1575,8 @@ def compile_bundle(
             if not relation.target_resolved
         ),
         "graph_meta": graph_meta,
+        "projection": projection_report,
+        "validation": validation,
         "query_claims": query_claims,
     }
     write_json(output_dir / "summary.json", summary)
@@ -1246,6 +1593,12 @@ def main() -> int:
     )
     parser.add_argument("--output", type=Path, required=True, help="Output directory.")
     parser.add_argument(
+        "--export-tier",
+        choices=EXPORT_TIERS,
+        default="client",
+        help="Trust boundary to compile for. Defaults to the restrictive client projection.",
+    )
+    parser.add_argument(
         "--query-claim",
         action="append",
         default=[],
@@ -1253,7 +1606,12 @@ def main() -> int:
     )
     args = parser.parse_args()
 
-    summary = compile_bundle(args.pack_dirs, args.output, query_claims=args.query_claim)
+    summary = compile_bundle(
+        args.pack_dirs,
+        args.output,
+        export_tier=args.export_tier,
+        query_claims=args.query_claim,
+    )
     print(json.dumps(summary, indent=2, sort_keys=True))
     return 0
 

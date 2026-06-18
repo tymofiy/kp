@@ -174,6 +174,84 @@ Synthetic B note.
         )
         return pack_a, pack_b
 
+    def write_tier_fixture(self, root: Path) -> Path:
+        pack = root / "example-tiered.kpack"
+        pack.mkdir()
+        (pack / "PACK.yaml").write_text(
+            """name: example-tiered
+version: 2026.06.18
+domain: test/compiler
+kind: claim
+author: KP Compiler Tests
+
+description: Synthetic tier-slicing compiler fixture.
+
+confidence:
+  scale: simple
+  normalize: true
+
+freshness: "2026-06-18"
+license: CC-BY-4.0
+sensitivity: public
+visibility: public
+tier: standalone
+
+provenance:
+  author: KP Compiler Tests
+  role: independent
+  reviewed_by: null
+  review_date: null
+  signed: false
+"""
+        )
+        (pack / "claims.md").write_text(
+            f"""{ROSETTA}
+---
+pack: example-tiered | v: 2026.06.18 | domain: test/compiler
+confidence: simple | normalized
+---
+
+# Example Tiered Fixture
+
+## Claims
+
+- [C001] The client-safe conclusion can be shown.
+  {{0.80|i|E001|2026-06-18|investigated|judgment}} Public rationale. ↔C002
+
+- [C002] The server-only method explains the conclusion.
+  {{0.90|i|E002|2026-06-18|investigated|meta}} Server method. <!-- kp-compiler: tier=server sensitivity=internal visibility=private -->
+
+- [C003] This claim looks public but depends on server-only evidence.
+  {{0.70|i|E002|2026-06-18|investigated|judgment}} Must not survive client slicing.
+
+- [C004] The internal operator note is not server-shippable.
+  {{0.95|i|E003|2026-06-18|investigated|meta}} Operator-only note. <!-- kp-compiler: tier=internal sensitivity=restricted visibility=private -->
+"""
+        )
+        (pack / "evidence.md").write_text(
+            """# Evidence
+
+## E001 — Public Note
+> **type:** synthetic_document | **captured:** 2026-06-18
+> **source:** fixture://public-note.txt
+
+Synthetic public note.
+
+## E002 — Server Method
+> **type:** synthetic_report | **captured:** 2026-06-18 | **tier:** server | **sensitivity:** internal | **visibility:** private
+> **source:** fixture://server-method.txt
+
+Synthetic server-only method.
+
+## E003 — Internal Note
+> **type:** synthetic_report | **captured:** 2026-06-18 | **tier:** internal | **sensitivity:** restricted | **visibility:** private
+> **source:** fixture://internal-note.txt
+
+Synthetic internal-only note.
+"""
+        )
+        return pack
+
     def test_compile_bundle_retrieves_supersession_neighborhood(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
@@ -260,6 +338,101 @@ Synthetic B note.
 
             self.assertTrue((out / "retrieval/example-a__C001.json").exists())
             self.assertTrue((out / "adapters/openai-compatible/request-example-a__C001.json").exists())
+
+    def test_client_export_filters_forbidden_nodes_edges_and_evidence(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            pack = self.write_tier_fixture(root)
+            out = root / "client"
+
+            summary = compile_bundle(
+                pack,
+                out,
+                export_tier="client",
+                query_claims=["C001"],
+                questions={"C001": "What can the client see?"},
+            )
+
+            self.assertEqual(summary["export_tier"], "client")
+            self.assertEqual(summary["claims"], 1)
+            self.assertEqual(summary["evidence"], 1)
+            self.assertEqual(summary["relations"], 0)
+            self.assertEqual(summary["unresolved_relations"], 0)
+            self.assertEqual(summary["projection"]["filtered_claims"], 3)
+            self.assertEqual(summary["projection"]["filtered_evidence"], 2)
+            self.assertGreaterEqual(summary["projection"]["filtered_relations"], 1)
+            self.assertTrue(summary["validation"]["valid"])
+            self.assertEqual(
+                summary["validation"]["checks"],
+                {
+                    "claim_policy_violations": 0,
+                    "evidence_policy_violations": 0,
+                    "dangling_evidence_links": 0,
+                    "dangling_relations": 0,
+                    "blocked_unresolved_relations": 0,
+                },
+            )
+
+            db_path = out / "indices" / "claim-graph.sqlite"
+            conn = sqlite3.connect(db_path)
+            try:
+                self.assertEqual(
+                    conn.execute("SELECT group_concat(local_claim_id) FROM kp_claims").fetchone()[0],
+                    "C001",
+                )
+                self.assertEqual(
+                    conn.execute("SELECT group_concat(local_evidence_id) FROM kp_evidence").fetchone()[0],
+                    "E001",
+                )
+                self.assertEqual(
+                    conn.execute("SELECT count(*) FROM kp_claim_relations").fetchone()[0],
+                    0,
+                )
+            finally:
+                conn.close()
+
+            packet = retrieve_packet(db_path, "C001")
+            self.assertEqual(packet["policy"]["export_tier"], "client")
+            self.assertEqual(packet["policy"]["filtered_claim_count"], 3)
+            self.assertEqual(packet["neighbors"], [])
+            self.assertEqual([row["local_evidence_id"] for row in packet["evidence"]], ["E001"])
+
+            with self.assertRaisesRegex(ValueError, "claim not found"):
+                retrieve_packet(db_path, "C002")
+
+    def test_server_export_keeps_server_material_but_filters_internal(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            pack = self.write_tier_fixture(root)
+            out = root / "server"
+
+            summary = compile_bundle(
+                pack,
+                out,
+                export_tier="server",
+                query_claims=["C001"],
+                questions={"C001": "What can the server see?"},
+            )
+
+            self.assertEqual(summary["export_tier"], "server")
+            self.assertEqual(summary["claims"], 3)
+            self.assertEqual(summary["evidence"], 2)
+            self.assertEqual(summary["relations"], 1)
+            self.assertEqual(summary["unresolved_relations"], 0)
+            self.assertEqual(summary["projection"]["filtered_claims"], 1)
+            self.assertEqual(summary["projection"]["filtered_evidence"], 1)
+            self.assertTrue(summary["validation"]["valid"])
+
+            db_path = out / "indices" / "claim-graph.sqlite"
+            packet = retrieve_packet(db_path, "C001")
+            neighbors = {neighbor["local_claim_id"] for neighbor in packet["neighbors"]}
+            evidence_ids = {row["local_evidence_id"] for row in packet["evidence"]}
+            self.assertEqual(packet["policy"]["export_tier"], "server")
+            self.assertIn("C002", neighbors)
+            self.assertEqual(evidence_ids, {"E001", "E002"})
+
+            with self.assertRaisesRegex(ValueError, "claim not found"):
+                retrieve_packet(db_path, "C004")
 
 
 if __name__ == "__main__":
