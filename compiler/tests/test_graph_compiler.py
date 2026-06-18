@@ -371,6 +371,7 @@ Synthetic internal-only note.
                     "dangling_evidence_links": 0,
                     "dangling_relations": 0,
                     "dangling_search_rows": 0,
+                    "dangling_fts_rows": 0,
                     "blocked_unresolved_relations": 0,
                 },
             )
@@ -491,6 +492,7 @@ Synthetic internal-only note.
             hits = summary["search_reports"][0]["hits"]
             self.assertEqual(len(hits), 1)
             self.assertEqual(hits[0]["claim_uid"], "example-supersession#C002")
+            self.assertEqual(hits[0]["search_engine"], "fts5")
             self.assertTrue(Path(hits[0]["artifacts"]["retrieval"]).exists())
             self.assertTrue(Path(hits[0]["artifacts"]["dossier"]).exists())
             self.assertTrue(Path(hits[0]["artifacts"]["openai_request"]).exists())
@@ -527,6 +529,69 @@ Synthetic internal-only note.
 
             public_hits = search_claims(db_path, "client safe conclusion", limit=3)
             self.assertEqual([hit["claim_uid"] for hit in public_hits], ["example-tiered#C001"])
+
+    def test_text_query_can_use_explicit_lexical_debug_mode(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            pack = self.write_fixture(root)
+            out = root / "lexical-search"
+
+            summary = compile_bundle(
+                pack,
+                out,
+                query_texts=["current reading"],
+                query_limit=1,
+                search_mode="lexical",
+            )
+
+            hits = summary["search_reports"][0]["hits"]
+            self.assertEqual(hits[0]["claim_uid"], "example-supersession#C002")
+            self.assertEqual(hits[0]["search_engine"], "lexical")
+
+            db_path = out / "indices" / "claim-graph.sqlite"
+            direct_hits = search_claims(db_path, "current reading", limit=1, mode="lexical")
+            self.assertEqual(direct_hits[0]["search_engine"], "lexical")
+            self.assertEqual(direct_hits[0]["claim_uid"], "example-supersession#C002")
+
+    def test_fts5_search_fails_when_index_is_missing(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            pack = self.write_fixture(root)
+            out = root / "missing-fts"
+
+            summary = compile_bundle(pack, out)
+            self.assertEqual(summary["graph_meta"]["search_engine"], "fts5")
+
+            db_path = out / "indices" / "claim-graph.sqlite"
+            conn = sqlite3.connect(db_path)
+            try:
+                conn.execute("DROP TABLE kp_claim_search_fts")
+                conn.commit()
+            finally:
+                conn.close()
+
+            with self.assertRaisesRegex(ValueError, "FTS5 search requested"):
+                search_claims(db_path, "current reading", limit=1, mode="fts5")
+
+            lexical_hits = search_claims(db_path, "current reading", limit=1, mode="lexical")
+            self.assertEqual(lexical_hits[0]["search_engine"], "lexical")
+
+    def test_default_text_query_uses_fts5(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            pack = self.write_fixture(root)
+            out = root / "fts5-search"
+
+            summary = compile_bundle(
+                pack,
+                out,
+                query_texts=["current reading"],
+                query_limit=1,
+            )
+
+            self.assertEqual(summary["graph_meta"]["search_engine"], "fts5")
+            self.assertEqual(summary["search_mode"], "fts5")
+            self.assertEqual(summary["search_reports"][0]["hits"][0]["search_engine"], "fts5")
 
 
 if __name__ == "__main__":

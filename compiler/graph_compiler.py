@@ -22,8 +22,9 @@ import yaml
 
 
 SCHEMA_VERSION = 1
-COMPILER_VERSION = "0.4.0"
+COMPILER_VERSION = "0.5.0"
 DEFAULT_QUERY_LIMIT = 3
+SEARCH_MODES = ("fts5", "lexical")
 
 RELATION_RE = re.compile(
     r"(\u2297~|\u2297!|\u2297|\u2192|\u2190|\u2298|\u2194|~)"
@@ -121,8 +122,13 @@ SEARCH_STOPWORDS = {
     "the",
     "to",
     "what",
+    "who",
     "which",
     "with",
+    "why",
+    "did",
+    "do",
+    "does",
 }
 
 @dataclasses.dataclass(frozen=True)
@@ -783,6 +789,66 @@ def write_jsonl(path: Path, rows: list[Any]) -> None:
             handle.write(json.dumps(as_jsonable(row), sort_keys=True) + "\n")
 
 
+def claim_search_text(claim: Claim, evidence_by_uid: dict[str, Evidence]) -> str:
+    evidence_parts = []
+    for local_evidence_id in claim.evidence_ids:
+        evidence = evidence_by_uid.get(evidence_uid(claim.pack_id, local_evidence_id))
+        if evidence is None:
+            continue
+        evidence_parts.extend(
+            part
+            for part in [
+                evidence.local_evidence_id,
+                evidence.title,
+                evidence.source_type or "",
+                evidence.reliability or "",
+                evidence.summary,
+            ]
+            if part
+        )
+    return " ".join(
+        part
+        for part in [
+            claim.claim_uid,
+            claim.local_claim_id,
+            claim.text,
+            claim.detail,
+            claim.claim_type,
+            claim.depth,
+            claim.nature,
+            claim.status,
+            *evidence_parts,
+        ]
+        if part
+    )
+
+
+def create_fts5_claim_search(conn: sqlite3.Connection, search_rows: list[tuple[str, str, str, str]]) -> bool:
+    try:
+        conn.execute(
+            """
+            CREATE VIRTUAL TABLE kp_claim_search_fts USING fts5(
+              claim_uid UNINDEXED,
+              pack_id UNINDEXED,
+              local_claim_id UNINDEXED,
+              search_text,
+              tokenize = 'unicode61 remove_diacritics 2'
+            )
+            """
+        )
+        conn.executemany(
+            """
+            INSERT INTO kp_claim_search_fts (
+              claim_uid, pack_id, local_claim_id, search_text
+            ) VALUES (?, ?, ?, ?)
+            """,
+            search_rows,
+        )
+    except sqlite3.OperationalError:
+        return False
+    return True
+
+
 def compile_sqlite(
     parsed: ParsedPack | list[ParsedPack],
     db_path: Path,
@@ -944,6 +1010,7 @@ def compile_sqlite(
             for parsed_pack in parsed_packs
             for evidence in parsed_pack.evidence
         ]
+        evidence_by_uid = {evidence.evidence_uid: evidence for evidence in evidence_rows}
         relations = [
             relation
             for parsed_pack in parsed_packs
@@ -979,33 +1046,29 @@ def compile_sqlite(
                 for claim in claims
             ],
         )
+        search_rows = [
+            (
+                claim.claim_uid,
+                claim.pack_id,
+                claim.local_claim_id,
+                claim_search_text(claim, evidence_by_uid),
+            )
+            for claim in claims
+        ]
         conn.executemany(
             """
             INSERT INTO kp_claim_search (
               claim_uid, pack_id, local_claim_id, search_text
             ) VALUES (?, ?, ?, ?)
             """,
+            search_rows,
+        )
+        fts5_available = create_fts5_claim_search(conn, search_rows)
+        conn.executemany(
+            "INSERT OR REPLACE INTO graph_meta (key, value) VALUES (?, ?)",
             [
-                (
-                    claim.claim_uid,
-                    claim.pack_id,
-                    claim.local_claim_id,
-                    " ".join(
-                        part
-                        for part in [
-                            claim.claim_uid,
-                            claim.local_claim_id,
-                            claim.text,
-                            claim.detail,
-                            claim.claim_type,
-                            claim.depth,
-                            claim.nature,
-                            claim.status,
-                        ]
-                        if part
-                    ),
-                )
-                for claim in claims
+                ("search_engine", "fts5" if fts5_available else "unavailable"),
+                ("search_fts5_available", str(fts5_available).lower()),
             ],
         )
         conn.executemany(
@@ -1037,7 +1100,6 @@ def compile_sqlite(
                 for evidence in evidence_rows
             ],
         )
-        evidence_by_uid = {evidence.evidence_uid: evidence for evidence in evidence_rows}
         claim_evidence_links = []
         for claim in claims:
             for local_evidence_id in claim.evidence_ids:
@@ -1090,6 +1152,14 @@ def row_to_dict(row: sqlite3.Row) -> dict[str, Any]:
 def read_graph_meta(conn: sqlite3.Connection) -> dict[str, str]:
     rows = conn.execute("SELECT key, value FROM graph_meta ORDER BY key").fetchall()
     return {row[0]: row[1] for row in rows}
+
+
+def sqlite_table_exists(conn: sqlite3.Connection, table_name: str) -> bool:
+    row = conn.execute(
+        "SELECT 1 FROM sqlite_master WHERE name = ? AND type IN ('table', 'view')",
+        (table_name,),
+    ).fetchone()
+    return row is not None
 
 
 def validate_projection(db_path: Path, export_tier: str) -> dict[str, Any]:
@@ -1154,6 +1224,17 @@ def validate_projection(db_path: Path, export_tier: str) -> dict[str, Any]:
             WHERE claim.claim_uid IS NULL
             """
         ).fetchone()[0]
+        if sqlite_table_exists(conn, "kp_claim_search_fts"):
+            dangling_fts_rows = conn.execute(
+                """
+                SELECT count(*)
+                FROM kp_claim_search_fts search
+                LEFT JOIN kp_claims claim ON claim.claim_uid = search.claim_uid
+                WHERE claim.claim_uid IS NULL
+                """
+            ).fetchone()[0]
+        else:
+            dangling_fts_rows = 0
     finally:
         conn.close()
 
@@ -1166,6 +1247,7 @@ def validate_projection(db_path: Path, export_tier: str) -> dict[str, Any]:
         "dangling_evidence_links": dangling_evidence_links,
         "dangling_relations": dangling_relations,
         "dangling_search_rows": dangling_search_rows,
+        "dangling_fts_rows": dangling_fts_rows,
         "blocked_unresolved_relations": blocked_unresolved_relations,
     }
     return {
@@ -1207,6 +1289,40 @@ def search_terms(query: str) -> list[str]:
     return unique_terms
 
 
+def fts5_term_variants(term: str) -> list[str]:
+    variants = [term]
+    if term.endswith("ly") and len(term) > 5:
+        variants.append(term[:-2])
+    if term.endswith("ed") and len(term) > 4:
+        variants.append(term[:-2])
+    if term.endswith("ing") and len(term) > 5:
+        variants.append(term[:-3])
+    if term.endswith("s") and len(term) > 3:
+        variants.append(term[:-1])
+    seen: set[str] = set()
+    result = []
+    for variant in variants:
+        if len(variant) < 2 or variant in seen:
+            continue
+        seen.add(variant)
+        result.append(variant)
+    return result
+
+
+def fts5_match_query(query: str) -> str:
+    terms: list[str] = []
+    for term in search_terms(query):
+        terms.extend(fts5_term_variants(term))
+    seen: set[str] = set()
+    unique_terms = []
+    for term in terms:
+        if term in seen:
+            continue
+        seen.add(term)
+        unique_terms.append(term)
+    return " OR ".join(f"{term}*" for term in unique_terms)
+
+
 def normalized_search_text(text: str) -> str:
     return " ".join(re.findall(r"[a-z0-9]+", text.lower()))
 
@@ -1234,43 +1350,138 @@ def lexical_score(query: str, text: str, confidence: float | None) -> tuple[floa
     return term_score + phrase_bonus + coverage_bonus + confidence_bonus, matched_terms
 
 
-def search_claims(db_path: Path, query: str, *, limit: int = DEFAULT_QUERY_LIMIT) -> list[dict[str, Any]]:
-    if limit < 1:
-        raise ValueError("search limit must be at least 1")
+def structured_search_bonus(query: str, claim: dict[str, Any], search_text: str) -> float:
+    normalized_query = normalized_search_text(query)
+    normalized_text = normalized_search_text(search_text)
+    bonus = 0.0
 
-    conn = sqlite3.connect(db_path)
-    conn.row_factory = sqlite3.Row
-    try:
-        rows = conn.execute(
-            """
-            SELECT claim.*, search.search_text
-            FROM kp_claim_search search
-            JOIN kp_claims claim ON claim.claim_uid = search.claim_uid
-            ORDER BY claim.pack_id, claim.local_claim_id
-            """
-        ).fetchall()
-    finally:
-        conn.close()
+    if claim.get("status") == "superseded":
+        bonus -= 3.0
+    else:
+        bonus += 0.4
 
+    asks_current = any(term in normalized_query for term in ("current", "currently", "now", "best"))
+    if asks_current and "current" in normalized_text:
+        bonus += 2.5
+    if asks_current and claim.get("status") == "active":
+        bonus += 0.8
+
+    asks_change = any(term in normalized_query for term in ("change", "changed", "why", "because"))
+    change_terms = ("supersedes", "superseded", "rejecting", "unreliable", "forged", "invalidates")
+    if asks_change and any(term in normalized_text for term in change_terms):
+        bonus += 2.0
+
+    asks_ownership = any(term in normalized_query for term in ("own", "owned", "owner", "ownership"))
+    if asks_ownership and any(term in normalized_text for term in ("own", "owned", "owner", "ownership")):
+        bonus += 1.0
+
+    if claim.get("confidence") is not None:
+        bonus += float(claim["confidence"]) * 0.2
+
+    return bonus
+
+
+def search_claims_lexical(
+    conn: sqlite3.Connection,
+    query: str,
+    *,
+    limit: int,
+) -> list[dict[str, Any]]:
+    rows = conn.execute(
+        """
+        SELECT claim.*, search.search_text
+        FROM kp_claim_search search
+        JOIN kp_claims claim ON claim.claim_uid = search.claim_uid
+        ORDER BY claim.pack_id, claim.local_claim_id
+        """
+    ).fetchall()
     hits = []
     for row in rows:
         claim = row_to_dict(row)
         score, matched_terms = lexical_score(query, claim["search_text"], claim["confidence"])
         if score <= 0:
             continue
+        score += structured_search_bonus(query, claim, claim["search_text"])
         claim.pop("search_text", None)
         hits.append(
             {
                 **claim,
                 "score": round(score, 4),
                 "matched_terms": matched_terms,
+                "search_engine": "lexical",
             }
         )
-
     return sorted(
         hits,
         key=lambda hit: (-hit["score"], -float(hit.get("confidence") or 0.0), hit["claim_uid"]),
     )[:limit]
+
+
+def search_claims_fts5(
+    conn: sqlite3.Connection,
+    query: str,
+    *,
+    limit: int,
+) -> list[dict[str, Any]]:
+    match_query = fts5_match_query(query)
+    if not match_query:
+        return []
+    rows = conn.execute(
+        """
+        SELECT claim.*, fts.search_text, bm25(kp_claim_search_fts, 2.0, 0.2, 2.0, 8.0) AS bm25_rank
+        FROM kp_claim_search_fts AS fts
+        JOIN kp_claims AS claim ON claim.claim_uid = fts.claim_uid
+        WHERE kp_claim_search_fts MATCH ?
+        ORDER BY bm25_rank ASC, claim.confidence DESC, claim.claim_uid ASC
+        LIMIT ?
+        """,
+        (match_query, max(limit * 8, 20)),
+    ).fetchall()
+    hits = []
+    for row in rows:
+        claim = row_to_dict(row)
+        bm25_rank = claim.pop("bm25_rank")
+        search_text = claim.pop("search_text")
+        _lexical_score, matched_terms = lexical_score(query, search_text, claim["confidence"])
+        score = -float(bm25_rank) + structured_search_bonus(query, claim, search_text)
+        hits.append(
+            {
+                **claim,
+                "score": round(score, 6),
+                "bm25_rank": round(float(bm25_rank), 6),
+                "matched_terms": matched_terms,
+                "search_engine": "fts5",
+            }
+        )
+    return sorted(
+        hits,
+        key=lambda hit: (-hit["score"], hit["bm25_rank"], -float(hit.get("confidence") or 0.0), hit["claim_uid"]),
+    )[:limit]
+
+
+def search_claims(
+    db_path: Path,
+    query: str,
+    *,
+    limit: int = DEFAULT_QUERY_LIMIT,
+    mode: str = "fts5",
+) -> list[dict[str, Any]]:
+    if limit < 1:
+        raise ValueError("search limit must be at least 1")
+    if mode not in SEARCH_MODES:
+        raise ValueError(f"unsupported search mode: {mode}")
+
+    conn = sqlite3.connect(db_path)
+    conn.row_factory = sqlite3.Row
+    try:
+        fts5_ready = sqlite_table_exists(conn, "kp_claim_search_fts")
+        if mode == "fts5":
+            if not fts5_ready:
+                raise ValueError("FTS5 search requested but the compiled graph has no FTS5 index")
+            return search_claims_fts5(conn, query, limit=limit)
+        return search_claims_lexical(conn, query, limit=limit)
+    finally:
+        conn.close()
 
 
 def fetch_claims(conn: sqlite3.Connection, claim_uids: set[str]) -> dict[str, dict[str, Any]]:
@@ -1718,6 +1929,7 @@ def compile_bundle(
     query_claims: list[str] | None = None,
     query_texts: list[str] | None = None,
     query_limit: int = DEFAULT_QUERY_LIMIT,
+    search_mode: str = "fts5",
     questions: dict[str, str] | None = None,
 ) -> dict[str, Any]:
     pack_dirs = pack_dir if isinstance(pack_dir, list) else [pack_dir]
@@ -1783,7 +1995,7 @@ def compile_bundle(
     search_reports: list[dict[str, Any]] = []
     for query_index, query_text in enumerate(query_texts, start=1):
         query_slug = slug_label(query_text)
-        hits = search_claims(db_path, query_text, limit=query_limit)
+        hits = search_claims(db_path, query_text, limit=query_limit, mode=search_mode)
         hit_reports = []
         for rank, hit in enumerate(hits, start=1):
             label = f"search-{query_index}-{query_slug}-r{rank}-{artifact_label(hit['claim_uid'])}"
@@ -1800,6 +2012,7 @@ def compile_bundle(
                     "claim_uid": hit["claim_uid"],
                     "local_claim_id": hit["local_claim_id"],
                     "score": hit["score"],
+                    "search_engine": hit["search_engine"],
                     "matched_terms": hit["matched_terms"],
                     "artifacts": artifacts,
                 }
@@ -1807,6 +2020,7 @@ def compile_bundle(
         search_report = {
             "query": query_text,
             "limit": query_limit,
+            "search_mode": search_mode,
             "hits": hit_reports,
         }
         write_json(output_dir / "search" / f"{query_index}-{query_slug}.json", search_report)
@@ -1847,6 +2061,7 @@ def compile_bundle(
         "validation": validation,
         "query_claims": query_claims,
         "query_texts": query_texts,
+        "search_mode": search_mode,
         "search_reports": search_reports,
     }
     write_json(output_dir / "summary.json", summary)
@@ -1891,6 +2106,12 @@ def main() -> int:
         default=DEFAULT_QUERY_LIMIT,
         help=f"Maximum search hits to render for each text query. Defaults to {DEFAULT_QUERY_LIMIT}.",
     )
+    parser.add_argument(
+        "--search-mode",
+        choices=SEARCH_MODES,
+        default="fts5",
+        help="Search engine for text queries. Defaults to fail-fast FTS5/BM25. Use lexical only explicitly for tests or debugging.",
+    )
     args = parser.parse_args()
 
     summary = compile_bundle(
@@ -1901,6 +2122,7 @@ def main() -> int:
         query_claims=args.query_claim,
         query_texts=args.query_text,
         query_limit=args.query_limit,
+        search_mode=args.search_mode,
     )
     print(json.dumps(summary, indent=2, sort_keys=True))
     return 0

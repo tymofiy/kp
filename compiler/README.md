@@ -18,8 +18,8 @@ The current compiler is intentionally small. It can:
 - project the graph for `client`, `server`, or `internal` export tiers;
 - validate tier projections for forbidden nodes, dangling evidence links,
   dangling relations, search-table leaks, and unresolved relation pointers;
-- search compiled, export-tier-safe claims and map text queries to `claim_uid`
-  results;
+- search compiled, export-tier-safe claims with fail-fast SQLite FTS5/BM25 and
+  map text queries to `claim_uid` results;
 - retrieve a bounded one-hop claim neighborhood;
 - render a dossier for a selected claim;
 - emit OpenAI-compatible, Ollama-style, and MCP-style adapter artifacts.
@@ -48,7 +48,7 @@ otherwise compilation fails before projection.
 It is not yet a stable public API. Current limits:
 
 - exact claim-ID retrieval;
-- deterministic lexical search only; no vector search or semantic reranking yet;
+- no vector search or semantic reranking yet;
 - approximate token counting;
 - no encrypted bundle output;
 - no redacted evidence stubs for claims that depend on filtered evidence.
@@ -101,6 +101,10 @@ python3 compiler/graph_compiler.py examples/hello-world.kpack \
 
 This writes a search report under `search/`, then renders retrieval packets,
 dossiers, and adapter payloads for the selected claim hits.
+
+Text queries default to `--search-mode fts5`, which fails if the compiled graph
+does not contain an FTS5 index. `--search-mode lexical` exists only as an
+explicit debug/test path; it is not used as a silent fallback.
 
 Compile more than one pack:
 
