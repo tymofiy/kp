@@ -22,7 +22,8 @@ import yaml
 
 
 SCHEMA_VERSION = 1
-COMPILER_VERSION = "0.3.0"
+COMPILER_VERSION = "0.4.0"
+DEFAULT_QUERY_LIMIT = 3
 
 RELATION_RE = re.compile(
     r"(\u2297~|\u2297!|\u2297|\u2192|\u2190|\u2298|\u2194|~)"
@@ -99,6 +100,31 @@ EDGE_PRIORITY = [
     "see_also",
 ]
 
+SEARCH_STOPWORDS = {
+    "a",
+    "an",
+    "and",
+    "are",
+    "as",
+    "be",
+    "by",
+    "for",
+    "from",
+    "how",
+    "in",
+    "is",
+    "it",
+    "of",
+    "on",
+    "or",
+    "that",
+    "the",
+    "to",
+    "what",
+    "which",
+    "with",
+}
+
 @dataclasses.dataclass(frozen=True)
 class Claim:
     claim_uid: str
@@ -116,6 +142,7 @@ class Claim:
     tier: str
     sensitivity: str
     visibility: str
+    boundary_explicit: bool
     source_locator: str
 
 
@@ -134,6 +161,7 @@ class Evidence:
     tier: str
     sensitivity: str
     visibility: str
+    boundary_explicit: bool
     source_locator: str
 
 
@@ -171,6 +199,13 @@ def relation_uid(from_claim_uid: str, relation_type: str, target_ref: str) -> st
 
 def artifact_label(claim_id: str) -> str:
     return claim_id.replace("#", "__").replace("/", "_")
+
+
+def slug_label(value: str, *, max_length: int = 48) -> str:
+    slug = re.sub(r"[^a-z0-9]+", "-", value.lower()).strip("-")
+    if not slug:
+        slug = "query"
+    return slug[:max_length].strip("-") or "query"
 
 
 def stable_pack_hash(pack_dir: Path) -> str:
@@ -281,6 +316,10 @@ def normalized_boundary_metadata(
     return tier, sensitivity, visibility
 
 
+def has_explicit_boundary(raw: dict[str, str]) -> bool:
+    return {"tier", "sensitivity", "visibility"}.issubset(raw)
+
+
 def parse_claims(
     pack_id: str,
     claims_text: str,
@@ -383,6 +422,7 @@ def parse_claims(
                 "tier": tier,
                 "sensitivity": sensitivity,
                 "visibility": visibility,
+                "boundary_explicit": has_explicit_boundary(annotations),
                 "source_locator": f"claims.md:{block['line']}",
             }
         )
@@ -411,6 +451,7 @@ def parse_claims(
             tier=raw["tier"],
             sensitivity=raw["sensitivity"],
             visibility=raw["visibility"],
+            boundary_explicit=raw["boundary_explicit"],
             source_locator=raw["source_locator"],
         )
         for raw in raw_claims
@@ -505,6 +546,7 @@ def parse_evidence(
                 tier=tier,
                 sensitivity=sensitivity,
                 visibility=visibility,
+                boundary_explicit=has_explicit_boundary({**metadata, **body_annotations}),
                 source_locator=f"evidence.md:{section['line']}",
             )
         )
@@ -694,6 +736,35 @@ def project_for_export_tier(
     }
 
 
+def validate_explicit_boundaries(parsed_packs: list[ParsedPack]) -> dict[str, Any]:
+    implicit_claims = [
+        claim.claim_uid
+        for parsed in parsed_packs
+        for claim in parsed.claims
+        if not claim.boundary_explicit
+    ]
+    implicit_evidence = [
+        evidence.evidence_uid
+        for parsed in parsed_packs
+        for evidence in parsed.evidence
+        if not evidence.boundary_explicit
+    ]
+    report = {
+        "required": True,
+        "valid": not implicit_claims and not implicit_evidence,
+        "implicit_claims": len(implicit_claims),
+        "implicit_evidence": len(implicit_evidence),
+    }
+    if not report["valid"]:
+        examples = [*implicit_claims[:3], *implicit_evidence[:3]]
+        raise ValueError(
+            "explicit boundary metadata required; missing "
+            f"{report['implicit_claims']} claims and {report['implicit_evidence']} evidence records"
+            + (f" (examples: {', '.join(examples)})" if examples else "")
+        )
+    return report
+
+
 def as_jsonable(value: Any) -> Any:
     if dataclasses.is_dataclass(value):
         return dataclasses.asdict(value)
@@ -763,6 +834,7 @@ def compile_sqlite(
               tier TEXT NOT NULL DEFAULT 'client',
               sensitivity TEXT NOT NULL DEFAULT 'public',
               visibility TEXT NOT NULL DEFAULT 'public',
+              boundary_explicit INTEGER NOT NULL DEFAULT 0,
               source_locator TEXT NOT NULL,
               FOREIGN KEY (pack_id) REFERENCES kp_packs(pack_id)
             );
@@ -781,6 +853,7 @@ def compile_sqlite(
               tier TEXT NOT NULL DEFAULT 'client',
               sensitivity TEXT NOT NULL DEFAULT 'public',
               visibility TEXT NOT NULL DEFAULT 'public',
+              boundary_explicit INTEGER NOT NULL DEFAULT 0,
               source_locator TEXT NOT NULL,
               FOREIGN KEY (pack_id) REFERENCES kp_packs(pack_id)
             );
@@ -807,12 +880,21 @@ def compile_sqlite(
               FOREIGN KEY (to_claim_uid) REFERENCES kp_claims(claim_uid)
             );
 
+            CREATE TABLE kp_claim_search (
+              claim_uid TEXT PRIMARY KEY,
+              pack_id TEXT NOT NULL,
+              local_claim_id TEXT NOT NULL,
+              search_text TEXT NOT NULL,
+              FOREIGN KEY (claim_uid) REFERENCES kp_claims(claim_uid)
+            );
+
             CREATE INDEX idx_kp_claims_pack_local ON kp_claims(pack_id, local_claim_id);
             CREATE INDEX idx_kp_evidence_pack_local ON kp_evidence(pack_id, local_evidence_id);
             CREATE INDEX idx_kp_claim_evidence_evidence ON kp_claim_evidence_links(evidence_uid);
             CREATE INDEX idx_kp_relations_from ON kp_claim_relations(from_claim_uid);
             CREATE INDEX idx_kp_relations_to ON kp_claim_relations(to_claim_uid);
             CREATE INDEX idx_kp_relations_type ON kp_claim_relations(relation_type);
+            CREATE INDEX idx_kp_claim_search_pack ON kp_claim_search(pack_id, local_claim_id);
             """
         )
         unresolved_relation_count = sum(
@@ -830,6 +912,7 @@ def compile_sqlite(
             "filtered_claim_count": str(projection_report["filtered_claims"]),
             "filtered_evidence_count": str(projection_report["filtered_evidence"]),
             "filtered_relation_count": str(projection_report["filtered_relations"]),
+            "require_explicit_boundary": str(projection_report.get("require_explicit_boundary", False)).lower(),
             "unresolved_relation_count": str(unresolved_relation_count),
         }
         conn.executemany(
@@ -870,8 +953,9 @@ def compile_sqlite(
             """
             INSERT INTO kp_claims (
               claim_uid, pack_id, local_claim_id, text, detail, confidence, claim_type,
-              since, depth, nature, status, tier, sensitivity, visibility, source_locator
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+              since, depth, nature, status, tier, sensitivity, visibility, boundary_explicit,
+              source_locator
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             [
                 (
@@ -889,7 +973,37 @@ def compile_sqlite(
                     claim.tier,
                     claim.sensitivity,
                     claim.visibility,
+                    1 if claim.boundary_explicit else 0,
                     claim.source_locator,
+                )
+                for claim in claims
+            ],
+        )
+        conn.executemany(
+            """
+            INSERT INTO kp_claim_search (
+              claim_uid, pack_id, local_claim_id, search_text
+            ) VALUES (?, ?, ?, ?)
+            """,
+            [
+                (
+                    claim.claim_uid,
+                    claim.pack_id,
+                    claim.local_claim_id,
+                    " ".join(
+                        part
+                        for part in [
+                            claim.claim_uid,
+                            claim.local_claim_id,
+                            claim.text,
+                            claim.detail,
+                            claim.claim_type,
+                            claim.depth,
+                            claim.nature,
+                            claim.status,
+                        ]
+                        if part
+                    ),
                 )
                 for claim in claims
             ],
@@ -899,8 +1013,8 @@ def compile_sqlite(
             INSERT INTO kp_evidence (
               evidence_uid, pack_id, local_evidence_id, title, source_type, source_uri,
               captured_at, reliability, credibility, summary, tier, sensitivity, visibility,
-              source_locator
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+              boundary_explicit, source_locator
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             [
                 (
@@ -917,6 +1031,7 @@ def compile_sqlite(
                     evidence.tier,
                     evidence.sensitivity,
                     evidence.visibility,
+                    1 if evidence.boundary_explicit else 0,
                     evidence.source_locator,
                 )
                 for evidence in evidence_rows
@@ -1031,6 +1146,14 @@ def validate_projection(db_path: Path, export_tier: str) -> dict[str, Any]:
         unresolved_relations = conn.execute(
             "SELECT count(*) FROM kp_claim_relations WHERE target_resolved = 0"
         ).fetchone()[0]
+        dangling_search_rows = conn.execute(
+            """
+            SELECT count(*)
+            FROM kp_claim_search search
+            LEFT JOIN kp_claims claim ON claim.claim_uid = search.claim_uid
+            WHERE claim.claim_uid IS NULL
+            """
+        ).fetchone()[0]
     finally:
         conn.close()
 
@@ -1042,6 +1165,7 @@ def validate_projection(db_path: Path, export_tier: str) -> dict[str, Any]:
         "evidence_policy_violations": evidence_policy_violations,
         "dangling_evidence_links": dangling_evidence_links,
         "dangling_relations": dangling_relations,
+        "dangling_search_rows": dangling_search_rows,
         "blocked_unresolved_relations": blocked_unresolved_relations,
     }
     return {
@@ -1065,6 +1189,88 @@ def claim_token_cost(claim: dict[str, Any]) -> int:
             for key in ("local_claim_id", "text", "detail", "claim_type", "depth", "nature", "status")
         )
     )
+
+
+def search_terms(query: str) -> list[str]:
+    terms = [
+        term
+        for term in re.findall(r"[a-z0-9]+", query.lower())
+        if len(term) >= 2 and term not in SEARCH_STOPWORDS
+    ]
+    seen: set[str] = set()
+    unique_terms = []
+    for term in terms:
+        if term in seen:
+            continue
+        seen.add(term)
+        unique_terms.append(term)
+    return unique_terms
+
+
+def normalized_search_text(text: str) -> str:
+    return " ".join(re.findall(r"[a-z0-9]+", text.lower()))
+
+
+def lexical_score(query: str, text: str, confidence: float | None) -> tuple[float, list[str]]:
+    terms = search_terms(query)
+    if not terms:
+        return 0.0, []
+    normalized_query = normalized_search_text(query)
+    normalized_text = normalized_search_text(text)
+    matched_terms = [term for term in terms if term in normalized_text]
+    if not matched_terms:
+        return 0.0, []
+
+    term_score = 0.0
+    padded_text = f" {normalized_text} "
+    for term in matched_terms:
+        exact_count = padded_text.count(f" {term} ")
+        partial_count = normalized_text.count(term)
+        term_score += 3.0 + exact_count + max(0, partial_count - exact_count) * 0.25
+
+    phrase_bonus = 8.0 if normalized_query and normalized_query in normalized_text else 0.0
+    coverage_bonus = 4.0 * (len(matched_terms) / len(terms))
+    confidence_bonus = confidence or 0.0
+    return term_score + phrase_bonus + coverage_bonus + confidence_bonus, matched_terms
+
+
+def search_claims(db_path: Path, query: str, *, limit: int = DEFAULT_QUERY_LIMIT) -> list[dict[str, Any]]:
+    if limit < 1:
+        raise ValueError("search limit must be at least 1")
+
+    conn = sqlite3.connect(db_path)
+    conn.row_factory = sqlite3.Row
+    try:
+        rows = conn.execute(
+            """
+            SELECT claim.*, search.search_text
+            FROM kp_claim_search search
+            JOIN kp_claims claim ON claim.claim_uid = search.claim_uid
+            ORDER BY claim.pack_id, claim.local_claim_id
+            """
+        ).fetchall()
+    finally:
+        conn.close()
+
+    hits = []
+    for row in rows:
+        claim = row_to_dict(row)
+        score, matched_terms = lexical_score(query, claim["search_text"], claim["confidence"])
+        if score <= 0:
+            continue
+        claim.pop("search_text", None)
+        hits.append(
+            {
+                **claim,
+                "score": round(score, 4),
+                "matched_terms": matched_terms,
+            }
+        )
+
+    return sorted(
+        hits,
+        key=lambda hit: (-hit["score"], -float(hit.get("confidence") or 0.0), hit["claim_uid"]),
+    )[:limit]
 
 
 def fetch_claims(conn: sqlite3.Connection, claim_uids: set[str]) -> dict[str, dict[str, Any]]:
@@ -1468,12 +1674,50 @@ def mcp_tool_response(dossier: str, packet: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def write_runtime_artifacts(
+    output_dir: Path,
+    db_path: Path,
+    claim_id: str,
+    question: str,
+    label: str,
+) -> dict[str, str]:
+    packet = retrieve_packet(db_path, claim_id)
+    dossier = render_dossier(packet, question)
+    retrieval_path = output_dir / "retrieval" / f"{label}.json"
+    write_json(retrieval_path, packet)
+
+    dossier_path = output_dir / "dossiers" / f"{label}.md"
+    dossier_path.parent.mkdir(parents=True, exist_ok=True)
+    dossier_path.write_text(dossier)
+
+    openai_path = output_dir / "adapters" / "openai-compatible" / f"request-{label}.json"
+    write_json(openai_path, openai_request(dossier, question))
+
+    ollama_path = output_dir / "adapters" / "ollama" / f"prompt-{label}.txt"
+    ollama_path.parent.mkdir(parents=True, exist_ok=True)
+    ollama_path.write_text(ollama_prompt(dossier, question))
+
+    mcp_path = output_dir / "adapters" / "mcp" / f"tool-response-{label}.json"
+    write_json(mcp_path, mcp_tool_response(dossier, packet))
+
+    return {
+        "retrieval": str(retrieval_path),
+        "dossier": str(dossier_path),
+        "openai_request": str(openai_path),
+        "ollama_prompt": str(ollama_path),
+        "mcp_tool_response": str(mcp_path),
+    }
+
+
 def compile_bundle(
     pack_dir: Path | list[Path],
     output_dir: Path,
     *,
     export_tier: str = "client",
+    require_explicit_boundary: bool = False,
     query_claims: list[str] | None = None,
+    query_texts: list[str] | None = None,
+    query_limit: int = DEFAULT_QUERY_LIMIT,
     questions: dict[str, str] | None = None,
 ) -> dict[str, Any]:
     pack_dirs = pack_dir if isinstance(pack_dir, list) else [pack_dir]
@@ -1481,10 +1725,17 @@ def compile_bundle(
         shutil.rmtree(output_dir)
     output_dir.mkdir(parents=True)
 
+    source_packs = [parse_pack(path) for path in pack_dirs]
+    boundary_report = (
+        validate_explicit_boundaries(source_packs)
+        if require_explicit_boundary
+        else {"required": False, "valid": True, "implicit_claims": None, "implicit_evidence": None}
+    )
     parsed_packs, projection_report = project_for_export_tier(
-        [parse_pack(path) for path in pack_dirs],
+        source_packs,
         export_tier,
     )
+    projection_report["require_explicit_boundary"] = require_explicit_boundary
     db_path = output_dir / "indices" / "claim-graph.sqlite"
     compile_sqlite(
         parsed_packs,
@@ -1522,28 +1773,44 @@ def compile_bundle(
     )
 
     query_claims = query_claims or []
+    query_texts = query_texts or []
     questions = questions or {}
     for local_claim_id in query_claims:
         question = questions.get(local_claim_id, f"What should be known about {local_claim_id}?")
-        packet = retrieve_packet(db_path, local_claim_id)
-        dossier = render_dossier(packet, question)
         label = artifact_label(local_claim_id)
-        write_json(output_dir / "retrieval" / f"{label}.json", packet)
-        dossier_path = output_dir / "dossiers" / f"{label}.md"
-        dossier_path.parent.mkdir(parents=True, exist_ok=True)
-        dossier_path.write_text(dossier)
+        write_runtime_artifacts(output_dir, db_path, local_claim_id, question, label)
 
-        write_json(
-            output_dir / "adapters" / "openai-compatible" / f"request-{label}.json",
-            openai_request(dossier, question),
-        )
-        ollama_path = output_dir / "adapters" / "ollama" / f"prompt-{label}.txt"
-        ollama_path.parent.mkdir(parents=True, exist_ok=True)
-        ollama_path.write_text(ollama_prompt(dossier, question))
-        write_json(
-            output_dir / "adapters" / "mcp" / f"tool-response-{label}.json",
-            mcp_tool_response(dossier, packet),
-        )
+    search_reports: list[dict[str, Any]] = []
+    for query_index, query_text in enumerate(query_texts, start=1):
+        query_slug = slug_label(query_text)
+        hits = search_claims(db_path, query_text, limit=query_limit)
+        hit_reports = []
+        for rank, hit in enumerate(hits, start=1):
+            label = f"search-{query_index}-{query_slug}-r{rank}-{artifact_label(hit['claim_uid'])}"
+            artifacts = write_runtime_artifacts(
+                output_dir,
+                db_path,
+                hit["claim_uid"],
+                query_text,
+                label,
+            )
+            hit_reports.append(
+                {
+                    "rank": rank,
+                    "claim_uid": hit["claim_uid"],
+                    "local_claim_id": hit["local_claim_id"],
+                    "score": hit["score"],
+                    "matched_terms": hit["matched_terms"],
+                    "artifacts": artifacts,
+                }
+            )
+        search_report = {
+            "query": query_text,
+            "limit": query_limit,
+            "hits": hit_reports,
+        }
+        write_json(output_dir / "search" / f"{query_index}-{query_slug}.json", search_report)
+        search_reports.append(search_report)
 
     conn = sqlite3.connect(db_path)
     try:
@@ -1576,8 +1843,11 @@ def compile_bundle(
         ),
         "graph_meta": graph_meta,
         "projection": projection_report,
+        "boundary": boundary_report,
         "validation": validation,
         "query_claims": query_claims,
+        "query_texts": query_texts,
+        "search_reports": search_reports,
     }
     write_json(output_dir / "summary.json", summary)
     return summary
@@ -1599,10 +1869,27 @@ def main() -> int:
         help="Trust boundary to compile for. Defaults to the restrictive client projection.",
     )
     parser.add_argument(
+        "--require-explicit-boundary",
+        action="store_true",
+        help="Refuse packs whose claims or evidence omit explicit compiler boundary metadata.",
+    )
+    parser.add_argument(
         "--query-claim",
         action="append",
         default=[],
         help="Claim ID to retrieve and render after compilation. May be passed more than once.",
+    )
+    parser.add_argument(
+        "--query-text",
+        action="append",
+        default=[],
+        help="Text query to search, retrieve, and render after compilation. May be passed more than once.",
+    )
+    parser.add_argument(
+        "--query-limit",
+        type=int,
+        default=DEFAULT_QUERY_LIMIT,
+        help=f"Maximum search hits to render for each text query. Defaults to {DEFAULT_QUERY_LIMIT}.",
     )
     args = parser.parse_args()
 
@@ -1610,7 +1897,10 @@ def main() -> int:
         args.pack_dirs,
         args.output,
         export_tier=args.export_tier,
+        require_explicit_boundary=args.require_explicit_boundary,
         query_claims=args.query_claim,
+        query_texts=args.query_text,
+        query_limit=args.query_limit,
     )
     print(json.dumps(summary, indent=2, sort_keys=True))
     return 0

@@ -1,9 +1,10 @@
+import json
 import sqlite3
 import tempfile
 import unittest
 from pathlib import Path
 
-from compiler.graph_compiler import compile_bundle, render_dossier, retrieve_packet
+from compiler.graph_compiler import compile_bundle, render_dossier, retrieve_packet, search_claims
 
 
 ROSETTA = """<!-- KP:1 — Knowledge Pack Format
@@ -216,13 +217,13 @@ confidence: simple | normalized
 ## Claims
 
 - [C001] The client-safe conclusion can be shown.
-  {{0.80|i|E001|2026-06-18|investigated|judgment}} Public rationale. ↔C002
+  {{0.80|i|E001|2026-06-18|investigated|judgment}} Public rationale. ↔C002 <!-- kp-compiler: tier=client sensitivity=public visibility=public -->
 
 - [C002] The server-only method explains the conclusion.
   {{0.90|i|E002|2026-06-18|investigated|meta}} Server method. <!-- kp-compiler: tier=server sensitivity=internal visibility=private -->
 
 - [C003] This claim looks public but depends on server-only evidence.
-  {{0.70|i|E002|2026-06-18|investigated|judgment}} Must not survive client slicing.
+  {{0.70|i|E002|2026-06-18|investigated|judgment}} Must not survive client slicing. <!-- kp-compiler: tier=client sensitivity=public visibility=public -->
 
 - [C004] The internal operator note is not server-shippable.
   {{0.95|i|E003|2026-06-18|investigated|meta}} Operator-only note. <!-- kp-compiler: tier=internal sensitivity=restricted visibility=private -->
@@ -232,7 +233,7 @@ confidence: simple | normalized
             """# Evidence
 
 ## E001 — Public Note
-> **type:** synthetic_document | **captured:** 2026-06-18
+> **type:** synthetic_document | **captured:** 2026-06-18 | **tier:** client | **sensitivity:** public | **visibility:** public
 > **source:** fixture://public-note.txt
 
 Synthetic public note.
@@ -369,6 +370,7 @@ Synthetic internal-only note.
                     "evidence_policy_violations": 0,
                     "dangling_evidence_links": 0,
                     "dangling_relations": 0,
+                    "dangling_search_rows": 0,
                     "blocked_unresolved_relations": 0,
                 },
             )
@@ -433,6 +435,98 @@ Synthetic internal-only note.
 
             with self.assertRaisesRegex(ValueError, "claim not found"):
                 retrieve_packet(db_path, "C004")
+
+    def test_require_explicit_boundary_rejects_implicit_defaults(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            pack = self.write_fixture(root)
+
+            with self.assertRaisesRegex(ValueError, "explicit boundary metadata required"):
+                compile_bundle(
+                    pack,
+                    root / "strict",
+                    require_explicit_boundary=True,
+                )
+
+    def test_require_explicit_boundary_accepts_annotated_fixture(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            pack = self.write_tier_fixture(root)
+            out = root / "strict"
+
+            summary = compile_bundle(
+                pack,
+                out,
+                require_explicit_boundary=True,
+                query_texts=["client safe conclusion"],
+                query_limit=1,
+            )
+
+            self.assertEqual(
+                summary["boundary"],
+                {
+                    "required": True,
+                    "valid": True,
+                    "implicit_claims": 0,
+                    "implicit_evidence": 0,
+                },
+            )
+            self.assertEqual(summary["search_reports"][0]["hits"][0]["claim_uid"], "example-tiered#C001")
+
+    def test_text_query_renders_graph_expanded_artifacts(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            pack = self.write_fixture(root)
+            out = root / "search"
+
+            summary = compile_bundle(
+                pack,
+                out,
+                query_texts=["current reading"],
+                query_limit=1,
+            )
+
+            self.assertEqual(summary["query_texts"], ["current reading"])
+            self.assertEqual(len(summary["search_reports"]), 1)
+            hits = summary["search_reports"][0]["hits"]
+            self.assertEqual(len(hits), 1)
+            self.assertEqual(hits[0]["claim_uid"], "example-supersession#C002")
+            self.assertTrue(Path(hits[0]["artifacts"]["retrieval"]).exists())
+            self.assertTrue(Path(hits[0]["artifacts"]["dossier"]).exists())
+            self.assertTrue(Path(hits[0]["artifacts"]["openai_request"]).exists())
+            self.assertTrue(Path(hits[0]["artifacts"]["ollama_prompt"]).exists())
+            self.assertTrue(Path(hits[0]["artifacts"]["mcp_tool_response"]).exists())
+
+            search_report_path = out / "search" / "1-current-reading.json"
+            search_report = json.loads(search_report_path.read_text())
+            self.assertEqual(search_report["hits"][0]["claim_uid"], "example-supersession#C002")
+
+            packet = json.loads(Path(hits[0]["artifacts"]["retrieval"]).read_text())
+            neighbors = {neighbor["local_claim_id"] for neighbor in packet["neighbors"]}
+            self.assertTrue({"C001", "C003"}.issubset(neighbors))
+
+    def test_client_search_excludes_filtered_claims(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            pack = self.write_tier_fixture(root)
+            out = root / "client-search"
+
+            summary = compile_bundle(
+                pack,
+                out,
+                export_tier="client",
+                query_texts=["server method"],
+                query_limit=3,
+            )
+
+            self.assertEqual(summary["claims"], 1)
+            self.assertEqual(summary["search_reports"][0]["hits"], [])
+
+            db_path = out / "indices" / "claim-graph.sqlite"
+            self.assertEqual(search_claims(db_path, "server method", limit=3), [])
+
+            public_hits = search_claims(db_path, "client safe conclusion", limit=3)
+            self.assertEqual([hit["claim_uid"] for hit in public_hits], ["example-tiered#C001"])
 
 
 if __name__ == "__main__":

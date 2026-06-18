@@ -17,7 +17,9 @@ The current compiler is intentionally small. It can:
   and unresolved relation count;
 - project the graph for `client`, `server`, or `internal` export tiers;
 - validate tier projections for forbidden nodes, dangling evidence links,
-  dangling relations, and unresolved relation pointers;
+  dangling relations, search-table leaks, and unresolved relation pointers;
+- search compiled, export-tier-safe claims and map text queries to `claim_uid`
+  results;
 - retrieve a bounded one-hop claim neighborhood;
 - render a dossier for a selected claim;
 - emit OpenAI-compatible, Ollama-style, and MCP-style adapter artifacts.
@@ -39,9 +41,14 @@ The default export tier is `client`, which only emits `client` / `public` /
 `public` material. `server` includes client and server material, while
 `internal` is the full-trust profile.
 
+Use `--require-explicit-boundary` for stricter local builds. In that mode every
+claim and evidence record must declare compiler boundary metadata explicitly;
+otherwise compilation fails before projection.
+
 It is not yet a stable public API. Current limits:
 
 - exact claim-ID retrieval;
+- deterministic lexical search only; no vector search or semantic reranking yet;
 - approximate token counting;
 - no encrypted bundle output;
 - no redacted evidence stubs for claims that depend on filtered evidence.
@@ -71,6 +78,29 @@ python3 compiler/graph_compiler.py examples/hello-world.kpack \
   --output /tmp/kp-graph-server \
   --export-tier server
 ```
+
+Compile with strict boundary checks:
+
+```bash
+python3 compiler/graph_compiler.py examples/hello-world.kpack \
+  --output /tmp/kp-graph-strict \
+  --require-explicit-boundary
+```
+
+This intentionally fails unless every claim and evidence entry has explicit
+compiler boundary metadata.
+
+Compile and render a text-query hit:
+
+```bash
+python3 compiler/graph_compiler.py examples/hello-world.kpack \
+  --output /tmp/kp-graph-search \
+  --query-text "what should I know about hello world" \
+  --query-limit 1
+```
+
+This writes a search report under `search/`, then renders retrieval packets,
+dossiers, and adapter payloads for the selected claim hits.
 
 Compile more than one pack:
 
