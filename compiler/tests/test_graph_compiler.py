@@ -4,7 +4,16 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from compiler.graph_compiler import compile_bundle, render_dossier, retrieve_packet, search_claims
+from compiler.graph_compiler import (
+    claim_search_text,
+    compile_bundle,
+    parse_pack,
+    project_for_export_tier,
+    render_dossier,
+    retrieve_packet,
+    search_claims,
+    vector_text_hash,
+)
 
 
 ROSETTA = """<!-- KP:1 — Knowledge Pack Format
@@ -87,6 +96,48 @@ Synthetic review note.
 """
         )
         return pack
+
+    def write_vectors(
+        self,
+        path: Path,
+        pack: Path,
+        vectors_by_local_id: dict[str, list[float]],
+        *,
+        model_id: str = "test-embedder-v1",
+        export_tier: str = "client",
+        stale_claim_uid: str | None = None,
+        extra_rows: list[dict[str, object]] | None = None,
+    ) -> Path:
+        parsed_packs, _projection = project_for_export_tier([parse_pack(pack)], export_tier)
+        evidence_by_uid = {
+            evidence.evidence_uid: evidence
+            for parsed_pack in parsed_packs
+            for evidence in parsed_pack.evidence
+        }
+        rows = []
+        for parsed_pack in parsed_packs:
+            for claim in parsed_pack.claims:
+                embedding = vectors_by_local_id[claim.local_claim_id]
+                search_text = claim_search_text(claim, evidence_by_uid)
+                source_hash = vector_text_hash(search_text)
+                if claim.claim_uid == stale_claim_uid:
+                    source_hash = "sha256:" + "0" * 64
+                rows.append(
+                    {
+                        "contract_version": 1,
+                        "claim_uid": claim.claim_uid,
+                        "model_id": model_id,
+                        "dimensions": len(embedding),
+                        "distance": "cosine",
+                        "embedding_surface_version": "claim-search-text-v1",
+                        "normalized": False,
+                        "source_text_hash": source_hash,
+                        "embedding": embedding,
+                    }
+                )
+        rows.extend(extra_rows or [])
+        path.write_text("\n".join(json.dumps(row, sort_keys=True) for row in rows) + "\n")
+        return path
 
     def write_cross_pack_fixtures(self, root: Path) -> tuple[Path, Path]:
         pack_a = root / "example-a.kpack"
@@ -277,7 +328,7 @@ Synthetic internal-only note.
             try:
                 self.assertEqual(
                     conn.execute("SELECT value FROM graph_meta WHERE key = 'schema_version'").fetchone()[0],
-                    "1",
+                    "2",
                 )
                 self.assertEqual(
                     conn.execute("SELECT count(*) FROM kp_claim_evidence_links").fetchone()[0],
@@ -371,7 +422,9 @@ Synthetic internal-only note.
                     "dangling_evidence_links": 0,
                     "dangling_relations": 0,
                     "dangling_search_rows": 0,
+                    "dangling_vector_rows": 0,
                     "dangling_fts_rows": 0,
+                    "incomplete_vector_coverage": 0,
                     "blocked_unresolved_relations": 0,
                 },
             )
@@ -592,6 +645,316 @@ Synthetic internal-only note.
             self.assertEqual(summary["graph_meta"]["search_engine"], "fts5")
             self.assertEqual(summary["search_mode"], "fts5")
             self.assertEqual(summary["search_reports"][0]["hits"][0]["search_engine"], "fts5")
+
+    def test_vector_query_uses_imported_claim_vectors(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            pack = self.write_fixture(root)
+            vectors_path = self.write_vectors(
+                root / "claim-vectors.jsonl",
+                pack,
+                {
+                    "C001": [0.0, 1.0, 0.0],
+                    "C002": [1.0, 0.0, 0.0],
+                    "C003": [0.0, 0.0, 1.0],
+                },
+            )
+            out = root / "vector-search"
+
+            query_vector = {
+                "contract_version": 1,
+                "model_id": "test-embedder-v1",
+                "dimensions": 3,
+                "distance": "cosine",
+                "embedding": [1.0, 0.0, 0.0],
+            }
+            summary = compile_bundle(
+                pack,
+                out,
+                vectors_jsonl=vectors_path,
+                query_texts=["semantic current reading"],
+                query_vectors=[query_vector],
+                query_limit=1,
+                search_mode="vector",
+            )
+
+            self.assertEqual(summary["graph_meta"]["vector_index"], "imported")
+            self.assertEqual(summary["graph_meta"]["vector_claim_count"], "3")
+            hit = summary["search_reports"][0]["hits"][0]
+            self.assertEqual(hit["claim_uid"], "example-supersession#C002")
+            self.assertEqual(hit["search_engine"], "vector")
+            self.assertEqual(hit["vector_model_id"], "test-embedder-v1")
+
+            db_path = out / "indices" / "claim-graph.sqlite"
+            direct_hits = search_claims(
+                db_path,
+                "semantic current reading",
+                limit=1,
+                mode="vector",
+                query_vector=query_vector,
+            )
+            self.assertEqual(direct_hits[0]["claim_uid"], "example-supersession#C002")
+
+    def test_hybrid_query_requires_and_fuses_fts5_and_vectors(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            pack = self.write_fixture(root)
+            vectors_path = self.write_vectors(
+                root / "claim-vectors.jsonl",
+                pack,
+                {
+                    "C001": [0.0, 1.0, 0.0],
+                    "C002": [1.0, 0.0, 0.0],
+                    "C003": [0.0, 0.0, 1.0],
+                },
+            )
+            out = root / "hybrid-search"
+
+            summary = compile_bundle(
+                pack,
+                out,
+                vectors_jsonl=vectors_path,
+                query_texts=["current reading"],
+                query_vectors=[
+                    {
+                        "contract_version": 1,
+                        "model_id": "test-embedder-v1",
+                        "dimensions": 3,
+                        "distance": "cosine",
+                        "embedding": [1.0, 0.0, 0.0],
+                    }
+                ],
+                query_limit=1,
+                search_mode="hybrid",
+            )
+
+            hit = summary["search_reports"][0]["hits"][0]
+            self.assertEqual(hit["claim_uid"], "example-supersession#C002")
+            self.assertEqual(hit["search_engine"], "hybrid")
+            self.assertEqual(hit["component_ranks"]["fts5"], 1)
+            self.assertEqual(hit["component_ranks"]["vector"], 1)
+
+    def test_hybrid_search_fails_when_fts5_index_is_missing(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            pack = self.write_fixture(root)
+            vectors_path = self.write_vectors(
+                root / "claim-vectors.jsonl",
+                pack,
+                {
+                    "C001": [0.0, 1.0, 0.0],
+                    "C002": [1.0, 0.0, 0.0],
+                    "C003": [0.0, 0.0, 1.0],
+                },
+            )
+            out = root / "hybrid-missing-fts"
+
+            compile_bundle(pack, out, vectors_jsonl=vectors_path)
+
+            db_path = out / "indices" / "claim-graph.sqlite"
+            conn = sqlite3.connect(db_path)
+            try:
+                conn.execute("DROP TABLE kp_claim_search_fts")
+                conn.commit()
+            finally:
+                conn.close()
+
+            with self.assertRaisesRegex(ValueError, "no FTS5 index"):
+                search_claims(
+                    db_path,
+                    "current reading",
+                    limit=1,
+                    mode="hybrid",
+                    query_vector={
+                        "contract_version": 1,
+                        "model_id": "test-embedder-v1",
+                        "dimensions": 3,
+                        "embedding": [1.0, 0.0, 0.0],
+                    },
+                )
+
+    def test_vector_search_fails_when_index_is_missing(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            pack = self.write_fixture(root)
+            out = root / "missing-vector"
+
+            compile_bundle(pack, out)
+
+            db_path = out / "indices" / "claim-graph.sqlite"
+            with self.assertRaisesRegex(ValueError, "no claim vector index"):
+                search_claims(
+                    db_path,
+                    "semantic current reading",
+                    limit=1,
+                    mode="vector",
+                    query_vector={
+                        "contract_version": 1,
+                        "model_id": "test-embedder-v1",
+                        "dimensions": 3,
+                        "embedding": [1.0, 0.0, 0.0],
+                    },
+                )
+
+    def test_vector_search_requires_query_vector(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            pack = self.write_fixture(root)
+            vectors_path = self.write_vectors(
+                root / "claim-vectors.jsonl",
+                pack,
+                {
+                    "C001": [0.0, 1.0, 0.0],
+                    "C002": [1.0, 0.0, 0.0],
+                    "C003": [0.0, 0.0, 1.0],
+                },
+            )
+
+            with self.assertRaisesRegex(ValueError, "one query vector per query text"):
+                compile_bundle(
+                    pack,
+                    root / "missing-query-vector",
+                    vectors_jsonl=vectors_path,
+                    query_texts=["current reading"],
+                    search_mode="vector",
+                )
+
+    def test_client_vector_import_ignores_filtered_source_vectors(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            pack = self.write_tier_fixture(root)
+            vectors_path = self.write_vectors(
+                root / "tier-vectors.jsonl",
+                pack,
+                {
+                    "C001": [1.0, 0.0, 0.0],
+                    "C002": [0.0, 1.0, 0.0],
+                    "C003": [0.0, 0.0, 1.0],
+                    "C004": [1.0, 1.0, 0.0],
+                },
+                export_tier="internal",
+            )
+            out = root / "client-vector"
+
+            summary = compile_bundle(
+                pack,
+                out,
+                export_tier="client",
+                vectors_jsonl=vectors_path,
+                query_texts=["client safe conclusion"],
+                query_vectors=[
+                    {
+                        "contract_version": 1,
+                        "model_id": "test-embedder-v1",
+                        "dimensions": 3,
+                        "embedding": [1.0, 0.0, 0.0],
+                    }
+                ],
+                query_limit=1,
+                search_mode="vector",
+            )
+
+            self.assertEqual(summary["claims"], 1)
+            self.assertEqual(summary["graph_meta"]["vector_claim_count"], "1")
+            self.assertEqual(summary["graph_meta"]["vector_ignored_row_count"], "3")
+            self.assertEqual(summary["search_reports"][0]["hits"][0]["claim_uid"], "example-tiered#C001")
+
+            db_path = out / "indices" / "claim-graph.sqlite"
+            conn = sqlite3.connect(db_path)
+            try:
+                self.assertEqual(
+                    conn.execute("SELECT group_concat(claim_uid) FROM kp_claim_vectors").fetchone()[0],
+                    "example-tiered#C001",
+                )
+            finally:
+                conn.close()
+
+    def test_vector_import_rejects_unknown_claim_uid(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            pack = self.write_fixture(root)
+            vectors_path = self.write_vectors(
+                root / "claim-vectors.jsonl",
+                pack,
+                {
+                    "C001": [0.0, 1.0, 0.0],
+                    "C002": [1.0, 0.0, 0.0],
+                    "C003": [0.0, 0.0, 1.0],
+                },
+                extra_rows=[
+                    {
+                        "contract_version": 1,
+                        "claim_uid": "other-pack#C999",
+                        "model_id": "test-embedder-v1",
+                        "dimensions": 3,
+                        "distance": "cosine",
+                        "embedding_surface_version": "claim-search-text-v1",
+                        "normalized": False,
+                        "source_text_hash": "sha256:" + "1" * 64,
+                        "embedding": [1.0, 0.0, 0.0],
+                    }
+                ],
+            )
+
+            with self.assertRaisesRegex(ValueError, "unknown claim vector"):
+                compile_bundle(
+                    pack,
+                    root / "unknown-vector",
+                    vectors_jsonl=vectors_path,
+                )
+
+    def test_vector_import_fails_when_source_hash_is_stale(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            pack = self.write_fixture(root)
+            vectors_path = self.write_vectors(
+                root / "claim-vectors.jsonl",
+                pack,
+                {
+                    "C001": [0.0, 1.0, 0.0],
+                    "C002": [1.0, 0.0, 0.0],
+                    "C003": [0.0, 0.0, 1.0],
+                },
+                stale_claim_uid="example-supersession#C002",
+            )
+
+            with self.assertRaisesRegex(ValueError, "source_text_hash mismatch"):
+                compile_bundle(
+                    pack,
+                    root / "stale-vector",
+                    vectors_jsonl=vectors_path,
+                )
+
+    def test_query_vector_model_mismatch_fails_fast(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            pack = self.write_fixture(root)
+            vectors_path = self.write_vectors(
+                root / "claim-vectors.jsonl",
+                pack,
+                {
+                    "C001": [0.0, 1.0, 0.0],
+                    "C002": [1.0, 0.0, 0.0],
+                    "C003": [0.0, 0.0, 1.0],
+                },
+            )
+
+            with self.assertRaisesRegex(ValueError, "query vector model_id mismatch"):
+                compile_bundle(
+                    pack,
+                    root / "bad-query-vector",
+                    vectors_jsonl=vectors_path,
+                    query_texts=["current reading"],
+                    query_vectors=[
+                        {
+                            "contract_version": 1,
+                            "model_id": "other-embedder",
+                            "dimensions": 3,
+                            "embedding": [1.0, 0.0, 0.0],
+                        }
+                    ],
+                    search_mode="vector",
+                )
 
 
 if __name__ == "__main__":

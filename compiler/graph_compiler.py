@@ -12,6 +12,7 @@ import dataclasses
 import datetime
 import hashlib
 import json
+import math
 import re
 import shutil
 import sqlite3
@@ -21,10 +22,14 @@ from typing import Any
 import yaml
 
 
-SCHEMA_VERSION = 1
-COMPILER_VERSION = "0.5.0"
+SCHEMA_VERSION = 2
+COMPILER_VERSION = "0.6.0"
 DEFAULT_QUERY_LIMIT = 3
-SEARCH_MODES = ("fts5", "lexical")
+SEARCH_MODES = ("fts5", "vector", "hybrid", "lexical")
+VECTOR_SEARCH_MODES = ("vector", "hybrid")
+RRF_K = 60
+VECTOR_CONTRACT_VERSION = 1
+EMBEDDING_SURFACE_VERSION = "claim-search-text-v1"
 
 RELATION_RE = re.compile(
     r"(\u2297~|\u2297!|\u2297|\u2192|\u2190|\u2298|\u2194|~)"
@@ -189,6 +194,17 @@ class ParsedPack:
     claims: list[Claim]
     evidence: list[Evidence]
     relations: list[Relation]
+
+
+@dataclasses.dataclass(frozen=True)
+class ClaimVector:
+    claim_uid: str
+    model_id: str
+    dimensions: int
+    vector: list[float]
+    source_text_hash: str
+    normalized: bool
+    distance: str
 
 
 def claim_uid(pack_id: str, local_claim_id: str) -> str:
@@ -823,6 +839,147 @@ def claim_search_text(claim: Claim, evidence_by_uid: dict[str, Evidence]) -> str
     )
 
 
+def vector_text_hash(text: str) -> str:
+    return "sha256:" + hashlib.sha256(text.encode("utf-8")).hexdigest()
+
+
+def normalize_vector_values(raw: Any, *, label: str) -> list[float]:
+    if not isinstance(raw, list) or not raw:
+        raise ValueError(f"{label} must be a non-empty JSON array")
+    vector = []
+    for index, value in enumerate(raw):
+        if not isinstance(value, (int, float)) or isinstance(value, bool):
+            raise ValueError(f"{label}[{index}] must be numeric")
+        float_value = float(value)
+        if not math.isfinite(float_value):
+            raise ValueError(f"{label}[{index}] must be finite")
+        vector.append(float_value)
+    if vector_norm(vector) == 0:
+        raise ValueError(f"{label} must not be a zero vector")
+    return vector
+
+
+def vector_norm(vector: list[float]) -> float:
+    return math.sqrt(math.fsum(value * value for value in vector))
+
+
+def cosine_similarity(left: list[float], right: list[float]) -> float:
+    if len(left) != len(right):
+        raise ValueError(f"vector dimensions differ: {len(left)} != {len(right)}")
+    left_norm = vector_norm(left)
+    right_norm = vector_norm(right)
+    if left_norm == 0 or right_norm == 0:
+        raise ValueError("cannot compare zero vectors")
+    return math.fsum(a * b for a, b in zip(left, right, strict=True)) / (left_norm * right_norm)
+
+
+def parse_claim_vector_row(raw: dict[str, Any], *, line_number: int) -> ClaimVector:
+    if not isinstance(raw, dict):
+        raise ValueError(f"vector row {line_number} must be a JSON object")
+
+    contract_version = raw.get("contract_version")
+    if contract_version != VECTOR_CONTRACT_VERSION:
+        raise ValueError(
+            f"vector row {line_number} must use contract_version {VECTOR_CONTRACT_VERSION}"
+        )
+    surface_version = raw.get("embedding_surface_version")
+    if surface_version != EMBEDDING_SURFACE_VERSION:
+        raise ValueError(
+            f"vector row {line_number} must use embedding_surface_version {EMBEDDING_SURFACE_VERSION}"
+        )
+
+    claim_uid_value = raw.get("claim_uid")
+    model_id = raw.get("model_id")
+    source_text_hash = raw.get("source_text_hash")
+    if not isinstance(claim_uid_value, str) or not claim_uid_value:
+        raise ValueError(f"vector row {line_number} must include claim_uid")
+    if not isinstance(model_id, str) or not model_id:
+        raise ValueError(f"vector row {line_number} must include model_id")
+    if not isinstance(source_text_hash, str) or not source_text_hash.startswith("sha256:"):
+        raise ValueError(f"vector row {line_number} must include source_text_hash")
+
+    vector = normalize_vector_values(
+        raw.get("embedding", raw.get("vector")),
+        label=f"vector row {line_number} embedding",
+    )
+    dimensions = raw.get("dimensions")
+    if not isinstance(dimensions, int) or dimensions < 1:
+        raise ValueError(f"vector row {line_number} must include positive integer dimensions")
+    if dimensions != len(vector):
+        raise ValueError(
+            f"vector row {line_number} dimensions mismatch: metadata {dimensions}, vector {len(vector)}"
+        )
+
+    distance = raw.get("distance", "cosine")
+    if distance != "cosine":
+        raise ValueError(f"vector row {line_number} has unsupported distance: {distance}")
+
+    normalized = raw.get("normalized", False)
+    if not isinstance(normalized, bool):
+        raise ValueError(f"vector row {line_number} normalized must be boolean")
+
+    return ClaimVector(
+        claim_uid=claim_uid_value,
+        model_id=model_id,
+        dimensions=dimensions,
+        vector=vector,
+        source_text_hash=source_text_hash,
+        normalized=normalized,
+        distance=distance,
+    )
+
+
+def load_claim_vectors(vectors_jsonl: Path) -> list[ClaimVector]:
+    if not vectors_jsonl.exists():
+        raise ValueError(f"claim vector file does not exist: {vectors_jsonl}")
+    vectors: list[ClaimVector] = []
+    for line_number, line in enumerate(vectors_jsonl.read_text().splitlines(), start=1):
+        if not line.strip():
+            continue
+        try:
+            raw = json.loads(line)
+        except json.JSONDecodeError as exc:
+            raise ValueError(f"vector row {line_number} is not valid JSON: {exc}") from exc
+        vectors.append(parse_claim_vector_row(raw, line_number=line_number))
+    if not vectors:
+        raise ValueError(f"claim vector file is empty: {vectors_jsonl}")
+    return vectors
+
+
+def query_vector_from_json(raw: Any) -> dict[str, Any]:
+    if not isinstance(raw, dict):
+        raise ValueError("query vector must be a JSON object")
+    contract_version = raw.get("contract_version")
+    if contract_version != VECTOR_CONTRACT_VERSION:
+        raise ValueError(f"query vector must use contract_version {VECTOR_CONTRACT_VERSION}")
+    model_id = raw.get("model_id")
+    if not isinstance(model_id, str) or not model_id:
+        raise ValueError("query vector must include model_id")
+    vector = normalize_vector_values(
+        raw.get("embedding", raw.get("vector")),
+        label="query vector embedding",
+    )
+    dimensions = raw.get("dimensions", len(vector))
+    if not isinstance(dimensions, int) or dimensions != len(vector):
+        raise ValueError("query vector dimensions must match embedding length")
+    distance = raw.get("distance", "cosine")
+    if distance != "cosine":
+        raise ValueError(f"query vector has unsupported distance: {distance}")
+    return {
+        "contract_version": contract_version,
+        "model_id": model_id,
+        "dimensions": dimensions,
+        "vector": vector,
+        "distance": distance,
+    }
+
+
+def load_query_vector(path: Path) -> dict[str, Any]:
+    if not path.exists():
+        raise ValueError(f"query vector file does not exist: {path}")
+    return query_vector_from_json(json.loads(path.read_text()))
+
+
 def create_fts5_claim_search(conn: sqlite3.Connection, search_rows: list[tuple[str, str, str, str]]) -> bool:
     try:
         conn.execute(
@@ -855,6 +1012,8 @@ def compile_sqlite(
     *,
     export_tier: str,
     projection_report: dict[str, Any],
+    vectors_jsonl: Path | None = None,
+    source_claim_uids: set[str] | None = None,
 ) -> None:
     parsed_packs = parsed if isinstance(parsed, list) else [parsed]
     parsed_packs = resolve_relations(parsed_packs)
@@ -868,7 +1027,7 @@ def compile_sqlite(
         conn.executescript(
             """
             PRAGMA foreign_keys = ON;
-            PRAGMA user_version = 1;
+            PRAGMA user_version = 2;
 
             CREATE TABLE graph_meta (
               key TEXT PRIMARY KEY,
@@ -954,6 +1113,19 @@ def compile_sqlite(
               FOREIGN KEY (claim_uid) REFERENCES kp_claims(claim_uid)
             );
 
+            CREATE TABLE kp_claim_vectors (
+              claim_uid TEXT PRIMARY KEY,
+              model_id TEXT NOT NULL,
+              dimensions INTEGER NOT NULL,
+              distance TEXT NOT NULL,
+              normalized INTEGER NOT NULL DEFAULT 0,
+              contract_version INTEGER NOT NULL,
+              embedding_surface_version TEXT NOT NULL,
+              source_text_hash TEXT NOT NULL,
+              vector_json TEXT NOT NULL,
+              FOREIGN KEY (claim_uid) REFERENCES kp_claims(claim_uid)
+            );
+
             CREATE INDEX idx_kp_claims_pack_local ON kp_claims(pack_id, local_claim_id);
             CREATE INDEX idx_kp_evidence_pack_local ON kp_evidence(pack_id, local_evidence_id);
             CREATE INDEX idx_kp_claim_evidence_evidence ON kp_claim_evidence_links(evidence_uid);
@@ -961,6 +1133,7 @@ def compile_sqlite(
             CREATE INDEX idx_kp_relations_to ON kp_claim_relations(to_claim_uid);
             CREATE INDEX idx_kp_relations_type ON kp_claim_relations(relation_type);
             CREATE INDEX idx_kp_claim_search_pack ON kp_claim_search(pack_id, local_claim_id);
+            CREATE INDEX idx_kp_claim_vectors_model ON kp_claim_vectors(model_id, dimensions);
             """
         )
         unresolved_relation_count = sum(
@@ -1055,6 +1228,10 @@ def compile_sqlite(
             )
             for claim in claims
         ]
+        search_text_by_claim_uid = {
+            claim_uid_value: search_text
+            for claim_uid_value, _pack_id, _local_claim_id, search_text in search_rows
+        }
         conn.executemany(
             """
             INSERT INTO kp_claim_search (
@@ -1070,6 +1247,105 @@ def compile_sqlite(
                 ("search_engine", "fts5" if fts5_available else "unavailable"),
                 ("search_fts5_available", str(fts5_available).lower()),
             ],
+        )
+        vector_meta = {
+            "vector_index": "absent",
+            "vector_search_available": "false",
+            "vector_contract_version": str(VECTOR_CONTRACT_VERSION),
+            "embedding_surface_version": EMBEDDING_SURFACE_VERSION,
+            "vector_claim_count": "0",
+            "vector_claim_coverage": f"0/{len(claims)}",
+            "vector_ignored_row_count": "0",
+            "vector_model_id": "",
+            "vector_dimensions": "0",
+            "vector_distance": "",
+            "vector_normalized": "",
+        }
+        if vectors_jsonl is not None:
+            raw_vectors = load_claim_vectors(vectors_jsonl)
+            claim_uids = {claim.claim_uid for claim in claims}
+            known_claim_uids = source_claim_uids or claim_uids
+            vectors_by_claim_uid: dict[str, ClaimVector] = {}
+            ignored_rows = 0
+            model_id: str | None = None
+            dimensions: int | None = None
+            normalized: bool | None = None
+            distance: str | None = None
+
+            for vector in raw_vectors:
+                if vector.claim_uid not in known_claim_uids:
+                    raise ValueError(f"unknown claim vector for {vector.claim_uid}")
+                if vector.claim_uid not in claim_uids:
+                    ignored_rows += 1
+                    continue
+                if vector.claim_uid in vectors_by_claim_uid:
+                    raise ValueError(f"duplicate claim vector for {vector.claim_uid}")
+                expected_hash = vector_text_hash(search_text_by_claim_uid[vector.claim_uid])
+                if vector.source_text_hash != expected_hash:
+                    raise ValueError(
+                        f"stale claim vector for {vector.claim_uid}: source_text_hash mismatch"
+                    )
+                if model_id is None:
+                    model_id = vector.model_id
+                    dimensions = vector.dimensions
+                    normalized = vector.normalized
+                    distance = vector.distance
+                elif (
+                    vector.model_id != model_id
+                    or vector.dimensions != dimensions
+                    or vector.normalized != normalized
+                    or vector.distance != distance
+                ):
+                    raise ValueError("claim vector file contains mixed vector contracts")
+                vectors_by_claim_uid[vector.claim_uid] = vector
+
+            missing_claim_uids = sorted(claim_uids - set(vectors_by_claim_uid))
+            if missing_claim_uids:
+                examples = ", ".join(missing_claim_uids[:3])
+                raise ValueError(
+                    "claim vector coverage incomplete; missing "
+                    f"{len(missing_claim_uids)} claim vectors"
+                    + (f" (examples: {examples})" if examples else "")
+                )
+
+            conn.executemany(
+                """
+                INSERT INTO kp_claim_vectors (
+                  claim_uid, model_id, dimensions, distance, normalized, contract_version,
+                  embedding_surface_version, source_text_hash, vector_json
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                [
+                    (
+                        vector.claim_uid,
+                        vector.model_id,
+                        vector.dimensions,
+                        vector.distance,
+                        1 if vector.normalized else 0,
+                        VECTOR_CONTRACT_VERSION,
+                        EMBEDDING_SURFACE_VERSION,
+                        vector.source_text_hash,
+                        json.dumps(vector.vector, separators=(",", ":")),
+                    )
+                    for vector in sorted(vectors_by_claim_uid.values(), key=lambda item: item.claim_uid)
+                ],
+            )
+            vector_meta = {
+                "vector_index": "imported",
+                "vector_search_available": "true",
+                "vector_contract_version": str(VECTOR_CONTRACT_VERSION),
+                "embedding_surface_version": EMBEDDING_SURFACE_VERSION,
+                "vector_claim_count": str(len(vectors_by_claim_uid)),
+                "vector_claim_coverage": f"{len(vectors_by_claim_uid)}/{len(claim_uids)}",
+                "vector_ignored_row_count": str(ignored_rows),
+                "vector_model_id": model_id or "",
+                "vector_dimensions": str(dimensions or 0),
+                "vector_distance": distance or "",
+                "vector_normalized": str(normalized).lower() if normalized is not None else "",
+            }
+        conn.executemany(
+            "INSERT OR REPLACE INTO graph_meta (key, value) VALUES (?, ?)",
+            sorted(vector_meta.items()),
         )
         conn.executemany(
             """
@@ -1166,6 +1442,9 @@ def validate_projection(db_path: Path, export_tier: str) -> dict[str, Any]:
     policy = EXPORT_POLICIES[export_tier]
     conn = sqlite3.connect(db_path)
     try:
+        graph_meta = read_graph_meta(conn)
+        claim_count = conn.execute("SELECT count(*) FROM kp_claims").fetchone()[0]
+        vector_count = conn.execute("SELECT count(*) FROM kp_claim_vectors").fetchone()[0]
         claim_policy_violations = conn.execute(
             f"""
             SELECT count(*)
@@ -1224,6 +1503,14 @@ def validate_projection(db_path: Path, export_tier: str) -> dict[str, Any]:
             WHERE claim.claim_uid IS NULL
             """
         ).fetchone()[0]
+        dangling_vector_rows = conn.execute(
+            """
+            SELECT count(*)
+            FROM kp_claim_vectors vector
+            LEFT JOIN kp_claims claim ON claim.claim_uid = vector.claim_uid
+            WHERE claim.claim_uid IS NULL
+            """
+        ).fetchone()[0]
         if sqlite_table_exists(conn, "kp_claim_search_fts"):
             dangling_fts_rows = conn.execute(
                 """
@@ -1247,7 +1534,13 @@ def validate_projection(db_path: Path, export_tier: str) -> dict[str, Any]:
         "dangling_evidence_links": dangling_evidence_links,
         "dangling_relations": dangling_relations,
         "dangling_search_rows": dangling_search_rows,
+        "dangling_vector_rows": dangling_vector_rows,
         "dangling_fts_rows": dangling_fts_rows,
+        "incomplete_vector_coverage": (
+            max(0, claim_count - vector_count)
+            if graph_meta.get("vector_index") == "imported"
+            else 0
+        ),
         "blocked_unresolved_relations": blocked_unresolved_relations,
     }
     return {
@@ -1459,12 +1752,218 @@ def search_claims_fts5(
     )[:limit]
 
 
+def vector_search_contract(conn: sqlite3.Connection) -> dict[str, Any]:
+    if not sqlite_table_exists(conn, "kp_claim_vectors"):
+        raise ValueError("vector search requested but the compiled graph has no claim vector index")
+    claim_count = conn.execute("SELECT count(*) FROM kp_claims").fetchone()[0]
+    vector_count = conn.execute("SELECT count(*) FROM kp_claim_vectors").fetchone()[0]
+    if vector_count == 0:
+        raise ValueError("vector search requested but the compiled graph has no claim vector index")
+    if vector_count != claim_count:
+        raise ValueError(
+            f"vector search requested but vector coverage is incomplete: {vector_count}/{claim_count}"
+        )
+    rows = conn.execute(
+        """
+        SELECT model_id, dimensions, distance, normalized, contract_version,
+               embedding_surface_version, count(*) AS count
+        FROM kp_claim_vectors
+        GROUP BY model_id, dimensions, distance, normalized, contract_version,
+                 embedding_surface_version
+        """
+    ).fetchall()
+    if len(rows) != 1:
+        raise ValueError("vector search requested but the claim vector contract is mixed")
+    row = rows[0]
+    if int(row["contract_version"]) != VECTOR_CONTRACT_VERSION:
+        raise ValueError("vector search requested but the vector contract version is unsupported")
+    if row["embedding_surface_version"] != EMBEDDING_SURFACE_VERSION:
+        raise ValueError("vector search requested but the embedding surface version is unsupported")
+    return {
+        "model_id": row["model_id"],
+        "dimensions": int(row["dimensions"]),
+        "distance": row["distance"],
+        "normalized": bool(row["normalized"]),
+        "contract_version": int(row["contract_version"]),
+        "embedding_surface_version": row["embedding_surface_version"],
+        "claim_count": int(row["count"]),
+    }
+
+
+def validate_query_vector(query_vector: dict[str, Any] | None, contract: dict[str, Any]) -> dict[str, Any]:
+    if query_vector is None:
+        raise ValueError("vector search requested but no query vector was provided")
+    normalized_query_vector = query_vector_from_json(query_vector)
+    if normalized_query_vector["model_id"] != contract["model_id"]:
+        raise ValueError(
+            "query vector model_id mismatch: "
+            f"{normalized_query_vector['model_id']} != {contract['model_id']}"
+        )
+    if normalized_query_vector["dimensions"] != contract["dimensions"]:
+        raise ValueError(
+            "query vector dimensions mismatch: "
+            f"{normalized_query_vector['dimensions']} != {contract['dimensions']}"
+        )
+    if normalized_query_vector["distance"] != contract["distance"]:
+        raise ValueError(
+            "query vector distance mismatch: "
+            f"{normalized_query_vector['distance']} != {contract['distance']}"
+        )
+    return normalized_query_vector
+
+
+def search_claims_vector(
+    conn: sqlite3.Connection,
+    query: str,
+    *,
+    limit: int,
+    query_vector: dict[str, Any] | None,
+) -> list[dict[str, Any]]:
+    contract = vector_search_contract(conn)
+    normalized_query_vector = validate_query_vector(query_vector, contract)
+    rows = conn.execute(
+        """
+        SELECT claim.*, search.search_text, vector.vector_json
+        FROM kp_claim_vectors vector
+        JOIN kp_claims claim ON claim.claim_uid = vector.claim_uid
+        JOIN kp_claim_search search ON search.claim_uid = vector.claim_uid
+        ORDER BY claim.pack_id, claim.local_claim_id
+        """
+    ).fetchall()
+    hits = []
+    for row in rows:
+        claim = row_to_dict(row)
+        search_text = claim.pop("search_text")
+        vector = json.loads(claim.pop("vector_json"))
+        similarity = cosine_similarity(normalized_query_vector["vector"], vector)
+        _lexical_score, matched_terms = lexical_score(query, search_text, claim["confidence"])
+        structured_bonus = structured_search_bonus(query, claim, search_text)
+        score = similarity + (structured_bonus * 0.05)
+        hits.append(
+            {
+                **claim,
+                "score": round(score, 6),
+                "matched_terms": matched_terms,
+                "search_engine": "vector",
+                "vector_similarity": round(similarity, 6),
+                "vector_model_id": contract["model_id"],
+            }
+        )
+    return sorted(
+        hits,
+        key=lambda hit: (
+            -hit["score"],
+            -hit["vector_similarity"],
+            -float(hit.get("confidence") or 0.0),
+            hit["claim_uid"],
+        ),
+    )[:limit]
+
+
+def fetch_search_texts(conn: sqlite3.Connection, claim_uids: set[str]) -> dict[str, str]:
+    if not claim_uids:
+        return {}
+    placeholders = ",".join("?" for _ in claim_uids)
+    rows = conn.execute(
+        f"SELECT claim_uid, search_text FROM kp_claim_search WHERE claim_uid IN ({placeholders})",
+        sorted(claim_uids),
+    ).fetchall()
+    return {row["claim_uid"]: row["search_text"] for row in rows}
+
+
+def search_claims_hybrid(
+    conn: sqlite3.Connection,
+    query: str,
+    *,
+    limit: int,
+    query_vector: dict[str, Any] | None,
+) -> list[dict[str, Any]]:
+    if not sqlite_table_exists(conn, "kp_claim_search_fts"):
+        raise ValueError("hybrid search requested but the compiled graph has no FTS5 index")
+
+    candidate_limit = max(limit * 8, 20)
+    fts_hits = search_claims_fts5(conn, query, limit=candidate_limit)
+    vector_hits = search_claims_vector(
+        conn,
+        query,
+        limit=candidate_limit,
+        query_vector=query_vector,
+    )
+    combined: dict[str, dict[str, Any]] = {}
+
+    for engine, hits in [("fts5", fts_hits), ("vector", vector_hits)]:
+        for rank, hit in enumerate(hits, start=1):
+            uid = hit["claim_uid"]
+            combined_hit = combined.setdefault(
+                uid,
+                {
+                    **{
+                        key: value
+                        for key, value in hit.items()
+                        if key
+                        not in {
+                            "score",
+                            "search_engine",
+                            "bm25_rank",
+                            "vector_similarity",
+                            "vector_model_id",
+                        }
+                    },
+                    "_rrf_score": 0.0,
+                    "component_ranks": {},
+                    "component_scores": {},
+                    "matched_terms": [],
+                },
+            )
+            combined_hit["_rrf_score"] += 1.0 / (RRF_K + rank)
+            combined_hit["component_ranks"][engine] = rank
+            if engine == "fts5":
+                combined_hit["component_scores"]["fts5_score"] = hit["score"]
+                combined_hit["component_scores"]["bm25_rank"] = hit.get("bm25_rank")
+            else:
+                combined_hit["component_scores"]["vector_score"] = hit["score"]
+                combined_hit["component_scores"]["vector_similarity"] = hit.get("vector_similarity")
+                combined_hit["vector_similarity"] = hit.get("vector_similarity")
+                combined_hit["vector_model_id"] = hit.get("vector_model_id")
+            combined_hit["matched_terms"] = sorted(
+                set(combined_hit["matched_terms"]) | set(hit.get("matched_terms", []))
+            )
+
+    search_texts = fetch_search_texts(conn, set(combined))
+    for uid, hit in combined.items():
+        search_text = search_texts.get(uid, "")
+        structured_bonus = structured_search_bonus(query, hit, search_text)
+        hit["_structured_bonus"] = structured_bonus
+        hit["score"] = round(hit["_rrf_score"] + (structured_bonus * 0.001), 6)
+        hit["search_engine"] = "hybrid"
+        hit["component_scores"] = {
+            key: value
+            for key, value in sorted(hit["component_scores"].items())
+            if value is not None
+        }
+
+    ranked_hits = sorted(
+        combined.values(),
+        key=lambda hit: (
+            -hit["_rrf_score"],
+            -hit["_structured_bonus"],
+            -float(hit.get("confidence") or 0.0),
+            hit["claim_uid"],
+        ),
+    )[:limit]
+    for hit in ranked_hits:
+        hit.pop("_rrf_score", None)
+        hit.pop("_structured_bonus", None)
+    return ranked_hits
+
+
 def search_claims(
     db_path: Path,
     query: str,
     *,
     limit: int = DEFAULT_QUERY_LIMIT,
     mode: str = "fts5",
+    query_vector: dict[str, Any] | None = None,
 ) -> list[dict[str, Any]]:
     if limit < 1:
         raise ValueError("search limit must be at least 1")
@@ -1479,6 +1978,10 @@ def search_claims(
             if not fts5_ready:
                 raise ValueError("FTS5 search requested but the compiled graph has no FTS5 index")
             return search_claims_fts5(conn, query, limit=limit)
+        if mode == "vector":
+            return search_claims_vector(conn, query, limit=limit, query_vector=query_vector)
+        if mode == "hybrid":
+            return search_claims_hybrid(conn, query, limit=limit, query_vector=query_vector)
         return search_claims_lexical(conn, query, limit=limit)
     finally:
         conn.close()
@@ -1926,8 +2429,10 @@ def compile_bundle(
     *,
     export_tier: str = "client",
     require_explicit_boundary: bool = False,
+    vectors_jsonl: Path | None = None,
     query_claims: list[str] | None = None,
     query_texts: list[str] | None = None,
+    query_vectors: list[dict[str, Any]] | None = None,
     query_limit: int = DEFAULT_QUERY_LIMIT,
     search_mode: str = "fts5",
     questions: dict[str, str] | None = None,
@@ -1938,6 +2443,11 @@ def compile_bundle(
     output_dir.mkdir(parents=True)
 
     source_packs = [parse_pack(path) for path in pack_dirs]
+    source_claim_uids = {
+        claim.claim_uid
+        for parsed_pack in source_packs
+        for claim in parsed_pack.claims
+    }
     boundary_report = (
         validate_explicit_boundaries(source_packs)
         if require_explicit_boundary
@@ -1954,6 +2464,8 @@ def compile_bundle(
         db_path,
         export_tier=export_tier,
         projection_report=projection_report,
+        vectors_jsonl=vectors_jsonl,
+        source_claim_uids=source_claim_uids,
     )
 
     write_jsonl(
@@ -1986,7 +2498,15 @@ def compile_bundle(
 
     query_claims = query_claims or []
     query_texts = query_texts or []
+    query_vectors = query_vectors or []
     questions = questions or {}
+    if query_texts and search_mode in VECTOR_SEARCH_MODES and len(query_vectors) != len(query_texts):
+        raise ValueError(
+            f"{search_mode} search requires one query vector per query text "
+            f"({len(query_vectors)} vectors for {len(query_texts)} queries)"
+        )
+    if query_vectors and search_mode not in VECTOR_SEARCH_MODES:
+        raise ValueError(f"query vectors were provided but {search_mode} search does not use vectors")
     for local_claim_id in query_claims:
         question = questions.get(local_claim_id, f"What should be known about {local_claim_id}?")
         label = artifact_label(local_claim_id)
@@ -1995,7 +2515,18 @@ def compile_bundle(
     search_reports: list[dict[str, Any]] = []
     for query_index, query_text in enumerate(query_texts, start=1):
         query_slug = slug_label(query_text)
-        hits = search_claims(db_path, query_text, limit=query_limit, mode=search_mode)
+        query_vector = (
+            query_vectors[query_index - 1]
+            if search_mode in VECTOR_SEARCH_MODES
+            else None
+        )
+        hits = search_claims(
+            db_path,
+            query_text,
+            limit=query_limit,
+            mode=search_mode,
+            query_vector=query_vector,
+        )
         hit_reports = []
         for rank, hit in enumerate(hits, start=1):
             label = f"search-{query_index}-{query_slug}-r{rank}-{artifact_label(hit['claim_uid'])}"
@@ -2015,6 +2546,17 @@ def compile_bundle(
                     "search_engine": hit["search_engine"],
                     "matched_terms": hit["matched_terms"],
                     "artifacts": artifacts,
+                }
+                | {
+                    key: hit[key]
+                    for key in [
+                        "bm25_rank",
+                        "vector_similarity",
+                        "vector_model_id",
+                        "component_ranks",
+                        "component_scores",
+                    ]
+                    if key in hit
                 }
             )
         search_report = {
@@ -2089,6 +2631,11 @@ def main() -> int:
         help="Refuse packs whose claims or evidence omit explicit compiler boundary metadata.",
     )
     parser.add_argument(
+        "--vectors-jsonl",
+        type=Path,
+        help="Optional claim vector JSONL file to import as a derived vector index.",
+    )
+    parser.add_argument(
         "--query-claim",
         action="append",
         default=[],
@@ -2101,6 +2648,16 @@ def main() -> int:
         help="Text query to search, retrieve, and render after compilation. May be passed more than once.",
     )
     parser.add_argument(
+        "--query-vector",
+        type=Path,
+        action="append",
+        default=[],
+        help=(
+            "Path to a JSON query vector object for the corresponding --query-text. "
+            "Required for vector and hybrid search."
+        ),
+    )
+    parser.add_argument(
         "--query-limit",
         type=int,
         default=DEFAULT_QUERY_LIMIT,
@@ -2110,17 +2667,24 @@ def main() -> int:
         "--search-mode",
         choices=SEARCH_MODES,
         default="fts5",
-        help="Search engine for text queries. Defaults to fail-fast FTS5/BM25. Use lexical only explicitly for tests or debugging.",
+        help=(
+            "Search engine for text queries. Defaults to fail-fast FTS5/BM25. "
+            "Vector and hybrid require imported vectors plus matching query vectors. "
+            "Use lexical only explicitly for tests or debugging."
+        ),
     )
     args = parser.parse_args()
+    query_vectors = [load_query_vector(path) for path in args.query_vector]
 
     summary = compile_bundle(
         args.pack_dirs,
         args.output,
         export_tier=args.export_tier,
         require_explicit_boundary=args.require_explicit_boundary,
+        vectors_jsonl=args.vectors_jsonl,
         query_claims=args.query_claim,
         query_texts=args.query_text,
+        query_vectors=query_vectors,
         query_limit=args.query_limit,
         search_mode=args.search_mode,
     )
