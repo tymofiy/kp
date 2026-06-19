@@ -117,6 +117,18 @@ Synthetic review note.
         )
         return pack
 
+    def declare_pack_boundary_defaults_explicit(self, pack: Path) -> None:
+        pack_yaml = pack / "PACK.yaml"
+        pack_yaml.write_text(
+            pack_yaml.read_text()
+            + """
+extensions:
+  kp_compiler:
+    boundary:
+      defaults_explicit: true
+"""
+        )
+
     def write_vectors(
         self,
         path: Path,
@@ -654,9 +666,122 @@ Synthetic internal-only note.
                     "valid": True,
                     "implicit_claims": 0,
                     "implicit_evidence": 0,
+                    "boundary_source_counts": {
+                        "claims": {"row": 4},
+                        "evidence": {"row": 3},
+                    },
                 },
             )
             self.assertEqual(summary["search_reports"][0]["hits"][0]["claim_uid"], "example-tiered#C001")
+
+    def test_require_explicit_boundary_accepts_pack_default_declaration(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            pack = self.write_fixture(root)
+            self.declare_pack_boundary_defaults_explicit(pack)
+
+            summary = compile_bundle(
+                pack,
+                root / "strict-defaults",
+                require_explicit_boundary=True,
+            )
+
+            self.assertEqual(
+                summary["boundary"],
+                {
+                    "required": True,
+                    "valid": True,
+                    "implicit_claims": 0,
+                    "implicit_evidence": 0,
+                    "boundary_source_counts": {
+                        "claims": {"pack_default": 3},
+                        "evidence": {"pack_default": 2},
+                    },
+                },
+            )
+            self.assertEqual(
+                summary["projection"]["source_boundary_counts"]["claims"],
+                {
+                    "tier=client|sensitivity=public|visibility=public|explicit=false": 3,
+                },
+            )
+            self.assertEqual(
+                summary["projection"]["source_boundary_counts"]["evidence"],
+                {
+                    "tier=client|sensitivity=public|visibility=public|explicit=false": 2,
+                },
+            )
+            self.assertEqual(
+                summary["projection"]["source_boundary_source_counts"],
+                {
+                    "claims": {"pack_default": 3},
+                    "evidence": {"pack_default": 2},
+                },
+            )
+
+    def test_partial_claim_boundary_annotation_fails_fast(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            pack = self.write_fixture(root)
+            self.declare_pack_boundary_defaults_explicit(pack)
+            claims_path = pack / "claims.md"
+            claims_path.write_text(
+                claims_path.read_text().replace(
+                    "Preserved as prior belief.",
+                    "Preserved as prior belief. <!-- kp-compiler: sensitivity=internal -->",
+                )
+            )
+
+            with self.assertRaisesRegex(ValueError, "partial compiler boundary metadata"):
+                compile_bundle(pack, root / "partial-claim")
+
+    def test_partial_evidence_boundary_metadata_fails_fast(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            pack = self.write_fixture(root)
+            self.declare_pack_boundary_defaults_explicit(pack)
+            evidence_path = pack / "evidence.md"
+            evidence_path.write_text(
+                evidence_path.read_text().replace(
+                    "> **type:** synthetic_document | **captured:** 2026-06-18",
+                    "> **type:** synthetic_document | **captured:** 2026-06-18 | **sensitivity:** internal",
+                )
+            )
+
+            with self.assertRaisesRegex(ValueError, "partial compiler boundary metadata"):
+                compile_bundle(pack, root / "partial-evidence")
+
+    def test_pack_boundary_declaration_requires_boolean(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            pack = self.write_fixture(root)
+            pack_yaml = pack / "PACK.yaml"
+            pack_yaml.write_text(
+                pack_yaml.read_text()
+                + """
+extensions:
+  kp_compiler:
+    boundary:
+      defaults_explicit: "true"
+"""
+            )
+
+            with self.assertRaisesRegex(ValueError, "defaults_explicit must be a boolean"):
+                compile_bundle(pack, root / "bad-manifest")
+
+    def test_pack_boundary_declaration_requires_manifest_defaults(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            pack = self.write_fixture(root)
+            pack_yaml = pack / "PACK.yaml"
+            pack_yaml.write_text(pack_yaml.read_text().replace("visibility: public\n", ""))
+            self.declare_pack_boundary_defaults_explicit(pack)
+
+            with self.assertRaisesRegex(
+                ValueError,
+                "requires explicit pack sensitivity and visibility",
+            ):
+                compile_bundle(pack, root / "missing-pack-default")
 
     def test_text_query_renders_graph_expanded_artifacts(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

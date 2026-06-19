@@ -23,7 +23,7 @@ import yaml
 
 
 SCHEMA_VERSION = 4
-COMPILER_VERSION = "0.8.1"
+COMPILER_VERSION = "0.8.2"
 DEFAULT_QUERY_LIMIT = 3
 SEARCH_MODES = ("fts5", "vector", "hybrid", "lexical")
 VECTOR_SEARCH_MODES = ("vector", "hybrid")
@@ -53,6 +53,7 @@ FIELD_RE = re.compile(r"\*\*([^:*]+):\*\*\s*(.+)")
 ANNOTATION_RE = re.compile(r"<!--\s*kp-compiler:\s*(.*?)\s*-->")
 
 EXPORT_TIERS = ("client", "server", "internal")
+BOUNDARY_FIELDS = frozenset(("tier", "sensitivity", "visibility"))
 EXPORT_POLICIES = {
     "client": {
         "tiers": {"client"},
@@ -162,6 +163,7 @@ class Claim:
     sensitivity: str
     visibility: str
     boundary_explicit: bool
+    boundary_source: str
     source_locator: str
 
 
@@ -181,6 +183,7 @@ class Evidence:
     sensitivity: str
     visibility: str
     boundary_explicit: bool
+    boundary_source: str
     source_locator: str
 
 
@@ -349,7 +352,59 @@ def normalized_boundary_metadata(
 
 
 def has_explicit_boundary(raw: dict[str, str]) -> bool:
-    return {"tier", "sensitivity", "visibility"}.issubset(raw)
+    return BOUNDARY_FIELDS.issubset(raw)
+
+
+def boundary_metadata_source(
+    raw: dict[str, str],
+    *,
+    default_boundary_explicit: bool,
+    source_locator: str,
+) -> str:
+    present = BOUNDARY_FIELDS.intersection(raw)
+    if not present:
+        return "pack_default" if default_boundary_explicit else "implicit"
+    if present != BOUNDARY_FIELDS:
+        found = ", ".join(sorted(present))
+        missing = ", ".join(sorted(BOUNDARY_FIELDS.difference(present)))
+        raise ValueError(
+            "partial compiler boundary metadata at "
+            f"{source_locator}: found {found}; missing {missing}"
+        )
+    return "row"
+
+
+def pack_boundary_defaults_explicit(pack: dict[str, Any]) -> bool:
+    extensions = pack.get("extensions")
+    if extensions is None:
+        return False
+    if not isinstance(extensions, dict):
+        raise ValueError("PACK.yaml extensions must be an object")
+
+    kp_compiler = extensions.get("kp_compiler")
+    if kp_compiler is None:
+        return False
+    if not isinstance(kp_compiler, dict):
+        raise ValueError("PACK.yaml extensions.kp_compiler must be an object")
+
+    boundary = kp_compiler.get("boundary")
+    if boundary is None:
+        return False
+    if not isinstance(boundary, dict):
+        raise ValueError("PACK.yaml extensions.kp_compiler.boundary must be an object")
+
+    defaults_explicit = boundary.get("defaults_explicit", False)
+    if not isinstance(defaults_explicit, bool):
+        raise ValueError(
+            "PACK.yaml extensions.kp_compiler.boundary.defaults_explicit "
+            "must be a boolean"
+        )
+    if defaults_explicit and ("sensitivity" not in pack or "visibility" not in pack):
+        raise ValueError(
+            "PACK.yaml extensions.kp_compiler.boundary.defaults_explicit "
+            "requires explicit pack sensitivity and visibility"
+        )
+    return defaults_explicit
 
 
 def parse_claims(
@@ -359,6 +414,7 @@ def parse_claims(
     default_tier: str,
     default_sensitivity: str,
     default_visibility: str,
+    default_boundary_explicit: bool,
 ) -> tuple[list[Claim], list[Relation]]:
     raw_claims: list[dict[str, Any]] = []
     raw_relations: list[tuple[str, str, str, str]] = []
@@ -439,6 +495,12 @@ def parse_claims(
             default_sensitivity=default_sensitivity,
             default_visibility=default_visibility,
         )
+        source_locator = f"claims.md:{block['line']}"
+        boundary_source = boundary_metadata_source(
+            annotations,
+            default_boundary_explicit=default_boundary_explicit,
+            source_locator=source_locator,
+        )
 
         raw_claims.append(
             {
@@ -454,8 +516,9 @@ def parse_claims(
                 "tier": tier,
                 "sensitivity": sensitivity,
                 "visibility": visibility,
-                "boundary_explicit": has_explicit_boundary(annotations),
-                "source_locator": f"claims.md:{block['line']}",
+                "boundary_explicit": boundary_source == "row",
+                "boundary_source": boundary_source,
+                "source_locator": source_locator,
             }
         )
 
@@ -484,6 +547,7 @@ def parse_claims(
             sensitivity=raw["sensitivity"],
             visibility=raw["visibility"],
             boundary_explicit=raw["boundary_explicit"],
+            boundary_source=raw["boundary_source"],
             source_locator=raw["source_locator"],
         )
         for raw in raw_claims
@@ -515,6 +579,7 @@ def parse_evidence(
     default_tier: str,
     default_sensitivity: str,
     default_visibility: str,
+    default_boundary_explicit: bool,
 ) -> list[Evidence]:
     sections: list[dict[str, Any]] = []
     current: dict[str, Any] | None = None
@@ -557,11 +622,18 @@ def parse_evidence(
         body, body_annotations = remove_compiler_annotations(
             " ".join(section["body"]).strip()
         )
+        boundary_fields = {**metadata, **body_annotations}
         tier, sensitivity, visibility = normalized_boundary_metadata(
-            {**metadata, **body_annotations},
+            boundary_fields,
             default_tier=default_tier,
             default_sensitivity=default_sensitivity,
             default_visibility=default_visibility,
+        )
+        source_locator = f"evidence.md:{section['line']}"
+        boundary_source = boundary_metadata_source(
+            boundary_fields,
+            default_boundary_explicit=default_boundary_explicit,
+            source_locator=source_locator,
         )
         evidence.append(
             Evidence(
@@ -578,8 +650,9 @@ def parse_evidence(
                 tier=tier,
                 sensitivity=sensitivity,
                 visibility=visibility,
-                boundary_explicit=has_explicit_boundary({**metadata, **body_annotations}),
-                source_locator=f"evidence.md:{section['line']}",
+                boundary_explicit=boundary_source == "row",
+                boundary_source=boundary_source,
+                source_locator=source_locator,
             )
         )
 
@@ -592,12 +665,14 @@ def parse_pack(pack_dir: Path) -> ParsedPack:
     default_sensitivity = str(pack.get("sensitivity", "public")).lower()
     default_visibility = str(pack.get("visibility", "public")).lower()
     default_tier = default_boundary_tier(default_sensitivity)
+    default_boundary_explicit = pack_boundary_defaults_explicit(pack)
     claims, relations = parse_claims(
         pack_id,
         (pack_dir / "claims.md").read_text(),
         default_tier=default_tier,
         default_sensitivity=default_sensitivity,
         default_visibility=default_visibility,
+        default_boundary_explicit=default_boundary_explicit,
     )
     evidence = parse_evidence(
         pack_id,
@@ -605,6 +680,7 @@ def parse_pack(pack_dir: Path) -> ParsedPack:
         default_tier=default_tier,
         default_sensitivity=default_sensitivity,
         default_visibility=default_visibility,
+        default_boundary_explicit=default_boundary_explicit,
     )
     return ParsedPack(
         pack=pack,
@@ -680,6 +756,10 @@ def increment_boundary_count(counts: dict[str, int], row: Claim | Evidence) -> N
     counts[key] = counts.get(key, 0) + 1
 
 
+def increment_boundary_source_count(counts: dict[str, int], row: Claim | Evidence) -> None:
+    counts[row.boundary_source] = counts.get(row.boundary_source, 0) + 1
+
+
 def boundary_count_report(parsed_packs: list[ParsedPack]) -> dict[str, dict[str, int]]:
     claim_counts: dict[str, int] = {}
     evidence_counts: dict[str, int] = {}
@@ -688,6 +768,20 @@ def boundary_count_report(parsed_packs: list[ParsedPack]) -> dict[str, dict[str,
             increment_boundary_count(claim_counts, claim)
         for evidence in parsed.evidence:
             increment_boundary_count(evidence_counts, evidence)
+    return {
+        "claims": dict(sorted(claim_counts.items())),
+        "evidence": dict(sorted(evidence_counts.items())),
+    }
+
+
+def boundary_source_report(parsed_packs: list[ParsedPack]) -> dict[str, dict[str, int]]:
+    claim_counts: dict[str, int] = {}
+    evidence_counts: dict[str, int] = {}
+    for parsed in parsed_packs:
+        for claim in parsed.claims:
+            increment_boundary_source_count(claim_counts, claim)
+        for evidence in parsed.evidence:
+            increment_boundary_source_count(evidence_counts, evidence)
     return {
         "claims": dict(sorted(claim_counts.items())),
         "evidence": dict(sorted(evidence_counts.items())),
@@ -704,6 +798,7 @@ def project_for_export_tier(
     parsed_packs = resolve_relations(parsed_packs)
     policy = EXPORT_POLICIES[export_tier]
     source_boundary_counts = boundary_count_report(parsed_packs)
+    source_boundary_source_counts = boundary_source_report(parsed_packs)
     allowed_claim_uids: set[str] = set()
     allowed_evidence_uids: set[str] = set()
     claim_filter_reasons: dict[str, int] = {}
@@ -780,6 +875,7 @@ def project_for_export_tier(
         )
 
     retained_boundary_counts = boundary_count_report(projected)
+    retained_boundary_source_counts = boundary_source_report(projected)
     return projected, {
         "export_tier": export_tier,
         "policy": {
@@ -796,6 +892,8 @@ def project_for_export_tier(
         "relation_filter_reasons": dict(sorted(relation_filter_reasons.items())),
         "source_boundary_counts": source_boundary_counts,
         "retained_boundary_counts": retained_boundary_counts,
+        "source_boundary_source_counts": source_boundary_source_counts,
+        "retained_boundary_source_counts": retained_boundary_source_counts,
     }
 
 
@@ -804,19 +902,20 @@ def validate_explicit_boundaries(parsed_packs: list[ParsedPack]) -> dict[str, An
         claim.claim_uid
         for parsed in parsed_packs
         for claim in parsed.claims
-        if not claim.boundary_explicit
+        if claim.boundary_source == "implicit"
     ]
     implicit_evidence = [
         evidence.evidence_uid
         for parsed in parsed_packs
         for evidence in parsed.evidence
-        if not evidence.boundary_explicit
+        if evidence.boundary_source == "implicit"
     ]
     report = {
         "required": True,
         "valid": not implicit_claims and not implicit_evidence,
         "implicit_claims": len(implicit_claims),
         "implicit_evidence": len(implicit_evidence),
+        "boundary_source_counts": boundary_source_report(parsed_packs),
     }
     if not report["valid"]:
         examples = [*implicit_claims[:3], *implicit_evidence[:3]]
@@ -3006,7 +3105,13 @@ def compile_bundle(
     boundary_report = (
         validate_explicit_boundaries(source_packs)
         if require_explicit_boundary
-        else {"required": False, "valid": True, "implicit_claims": None, "implicit_evidence": None}
+        else {
+            "required": False,
+            "valid": True,
+            "implicit_claims": None,
+            "implicit_evidence": None,
+            "boundary_source_counts": boundary_source_report(source_packs),
+        }
     )
     parsed_packs, projection_report = project_for_export_tier(
         source_packs,

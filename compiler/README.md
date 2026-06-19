@@ -44,6 +44,32 @@ Evidence entries can also use blockquote metadata fields:
 > **tier:** server | **sensitivity:** internal | **visibility:** private
 ```
 
+For packs where every unannotated claim and evidence row intentionally inherits
+the manifest-level `sensitivity` and `visibility`, declare that intent in
+`PACK.yaml`:
+
+```yaml
+extensions:
+  kp_compiler:
+    boundary:
+      defaults_explicit: true
+```
+
+This makes inherited defaults auditable as `pack_default` boundary-source
+metadata for strict builds. It does not reinterpret KP's manifest `tier` field;
+`tier: standalone` remains a pack structure declaration, not an export/trust
+boundary. The compiler still derives the default trust tier from manifest
+`sensitivity` (`public` -> `client`, `internal` / `confidential` -> `server`,
+`restricted` -> `internal`). If a row uses any row-level boundary override, it
+must declare all three compiler fields (`tier`, `sensitivity`, and
+`visibility`) or compilation fails.
+
+Inherited rows remain `explicit=false` in boundary tuple counts. Strict builds
+pass because their boundary source is `pack_default`, not because they become
+indistinguishable from row-level annotations. A pack that declares
+`defaults_explicit: true` must explicitly set manifest `sensitivity` and
+`visibility`; the compiler will not bless fallback defaults.
+
 The default export tier is `client`, which only emits `client` / `public` /
 `public` material. `server` includes client and server material, while
 `internal` is the full-trust profile.
@@ -59,8 +85,10 @@ bundles or user-facing adapter artifacts. The compiler keeps them in
 `summary.json` and out of SQLite `graph_meta`.
 
 Use `--require-explicit-boundary` for stricter local builds. In that mode every
-claim and evidence record must declare compiler boundary metadata explicitly;
-otherwise compilation fails before projection.
+claim and evidence record must declare compiler boundary metadata explicitly at
+the row level or inherit from a pack whose `extensions.kp_compiler.boundary`
+marks manifest defaults as explicit; otherwise compilation fails before
+projection.
 
 It is not yet a stable public API. Current limits:
 
@@ -107,7 +135,7 @@ python3 compiler/graph_compiler.py examples/hello-world.kpack \
 ```
 
 This intentionally fails unless every claim and evidence entry has explicit
-compiler boundary metadata.
+compiler boundary metadata or the pack declares its manifest defaults explicit.
 
 Compile and render a text-query hit:
 
