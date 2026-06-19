@@ -22,8 +22,9 @@ from typing import Any
 import yaml
 
 
-SCHEMA_VERSION = 5
-COMPILER_VERSION = "0.8.3"
+SCHEMA_VERSION = 6
+COMPILER_VERSION = "0.9.0"
+RELATION_PROFILE_SCHEMA_VERSION = "kp-relation-profile-v0"
 DEFAULT_QUERY_LIMIT = 3
 SEARCH_MODES = ("fts5", "vector", "hybrid", "lexical")
 VECTOR_SEARCH_MODES = ("vector", "hybrid")
@@ -109,6 +110,16 @@ RELATION_MAP = {
     "\u2298": "supersedes",
     "\u2194": "see_also",
 }
+
+KNOWN_RELATION_TYPES = frozenset(RELATION_MAP.values())
+KNOWN_RELATION_PROFILE_ROLES = frozenset(
+    (
+        "warns_against",
+        "operationalizes",
+        "depends_on_coverage_ledger",
+        "method_runtime_pair",
+    )
+)
 
 EDGE_PRIORITY = [
     "supersedes",
@@ -262,6 +273,19 @@ class ClaimVector:
     distance: str
 
 
+@dataclasses.dataclass(frozen=True)
+class RelationProfileEdge:
+    profile_edge_uid: str
+    from_claim_uid: str
+    to_claim_uid: str
+    relation_type: str
+    profile_role: str
+    family: str
+    direction: str
+    fixture: bool
+    source_locator: str
+
+
 def claim_uid(pack_id: str, local_claim_id: str) -> str:
     return f"{pack_id}#{local_claim_id}"
 
@@ -272,6 +296,15 @@ def evidence_uid(pack_id: str, local_evidence_id: str) -> str:
 
 def relation_uid(from_claim_uid: str, relation_type: str, target_ref: str) -> str:
     return f"{from_claim_uid}:{relation_type}:{target_ref}"
+
+
+def relation_profile_edge_uid(
+    from_claim_uid: str,
+    relation_type: str,
+    profile_role: str,
+    to_claim_uid: str,
+) -> str:
+    return f"{from_claim_uid}:{relation_type}:{profile_role}:{to_claim_uid}"
 
 
 def artifact_label(claim_id: str) -> str:
@@ -964,6 +997,162 @@ def bundle_source_hash(parsed_packs: list[ParsedPack]) -> str:
         digest.update(parsed.source_hash.encode("utf-8"))
         digest.update(b"\0")
     return digest.hexdigest()
+
+
+def require_string(value: Any, *, label: str) -> str:
+    if not isinstance(value, str) or not value.strip():
+        raise ValueError(f"{label} must be a non-empty string")
+    return value.strip()
+
+
+def load_relation_profile(
+    path: Path,
+    *,
+    source_claim_uids: set[str],
+    source_hash: str,
+) -> list[RelationProfileEdge]:
+    if not path.exists():
+        raise ValueError(f"relation profile does not exist: {path}")
+    raw = yaml.safe_load(path.read_text()) or {}
+    if not isinstance(raw, dict):
+        raise ValueError(f"relation profile must be an object: {path}")
+    if raw.get("schemaVersion") != RELATION_PROFILE_SCHEMA_VERSION:
+        raise ValueError(
+            f"relation profile schemaVersion must be {RELATION_PROFILE_SCHEMA_VERSION}: {path}"
+        )
+    expected_source_hash = raw.get("expectedSourceHash")
+    if expected_source_hash is not None and expected_source_hash != source_hash:
+        raise ValueError(
+            "relation profile source hash mismatch: "
+            f"{expected_source_hash} != {source_hash} ({path})"
+        )
+    raw_edges = raw.get("relations", raw.get("edges"))
+    if raw_edges is None:
+        raw_edges = []
+    if not isinstance(raw_edges, list):
+        raise ValueError(f"relation profile relations must be a list: {path}")
+
+    edges: list[RelationProfileEdge] = []
+    seen: set[str] = set()
+    for index, item in enumerate(raw_edges, start=1):
+        label = f"{path}:relations[{index}]"
+        if not isinstance(item, dict):
+            raise ValueError(f"{label} must be an object")
+        from_claim_uid = require_string(item.get("from"), label=f"{label}.from")
+        to_claim_uid = require_string(item.get("to"), label=f"{label}.to")
+        relation_type = require_string(
+            item.get("relationType", item.get("relation_type")),
+            label=f"{label}.relationType",
+        )
+        profile_role = require_string(
+            item.get("role", item.get("profileRole", item.get("profile_role"))),
+            label=f"{label}.role",
+        )
+        family = require_string(item.get("family"), label=f"{label}.family")
+        direction = require_string(item.get("direction", "directed"), label=f"{label}.direction")
+        fixture = item.get("fixture", False)
+        if relation_type not in KNOWN_RELATION_TYPES:
+            raise ValueError(f"{label}.relationType is unsupported: {relation_type}")
+        if profile_role not in KNOWN_RELATION_PROFILE_ROLES:
+            raise ValueError(f"{label}.role is unsupported: {profile_role}")
+        if direction not in {"directed", "bidirectional"}:
+            raise ValueError(f"{label}.direction is unsupported: {direction}")
+        if not isinstance(fixture, bool):
+            raise ValueError(f"{label}.fixture must be boolean")
+        if from_claim_uid not in source_claim_uids:
+            raise ValueError(f"{label}.from not found in source bundle: {from_claim_uid}")
+        if to_claim_uid not in source_claim_uids:
+            raise ValueError(f"{label}.to not found in source bundle: {to_claim_uid}")
+
+        edge_uid = relation_profile_edge_uid(
+            from_claim_uid,
+            relation_type,
+            profile_role,
+            to_claim_uid,
+        )
+        if edge_uid in seen:
+            raise ValueError(f"duplicate relation profile edge: {edge_uid}")
+        seen.add(edge_uid)
+        edges.append(
+            RelationProfileEdge(
+                profile_edge_uid=edge_uid,
+                from_claim_uid=from_claim_uid,
+                to_claim_uid=to_claim_uid,
+                relation_type=relation_type,
+                profile_role=profile_role,
+                family=family,
+                direction=direction,
+                fixture=fixture,
+                source_locator=f"{path}:{index}",
+            )
+        )
+    return edges
+
+
+def load_relation_profiles(
+    paths: list[Path] | None,
+    *,
+    source_claim_uids: set[str],
+    source_hash: str,
+) -> list[RelationProfileEdge]:
+    edges: list[RelationProfileEdge] = []
+    seen: set[str] = set()
+    for path in paths or []:
+        for edge in load_relation_profile(
+            path,
+            source_claim_uids=source_claim_uids,
+            source_hash=source_hash,
+        ):
+            if edge.profile_edge_uid in seen:
+                raise ValueError(f"duplicate relation profile edge: {edge.profile_edge_uid}")
+            seen.add(edge.profile_edge_uid)
+            edges.append(edge)
+    return edges
+
+
+def relation_profile_role_counts(edges: list[RelationProfileEdge]) -> dict[str, int]:
+    counts: dict[str, int] = {}
+    for edge in edges:
+        counts[edge.profile_role] = counts.get(edge.profile_role, 0) + 1
+    return dict(sorted(counts.items()))
+
+
+def relation_profile_triples(edges: list[RelationProfileEdge]) -> list[dict[str, Any]]:
+    return [
+        {
+            "from": edge.from_claim_uid,
+            "relationType": edge.relation_type,
+            "role": edge.profile_role,
+            "to": edge.to_claim_uid,
+            "family": edge.family,
+        }
+        for edge in sorted(edges, key=lambda item: item.profile_edge_uid)
+    ]
+
+
+def project_relation_profile_edges(
+    edges: list[RelationProfileEdge],
+    *,
+    retained_claim_uids: set[str],
+) -> tuple[list[RelationProfileEdge], dict[str, Any]]:
+    retained: list[RelationProfileEdge] = []
+    filter_reasons: dict[str, int] = {}
+    for edge in edges:
+        if edge.from_claim_uid not in retained_claim_uids:
+            increment_reason(filter_reasons, "filtered_source_claim")
+            continue
+        if edge.to_claim_uid not in retained_claim_uids:
+            increment_reason(filter_reasons, "filtered_target_claim")
+            continue
+        retained.append(edge)
+    return retained, {
+        "sourceEdges": len(edges),
+        "retainedEdges": len(retained),
+        "filteredEdges": sum(filter_reasons.values()),
+        "filterReasons": dict(sorted(filter_reasons.items())),
+        "roleCounts": relation_profile_role_counts(retained),
+        "triples": relation_profile_triples(retained),
+    }
 
 
 def is_allowed_for_export(row: Claim | Evidence, export_tier: str) -> bool:
@@ -1852,12 +2041,14 @@ def compile_sqlite(
     *,
     export_tier: str,
     projection_report: dict[str, Any],
+    relation_profile_edges: list[RelationProfileEdge] | None = None,
     vectors_jsonl: Path | None = None,
     source_claim_uids: set[str] | None = None,
     allow_filtered_vector_rows: bool = True,
 ) -> None:
     parsed_packs = parsed if isinstance(parsed, list) else [parsed]
     parsed_packs = resolve_relations(parsed_packs)
+    relation_profile_edges = relation_profile_edges or []
 
     db_path.parent.mkdir(parents=True, exist_ok=True)
     if db_path.exists():
@@ -1868,7 +2059,7 @@ def compile_sqlite(
         conn.executescript(
             """
             PRAGMA foreign_keys = ON;
-            PRAGMA user_version = 5;
+            PRAGMA user_version = 6;
 
             CREATE TABLE graph_meta (
               key TEXT PRIMARY KEY,
@@ -1941,6 +2132,20 @@ def compile_sqlite(
               relation_type TEXT NOT NULL,
               target_ref TEXT NOT NULL,
               target_resolved INTEGER NOT NULL,
+              source_locator TEXT NOT NULL,
+              FOREIGN KEY (from_claim_uid) REFERENCES kp_claims(claim_uid),
+              FOREIGN KEY (to_claim_uid) REFERENCES kp_claims(claim_uid)
+            );
+
+            CREATE TABLE kp_relation_profile_edges (
+              profile_edge_uid TEXT PRIMARY KEY,
+              from_claim_uid TEXT NOT NULL,
+              to_claim_uid TEXT NOT NULL,
+              relation_type TEXT NOT NULL,
+              profile_role TEXT NOT NULL,
+              family TEXT NOT NULL,
+              direction TEXT NOT NULL,
+              fixture INTEGER NOT NULL DEFAULT 0,
               source_locator TEXT NOT NULL,
               FOREIGN KEY (from_claim_uid) REFERENCES kp_claims(claim_uid),
               FOREIGN KEY (to_claim_uid) REFERENCES kp_claims(claim_uid)
@@ -2020,6 +2225,10 @@ def compile_sqlite(
             CREATE INDEX idx_kp_relations_from ON kp_claim_relations(from_claim_uid);
             CREATE INDEX idx_kp_relations_to ON kp_claim_relations(to_claim_uid);
             CREATE INDEX idx_kp_relations_type ON kp_claim_relations(relation_type);
+            CREATE INDEX idx_kp_relation_profile_from ON kp_relation_profile_edges(from_claim_uid);
+            CREATE INDEX idx_kp_relation_profile_to ON kp_relation_profile_edges(to_claim_uid);
+            CREATE INDEX idx_kp_relation_profile_role ON kp_relation_profile_edges(profile_role);
+            CREATE INDEX idx_kp_relation_profile_family ON kp_relation_profile_edges(family);
             CREATE INDEX idx_kp_history_claims_pack_local ON kp_history_claims(pack_id, local_claim_id);
             CREATE INDEX idx_kp_history_links_evidence ON kp_history_claim_evidence_links(evidence_uid);
             CREATE INDEX idx_kp_history_relations_from ON kp_history_relations(from_claim_uid);
@@ -2053,6 +2262,11 @@ def compile_sqlite(
             "source_history_relation_count": str(projection_report["source_history_relations"]),
             "retained_history_relation_count": str(projection_report["retained_history_relations"]),
             "filtered_history_relation_count": str(projection_report["filtered_history_relations"]),
+            "relation_profile_edge_count": str(len(relation_profile_edges)),
+            "relation_profile_role_counts": json.dumps(
+                relation_profile_role_counts(relation_profile_edges),
+                sort_keys=True,
+            ),
             "require_explicit_boundary": str(projection_report.get("require_explicit_boundary", False)).lower(),
             "unresolved_relation_count": str(unresolved_relation_count),
         }
@@ -2411,6 +2625,28 @@ def compile_sqlite(
                     relation.source_locator,
                 )
                 for relation in relations
+            ],
+        )
+        conn.executemany(
+            """
+            INSERT INTO kp_relation_profile_edges (
+              profile_edge_uid, from_claim_uid, to_claim_uid, relation_type,
+              profile_role, family, direction, fixture, source_locator
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            [
+                (
+                    edge.profile_edge_uid,
+                    edge.from_claim_uid,
+                    edge.to_claim_uid,
+                    edge.relation_type,
+                    edge.profile_role,
+                    edge.family,
+                    edge.direction,
+                    1 if edge.fixture else 0,
+                    edge.source_locator,
+                )
+                for edge in relation_profile_edges
             ],
         )
         conn.executemany(
@@ -3204,10 +3440,25 @@ def relation_sort_key(relation: dict[str, Any]) -> tuple[int, str]:
         priority = EDGE_PRIORITY.index(relation["relation_type"])
     except ValueError:
         priority = len(EDGE_PRIORITY)
-    return priority, relation["relation_uid"]
+    relation_id = relation.get("relation_uid") or relation.get("profile_edge_uid") or ""
+    return priority, str(relation_id)
 
 
-def reason_for_relation(relation_type: str, source_id: str, target_id: str) -> str:
+def reason_for_relation(
+    relation_type: str,
+    source_id: str,
+    target_id: str,
+    *,
+    profile_role: str | None = None,
+) -> str:
+    if profile_role == "warns_against":
+        return f"{source_id} warns against treating {target_id} as safe guidance."
+    if profile_role == "operationalizes":
+        return f"{source_id} operationalizes the higher-level method doctrine in {target_id}."
+    if profile_role == "depends_on_coverage_ledger":
+        return f"{source_id} depends on {target_id} before it can be used as a clean result."
+    if profile_role == "method_runtime_pair":
+        return f"{source_id} and {target_id} are a doctrine/runtime tactic pair."
     if relation_type == "supersedes":
         return f"{source_id} supersedes {target_id}, so the prior belief must remain visible."
     if relation_type == "requires":
@@ -3255,10 +3506,70 @@ def retrieve_packet(
 
         nodes: dict[str, dict[str, Any]] = {matched["claim_uid"]: matched}
         included_by: dict[str, list[str]] = {}
+        included_by_roles: dict[str, list[str]] = {}
         relation_reasons: dict[str, list[str]] = {}
         used_relations: list[dict[str, Any]] = []
+        used_relation_uids: set[str] = set()
         truncated = False
         token_budget_used = claim_token_cost(matched)
+
+        def add_active_node(claim_uid_value: str) -> dict[str, Any] | None:
+            nonlocal token_budget_used, truncated
+            if claim_uid_value in nodes:
+                return nodes[claim_uid_value]
+            target = fetch_claims(conn, {claim_uid_value}).get(claim_uid_value)
+            if target is None:
+                return None
+            projected_tokens = token_budget_used + claim_token_cost(target)
+            if len(nodes) >= max_nodes or projected_tokens > 1800:
+                truncated = True
+                return None
+            token_budget_used = projected_tokens
+            nodes[target["claim_uid"]] = target
+            return target
+
+        def remember_relation(
+            relation: dict[str, Any],
+            *,
+            neighbor_uid: str,
+            source_id: str,
+            target_id: str,
+        ) -> None:
+            relation_key = relation.get("relation_uid") or relation.get("profile_edge_uid")
+            if isinstance(relation_key, str):
+                if relation_key in used_relation_uids:
+                    return
+                used_relation_uids.add(relation_key)
+            included_by.setdefault(neighbor_uid, []).append(relation["relation_type"])
+            profile_role = relation.get("profile_role")
+            if isinstance(profile_role, str):
+                included_by_roles.setdefault(neighbor_uid, []).append(profile_role)
+            relation_reasons.setdefault(neighbor_uid, []).append(
+                reason_for_relation(
+                    relation["relation_type"],
+                    source_id,
+                    target_id,
+                    profile_role=profile_role if isinstance(profile_role, str) else None,
+                )
+            )
+            used_relations.append(relation)
+
+        def include_profile_edge(
+            relation: dict[str, Any],
+            *,
+            neighbor_uid: str,
+        ) -> dict[str, Any] | None:
+            source = add_active_node(relation["from_claim_uid"])
+            target = add_active_node(relation["to_claim_uid"])
+            if source is None or target is None:
+                return None
+            remember_relation(
+                relation,
+                neighbor_uid=neighbor_uid,
+                source_id=source["local_claim_id"],
+                target_id=target["local_claim_id"],
+            )
+            return nodes.get(neighbor_uid)
 
         outbound_rows = conn.execute(
             "SELECT * FROM kp_claim_relations WHERE from_claim_uid = ?",
@@ -3287,15 +3598,12 @@ def retrieve_packet(
                     continue
                 token_budget_used = projected_tokens
             nodes[target["claim_uid"]] = target
-            included_by.setdefault(target["claim_uid"], []).append(relation["relation_type"])
-            relation_reasons.setdefault(target["claim_uid"], []).append(
-                reason_for_relation(
-                    relation["relation_type"],
-                    matched["local_claim_id"],
-                    target["local_claim_id"],
-                )
+            remember_relation(
+                relation,
+                neighbor_uid=target["claim_uid"],
+                source_id=matched["local_claim_id"],
+                target_id=target["local_claim_id"],
             )
-            used_relations.append(relation)
 
         history_rows = conn.execute(
             "SELECT * FROM kp_history_relations WHERE from_claim_uid = ?",
@@ -3331,15 +3639,47 @@ def retrieve_packet(
                     continue
                 token_budget_used = projected_tokens
             nodes[target["claim_uid"]] = target
-            included_by.setdefault(target["claim_uid"], []).append(relation["relation_type"])
-            relation_reasons.setdefault(target["claim_uid"], []).append(
-                reason_for_relation(
-                    relation["relation_type"],
-                    matched["local_claim_id"],
-                    target["local_claim_id"],
-                )
+            remember_relation(
+                relation,
+                neighbor_uid=target["claim_uid"],
+                source_id=matched["local_claim_id"],
+                target_id=target["local_claim_id"],
             )
-            used_relations.append(relation)
+
+        profile_queue = [matched["claim_uid"]]
+        inbound_profile_rows = conn.execute(
+            """
+            SELECT * FROM kp_relation_profile_edges
+            WHERE to_claim_uid = ?
+              AND profile_role IN ('warns_against', 'method_runtime_pair')
+            """,
+            (matched["claim_uid"],),
+        ).fetchall()
+        for relation in [row_to_dict(row) for row in inbound_profile_rows]:
+            source = include_profile_edge(
+                relation,
+                neighbor_uid=relation["from_claim_uid"],
+            )
+            if source is not None:
+                profile_queue.append(source["claim_uid"])
+
+        processed_profile_sources: set[str] = set()
+        while profile_queue:
+            source_uid = profile_queue.pop(0)
+            if source_uid in processed_profile_sources:
+                continue
+            processed_profile_sources.add(source_uid)
+            profile_rows = conn.execute(
+                "SELECT * FROM kp_relation_profile_edges WHERE from_claim_uid = ?",
+                (source_uid,),
+            ).fetchall()
+            for relation in [row_to_dict(row) for row in profile_rows]:
+                target = include_profile_edge(
+                    relation,
+                    neighbor_uid=relation["to_claim_uid"],
+                )
+                if target is not None and target["claim_uid"] not in processed_profile_sources:
+                    profile_queue.append(target["claim_uid"])
 
         explanatory_relation_types = {"contradicts:error", "supports"}
         included_node_uids = {uid for uid in nodes if uid != matched["claim_uid"]}
@@ -3378,16 +3718,13 @@ def retrieve_packet(
                         continue
                     token_budget_used = projected_tokens
                 nodes[source["claim_uid"]] = source
-                included_by.setdefault(source["claim_uid"], []).append(relation["relation_type"])
                 target = nodes[relation["to_claim_uid"]]
-                relation_reasons.setdefault(source["claim_uid"], []).append(
-                    reason_for_relation(
-                        relation["relation_type"],
-                        source["local_claim_id"],
-                        target["local_claim_id"],
-                    )
+                remember_relation(
+                    relation,
+                    neighbor_uid=source["claim_uid"],
+                    source_id=source["local_claim_id"],
+                    target_id=target["local_claim_id"],
                 )
-                used_relations.append(relation)
 
         active_nodes = {
             uid: node
@@ -3425,6 +3762,7 @@ def retrieve_packet(
                 {
                     **node,
                     "included_by": included_by.get(uid, []),
+                    "included_by_roles": included_by_roles.get(uid, []),
                     "reasons": relation_reasons.get(uid, []),
                 }
             )
@@ -3486,11 +3824,15 @@ def evidence_label(evidence: dict[str, Any] | None) -> str:
 def render_dossier(packet: dict[str, Any], question: str) -> str:
     matched = packet["matched"]
     claims = claim_by_id(packet)
+    claims_by_uid = {matched["claim_uid"]: matched}
+    for neighbor in packet["neighbors"]:
+        claims_by_uid[neighbor["claim_uid"]] = neighbor
     evidence = evidence_by_id(packet)
     relations = packet["relations"]
 
     supersedes = [rel for rel in relations if rel["from_claim_uid"] == matched["claim_uid"] and rel["relation_type"] == "supersedes"]
     tensions = [rel for rel in relations if rel["relation_type"] == "contradicts:tension"]
+    profile_edges = [rel for rel in relations if rel.get("profile_role")]
 
     lines: list[str] = [
         f"# Dossier: {matched['local_claim_id']}",
@@ -3499,7 +3841,73 @@ def render_dossier(packet: dict[str, Any], question: str) -> str:
         "",
     ]
 
-    if supersedes:
+    if profile_edges:
+        no_hit_profile = any(
+            relation.get("family") == "no_hit_discipline"
+            or relation.get("profile_role")
+            in {"warns_against", "depends_on_coverage_ledger"}
+            for relation in profile_edges
+        )
+        guardrail_claims: list[dict[str, Any]] = []
+        anti_pattern_claims: list[dict[str, Any]] = []
+        method_claims: list[dict[str, Any]] = []
+        coverage_claims: list[dict[str, Any]] = []
+        for relation in profile_edges:
+            source = claims_by_uid.get(relation["from_claim_uid"])
+            target = claims_by_uid.get(relation["to_claim_uid"])
+            role = relation.get("profile_role")
+            if role == "warns_against":
+                if source:
+                    guardrail_claims.append(source)
+                if target:
+                    anti_pattern_claims.append(target)
+            elif role == "operationalizes":
+                if source:
+                    guardrail_claims.append(source)
+                if target:
+                    method_claims.append(target)
+            elif role == "depends_on_coverage_ledger":
+                if target:
+                    coverage_claims.append(target)
+            elif role == "method_runtime_pair":
+                if source:
+                    method_claims.append(source)
+                if target:
+                    method_claims.append(target)
+
+        def append_claim_lines(title: str, rows: list[dict[str, Any]]) -> None:
+            unique_rows = []
+            seen: set[str] = set()
+            for row in rows:
+                if row["claim_uid"] in seen:
+                    continue
+                seen.add(row["claim_uid"])
+                unique_rows.append(row)
+            if not unique_rows:
+                return
+            lines.extend(["", f"## {title}"])
+            for row in unique_rows:
+                lines.append(f"- {row['text']}")
+                for evidence_id in claim_evidence_ids(row):
+                    lines.append(f"- Basis: {evidence_label(evidence.get(evidence_id))}.")
+
+        if no_hit_profile:
+            append_claim_lines("No-Hit Guardrail", guardrail_claims or [matched])
+            append_claim_lines("Anti-Pattern", anti_pattern_claims)
+            append_claim_lines("Required Coverage", coverage_claims)
+            append_claim_lines("Method Doctrine", method_claims)
+            lines.extend(
+                [
+                    "",
+                    "## Do Not Flatten",
+                    "- Do not treat a generic no-results statement as a clean result.",
+                    "- Say that no-hit is valid only after documented source-class coverage.",
+                    "- Keep the anti-pattern visible as a warning, not as live advice.",
+                ]
+            )
+        else:
+            append_claim_lines("Method Runtime Pair", method_claims or [matched])
+    elif supersedes:
         lines.extend(
             [
                 "## Current Best Reading",
@@ -3686,6 +4094,7 @@ def compile_bundle(
     *,
     export_tier: str = "client",
     require_explicit_boundary: bool = False,
+    relation_profiles: list[Path] | None = None,
     vectors_jsonl: Path | None = None,
     embedding_manifest: Path | None = None,
     seal_bundle: bool = False,
@@ -3707,6 +4116,12 @@ def compile_bundle(
         for parsed_pack in source_packs
         for claim in parsed_pack.claims
     }
+    source_hash = bundle_source_hash(source_packs)
+    source_relation_profile_edges = load_relation_profiles(
+        relation_profiles,
+        source_claim_uids=source_claim_uids,
+        source_hash=source_hash,
+    )
     boundary_report = (
         validate_explicit_boundaries(source_packs)
         if require_explicit_boundary
@@ -3723,6 +4138,15 @@ def compile_bundle(
     parsed_packs, projection_report = project_for_export_tier(
         source_packs,
         export_tier,
+    )
+    retained_claim_uids = {
+        claim.claim_uid
+        for parsed_pack in parsed_packs
+        for claim in parsed_pack.claims
+    }
+    relation_profile_edges, relation_profile_report = project_relation_profile_edges(
+        source_relation_profile_edges,
+        retained_claim_uids=retained_claim_uids,
     )
     projection_report["require_explicit_boundary"] = require_explicit_boundary
     if seal_bundle and vectors_jsonl is None:
@@ -3747,6 +4171,7 @@ def compile_bundle(
         db_path,
         export_tier=export_tier,
         projection_report=projection_report,
+        relation_profile_edges=relation_profile_edges,
         vectors_jsonl=vectors_jsonl,
         source_claim_uids=source_claim_uids,
         allow_filtered_vector_rows=not seal_bundle,
@@ -3778,6 +4203,10 @@ def compile_bundle(
     write_jsonl(
         output_dir / "logical" / "claim-relations.jsonl",
         [relation for parsed_pack in parsed_packs for relation in parsed_pack.relations],
+    )
+    write_jsonl(
+        output_dir / "logical" / "relation-profile-edges.jsonl",
+        relation_profile_edges,
     )
     write_jsonl(
         output_dir / "logical" / "history-claims.jsonl",
@@ -3933,6 +4362,7 @@ def compile_bundle(
         "relations": sum(len(parsed_pack.relations) for parsed_pack in parsed_packs),
         "history_claims": sum(len(parsed_pack.history_claims) for parsed_pack in parsed_packs),
         "history_relations": sum(len(parsed_pack.history_relations) for parsed_pack in parsed_packs),
+        "relation_profile": relation_profile_report,
         "unresolved_relations": sum(
             1
             for parsed_pack in parsed_packs
@@ -3978,6 +4408,16 @@ def main() -> int:
         "--require-explicit-boundary",
         action="store_true",
         help="Refuse packs whose claims or evidence omit explicit compiler boundary metadata.",
+    )
+    parser.add_argument(
+        "--relation-profile",
+        type=Path,
+        action="append",
+        default=[],
+        help=(
+            "Optional KP relation profile YAML/JSON overlay. May be passed more than once. "
+            "Profile edges are projected and stored separately from authored KP relations."
+        ),
     )
     parser.add_argument(
         "--vectors-jsonl",
@@ -4046,6 +4486,7 @@ def main() -> int:
         args.output,
         export_tier=args.export_tier,
         require_explicit_boundary=args.require_explicit_boundary,
+        relation_profiles=args.relation_profile,
         vectors_jsonl=args.vectors_jsonl,
         embedding_manifest=args.embedding_manifest,
         seal_bundle=args.seal_bundle,

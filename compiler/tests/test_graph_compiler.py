@@ -13,6 +13,7 @@ from compiler.graph_compiler import (
     EMBEDDING_PREFIX_SCHEME,
     EMBEDDING_SURFACE_VERSION,
     VECTOR_CONTRACT_VERSION,
+    bundle_source_hash,
     compile_bundle,
     claim_embedding_text,
     embedding_input_text,
@@ -195,6 +196,121 @@ Synthetic review note.
 """
         )
         return pack
+
+    def write_relation_profile_fixture(self, root: Path) -> tuple[Path, Path]:
+        pack = root / "example-relation-profile.kpack"
+        pack.mkdir()
+        (pack / "PACK.yaml").write_text(
+            """name: example-relation-profile
+version: 2026.06.19
+domain: test/compiler
+kind: claim
+author: KP Compiler Tests
+
+description: Synthetic compiler relation-profile fixture.
+
+confidence:
+  scale: simple
+  normalize: true
+
+freshness: "2026-06-19"
+license: CC-BY-4.0
+sensitivity: public
+visibility: public
+tier: standalone
+
+provenance:
+  author: KP Compiler Tests
+  role: independent
+  reviewed_by: null
+  review_date: null
+  signed: false
+"""
+        )
+        (pack / "claims.md").write_text(
+            f"""{ROSETTA}
+---
+pack: example-relation-profile | v: 2026.06.19 | domain: test/compiler
+confidence: simple | normalized
+---
+
+# Example Relation Profile Fixture
+
+## Claims
+
+- [C001] Anti-pattern: treating no results as clean.
+  {{0.91|o|E001|2026-06-19|investigated|meta}} Known bad result.
+
+- [C002] No-hit doctrine requires searched-source evidence.
+  {{0.92|o|E002|2026-06-19|investigated|meta}} Method doctrine.
+
+- [C003] A coverage ledger records the searched lane.
+  {{0.93|o|E003|2026-06-19|investigated|meta}} Required coverage proof.
+
+- [C004] No hit is valid only after documented coverage.
+  {{0.94|o|E004|2026-06-19|investigated|meta}} Runtime guardrail.
+"""
+        )
+        (pack / "evidence.md").write_text(
+            """# Evidence
+
+## E001 — Anti Pattern
+> **type:** synthetic_document | **captured:** 2026-06-19
+> **source:** fixture://anti-pattern.txt
+
+Synthetic anti-pattern note.
+
+## E002 — Doctrine
+> **type:** synthetic_document | **captured:** 2026-06-19
+> **source:** fixture://doctrine.txt
+
+Synthetic doctrine note.
+
+## E003 — Coverage
+> **type:** synthetic_document | **captured:** 2026-06-19
+> **source:** fixture://coverage.txt
+
+Synthetic coverage note.
+
+## E004 — Guardrail
+> **type:** synthetic_document | **captured:** 2026-06-19
+> **source:** fixture://guardrail.txt
+
+Synthetic guardrail note.
+"""
+        )
+        parsed = [parse_pack(pack)]
+        source_hash = bundle_source_hash(parsed)
+        profile = root / "relation-profile.yaml"
+        profile.write_text(
+            f"""schemaVersion: kp-relation-profile-v0
+name: example-relation-profile-v0
+expectedSourceHash: {source_hash}
+relations:
+  - from: example-relation-profile#C004
+    relationType: contradicts:error
+    role: warns_against
+    to: example-relation-profile#C001
+    family: no_hit_discipline
+    direction: directed
+    fixture: true
+  - from: example-relation-profile#C004
+    relationType: refines
+    role: operationalizes
+    to: example-relation-profile#C002
+    family: no_hit_discipline
+    direction: directed
+    fixture: true
+  - from: example-relation-profile#C004
+    relationType: requires
+    role: depends_on_coverage_ledger
+    to: example-relation-profile#C003
+    family: no_hit_discipline
+    direction: directed
+    fixture: true
+"""
+        )
+        return pack, profile
 
     def declare_pack_boundary_defaults_explicit(self, pack: Path) -> None:
         pack_yaml = pack / "PACK.yaml"
@@ -472,7 +588,7 @@ Synthetic internal-only note.
             try:
                 self.assertEqual(
                     conn.execute("SELECT value FROM graph_meta WHERE key = 'schema_version'").fetchone()[0],
-                    "5",
+                    "6",
                 )
                 self.assertEqual(
                     conn.execute("SELECT count(*) FROM kp_claim_evidence_links").fetchone()[0],
@@ -558,6 +674,101 @@ Synthetic internal-only note.
             self.assertIn("prior / superseded belief", dossier.lower())
             self.assertIn("The prior reading was Example A.", dossier)
             self.assertIn("not equally live", dossier.lower())
+
+    def test_relation_profile_edges_are_retrievable_and_rendered(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            pack, profile = self.write_relation_profile_fixture(root)
+            out = root / "out"
+
+            summary = compile_bundle(
+                pack,
+                out,
+                relation_profiles=[profile],
+                query_claims=["C004"],
+                questions={"C004": "Can no results be treated as clean?"},
+            )
+
+            self.assertEqual(summary["relations"], 0)
+            self.assertEqual(summary["relation_profile"]["retainedEdges"], 3)
+            self.assertEqual(
+                summary["relation_profile"]["roleCounts"],
+                {
+                    "depends_on_coverage_ledger": 1,
+                    "operationalizes": 1,
+                    "warns_against": 1,
+                },
+            )
+
+            db_path = out / "indices" / "claim-graph.sqlite"
+            conn = sqlite3.connect(db_path)
+            try:
+                self.assertEqual(
+                    conn.execute("SELECT count(*) FROM kp_relation_profile_edges").fetchone()[0],
+                    3,
+                )
+            finally:
+                conn.close()
+
+            packet = retrieve_packet(db_path, "C004")
+            neighbors = {neighbor["local_claim_id"] for neighbor in packet["neighbors"]}
+            self.assertEqual(neighbors, {"C001", "C002", "C003"})
+            roles = {
+                relation["profile_role"]
+                for relation in packet["relations"]
+                if relation.get("profile_role")
+            }
+            self.assertEqual(
+                roles,
+                {"depends_on_coverage_ledger", "operationalizes", "warns_against"},
+            )
+
+            dossier = render_dossier(packet, "Can no results be treated as clean?")
+            self.assertIn("## No-Hit Guardrail", dossier)
+            self.assertIn("## Anti-Pattern", dossier)
+            self.assertIn("## Required Coverage", dossier)
+            self.assertIn("## Method Doctrine", dossier)
+            self.assertIn("not treat a generic no-results statement as a clean result", dossier)
+
+    def test_method_runtime_pair_profile_uses_method_pair_dossier(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            pack, _ = self.write_relation_profile_fixture(root)
+            source_hash = bundle_source_hash([parse_pack(pack)])
+            profile = root / "method-runtime-profile.yaml"
+            profile.write_text(
+                f"""schemaVersion: kp-relation-profile-v0
+name: example-method-runtime-profile-v0
+expectedSourceHash: {source_hash}
+relations:
+  - from: example-relation-profile#C004
+    relationType: see_also
+    role: method_runtime_pair
+    to: example-relation-profile#C002
+    family: bootstrap_before_target
+    direction: directed
+    fixture: true
+"""
+            )
+            out = root / "out"
+
+            summary = compile_bundle(
+                pack,
+                out,
+                relation_profiles=[profile],
+                query_claims=["C004"],
+                questions={"C004": "What method should pair with this runtime guardrail?"},
+            )
+
+            self.assertEqual(summary["relation_profile"]["retainedEdges"], 1)
+            db_path = out / "indices" / "claim-graph.sqlite"
+            packet = retrieve_packet(db_path, "C004")
+            dossier = render_dossier(packet, "What method should pair with this runtime guardrail?")
+
+            self.assertIn("## Method Runtime Pair", dossier)
+            self.assertIn("No-hit doctrine requires searched-source evidence", dossier)
+            self.assertNotIn("## No-Hit Guardrail", dossier)
+            self.assertNotIn("generic no-results statement", dossier)
 
     def test_compile_bundle_resolves_cross_pack_relation(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
