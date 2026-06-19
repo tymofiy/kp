@@ -22,8 +22,8 @@ from typing import Any
 import yaml
 
 
-SCHEMA_VERSION = 4
-COMPILER_VERSION = "0.8.2"
+SCHEMA_VERSION = 5
+COMPILER_VERSION = "0.8.3"
 DEFAULT_QUERY_LIMIT = 3
 SEARCH_MODES = ("fts5", "vector", "hybrid", "lexical")
 VECTOR_SEARCH_MODES = ("vector", "hybrid")
@@ -51,6 +51,11 @@ CLAIM_START_RE = re.compile(r"^- (?:\*\*)?\[(C\d+(?:-v\d+)?)\](?:\*\*)?\s+(.+)")
 EVIDENCE_HEADING_RE = re.compile(r"^##\s+(E\d+)(?:\s+(?:[-\u2014]\s*)?(.+))?$")
 FIELD_RE = re.compile(r"\*\*([^:*]+):\*\*\s*(.+)")
 ANNOTATION_RE = re.compile(r"<!--\s*kp-compiler:\s*(.*?)\s*-->")
+HISTORY_SUPERSESSION_RE = re.compile(
+    r"\bSuperseded\s+(\d{4}-\d{2}-\d{2})\s*:\s*(.*?)"
+    r"(?:\s+See\s+([A-Za-z0-9_#-]+(?:\.[A-Za-z0-9_#-]+)*)\.?)?$",
+    re.IGNORECASE,
+)
 
 EXPORT_TIERS = ("client", "server", "internal")
 BOUNDARY_FIELDS = frozenset(("tier", "sensitivity", "visibility"))
@@ -199,12 +204,49 @@ class Relation:
 
 
 @dataclasses.dataclass(frozen=True)
+class HistoryClaim:
+    history_claim_uid: str
+    pack_id: str
+    local_claim_id: str
+    text: str
+    detail: str
+    confidence: float
+    claim_type: str
+    evidence_ids: list[str]
+    since: str
+    depth: str
+    nature: str
+    status: str
+    tier: str
+    sensitivity: str
+    visibility: str
+    boundary_explicit: bool
+    boundary_source: str
+    superseded_at: str | None
+    superseded_by: str | None
+    source_locator: str
+
+
+@dataclasses.dataclass(frozen=True)
+class HistoryRelation:
+    relation_uid: str
+    from_claim_uid: str
+    to_history_claim_uid: str
+    relation_type: str
+    target_ref: str
+    target_resolved: int
+    source_locator: str
+
+
+@dataclasses.dataclass(frozen=True)
 class ParsedPack:
     pack: dict[str, Any]
     source_hash: str
     claims: list[Claim]
     evidence: list[Evidence]
     relations: list[Relation]
+    history_claims: list[HistoryClaim]
+    history_relations: list[HistoryRelation]
 
 
 @dataclasses.dataclass(frozen=True)
@@ -421,6 +463,18 @@ def parse_claims(
 
     for block in parse_claim_blocks(claims_text):
         local_id = block["id"]
+        statement = strip_relations(block["statement"])
+        for relation_match in RELATION_RE.finditer(block["statement"]):
+            symbol = relation_match.group(1)
+            target_ref = relation_match.group(2)
+            raw_relations.append(
+                (
+                    local_id,
+                    RELATION_MAP[symbol],
+                    target_ref,
+                    f"claims.md:{block['line']}",
+                )
+            )
         continuations: list[tuple[int, str]] = block["continuations"]
         if not continuations:
             raise ValueError(f"{local_id} has no metadata continuation")
@@ -505,7 +559,7 @@ def parse_claims(
         raw_claims.append(
             {
                 "local_claim_id": local_id,
-                "text": block["statement"],
+                "text": statement,
                 "detail": detail,
                 "confidence": confidence,
                 "claim_type": claim_type,
@@ -659,6 +713,105 @@ def parse_evidence(
     return evidence
 
 
+def history_claim_uid(pack_id: str, local_claim_id: str) -> str:
+    return f"{pack_id}#{local_claim_id}"
+
+
+def parse_history(
+    pack_id: str,
+    history_text: str,
+    *,
+    default_tier: str,
+    default_sensitivity: str,
+    default_visibility: str,
+    default_boundary_explicit: bool,
+) -> tuple[list[HistoryClaim], list[HistoryRelation]]:
+    history_claims: list[HistoryClaim] = []
+    history_relations: list[HistoryRelation] = []
+
+    for block in parse_claim_blocks(history_text):
+        local_id = block["id"]
+        continuations: list[tuple[int, str]] = block["continuations"]
+        if not continuations:
+            raise ValueError(f"history {local_id} has no metadata continuation")
+
+        meta_line_number, meta_line = continuations[0]
+        dense = re.match(r"\{([^}]+)\}", meta_line)
+        if not dense:
+            raise ValueError(f"history {local_id} has unsupported metadata syntax")
+
+        parts = [part.strip() for part in dense.group(1).split("|")]
+        if len(parts) < 4:
+            raise ValueError(f"history {local_id} metadata has fewer than four fields")
+
+        confidence = float(parts[0])
+        claim_type = TYPE_MAP.get(parts[1], parts[1])
+        evidence_ids = [ref.strip() for ref in parts[2].split(",") if ref.strip()]
+        since = parts[3]
+        depth = parts[4] if len(parts) >= 5 and parts[4] else ""
+        nature = parts[5] if len(parts) >= 6 and parts[5] else "factual"
+
+        detail_parts = [strip_relations(meta_line[dense.end() :])]
+        for _continuation_line_number, continuation in continuations[1:]:
+            detail_parts.append(strip_relations(continuation))
+        detail, annotations = remove_compiler_annotations(
+            " ".join(part for part in detail_parts if part).strip()
+        )
+        tier, sensitivity, visibility = normalized_boundary_metadata(
+            annotations,
+            default_tier=default_tier,
+            default_sensitivity=default_sensitivity,
+            default_visibility=default_visibility,
+        )
+        source_locator = f"history.md:{block['line']}"
+        boundary_source = boundary_metadata_source(
+            annotations,
+            default_boundary_explicit=default_boundary_explicit,
+            source_locator=source_locator,
+        )
+
+        superseded_at: str | None = None
+        superseded_by: str | None = None
+        status = "historical"
+        supersession_match = HISTORY_SUPERSESSION_RE.search(detail)
+        if supersession_match:
+            superseded_at = supersession_match.group(1)
+            superseded_by = supersession_match.group(3)
+            if not superseded_by:
+                raise ValueError(
+                    f"history {local_id} supersession line must include a successor reference"
+                )
+            status = "historical_superseded"
+
+        current_history_claim_uid = history_claim_uid(pack_id, local_id)
+        history_claims.append(
+            HistoryClaim(
+                history_claim_uid=current_history_claim_uid,
+                pack_id=pack_id,
+                local_claim_id=local_id,
+                text=block["statement"],
+                detail=detail,
+                confidence=confidence,
+                claim_type=claim_type,
+                evidence_ids=evidence_ids,
+                since=since,
+                depth=depth,
+                nature=nature,
+                status=status,
+                tier=tier,
+                sensitivity=sensitivity,
+                visibility=visibility,
+                boundary_explicit=boundary_source == "row",
+                boundary_source=boundary_source,
+                superseded_at=superseded_at,
+                superseded_by=superseded_by,
+                source_locator=source_locator,
+            )
+        )
+
+    return history_claims, history_relations
+
+
 def parse_pack(pack_dir: Path) -> ParsedPack:
     pack = yaml.safe_load((pack_dir / "PACK.yaml").read_text())
     pack_id = pack["name"]
@@ -682,12 +835,26 @@ def parse_pack(pack_dir: Path) -> ParsedPack:
         default_visibility=default_visibility,
         default_boundary_explicit=default_boundary_explicit,
     )
+    history_claims: list[HistoryClaim] = []
+    history_relations: list[HistoryRelation] = []
+    history_path = pack_dir / "history.md"
+    if history_path.exists():
+        history_claims, history_relations = parse_history(
+            pack_id,
+            history_path.read_text(),
+            default_tier=default_tier,
+            default_sensitivity=default_sensitivity,
+            default_visibility=default_visibility,
+            default_boundary_explicit=default_boundary_explicit,
+        )
     return ParsedPack(
         pack=pack,
         source_hash=stable_pack_hash(pack_dir),
         claims=claims,
         evidence=evidence,
         relations=relations,
+        history_claims=history_claims,
+        history_relations=history_relations,
     )
 
 
@@ -697,13 +864,42 @@ def resolve_relations(parsed_packs: list[ParsedPack]) -> list[ParsedPack]:
         for parsed in parsed_packs
         for claim in parsed.claims
     }
+    all_history_claim_uids = {
+        claim.history_claim_uid
+        for parsed in parsed_packs
+        for claim in parsed.history_claims
+    }
     resolved_packs: list[ParsedPack] = []
+    all_history_relation_targets: set[str] = set()
     for parsed in parsed_packs:
         resolved_relations: list[Relation] = []
+        converted_history_relations: list[HistoryRelation] = []
         for relation in parsed.relations:
             target_uid = relation.to_claim_uid
             if target_uid is None and "#" in relation.target_ref:
                 target_uid = relation.target_ref
+            if target_uid is None:
+                source_pack_id = relation.from_claim_uid.split("#", 1)[0]
+                candidate_history_uid = history_claim_uid(source_pack_id, relation.target_ref)
+            else:
+                candidate_history_uid = target_uid
+            if (
+                relation.relation_type == "supersedes"
+                and candidate_history_uid in all_history_claim_uids
+            ):
+                converted_history_relations.append(
+                    HistoryRelation(
+                        relation_uid=relation.relation_uid,
+                        from_claim_uid=relation.from_claim_uid,
+                        to_history_claim_uid=candidate_history_uid,
+                        relation_type=relation.relation_type,
+                        target_ref=relation.target_ref,
+                        target_resolved=1,
+                        source_locator=relation.source_locator,
+                    )
+                )
+                all_history_relation_targets.add(candidate_history_uid)
+                continue
             target_resolved = 1 if target_uid in all_claim_uids else 0
             resolved_relations.append(
                 Relation(
@@ -716,7 +912,47 @@ def resolve_relations(parsed_packs: list[ParsedPack]) -> list[ParsedPack]:
                     source_locator=relation.source_locator,
                 )
             )
-        resolved_packs.append(dataclasses.replace(parsed, relations=resolved_relations))
+        resolved_history_relations: list[HistoryRelation] = []
+        for relation in [*parsed.history_relations, *converted_history_relations]:
+            if relation.from_claim_uid not in all_claim_uids:
+                raise ValueError(
+                    "history supersession successor not found: "
+                    f"{relation.from_claim_uid} at {relation.source_locator}"
+                )
+            if relation.to_history_claim_uid not in all_history_claim_uids:
+                raise ValueError(
+                    "history supersession target not found: "
+                    f"{relation.to_history_claim_uid} at {relation.source_locator}"
+                )
+            resolved_history_relations.append(
+                HistoryRelation(
+                    relation_uid=relation.relation_uid,
+                    from_claim_uid=relation.from_claim_uid,
+                    to_history_claim_uid=relation.to_history_claim_uid,
+                    relation_type=relation.relation_type,
+                    target_ref=relation.target_ref,
+                    target_resolved=1,
+                    source_locator=relation.source_locator,
+                )
+            )
+            all_history_relation_targets.add(relation.to_history_claim_uid)
+        resolved_packs.append(
+            dataclasses.replace(
+                parsed,
+                relations=resolved_relations,
+                history_relations=resolved_history_relations,
+            )
+        )
+    for parsed in resolved_packs:
+        for claim in parsed.history_claims:
+            if (
+                claim.status == "historical_superseded"
+                and claim.history_claim_uid not in all_history_relation_targets
+            ):
+                raise ValueError(
+                    "history supersession structural edge not found for "
+                    f"{claim.history_claim_uid}; add an active supersedes relation"
+                )
     return resolved_packs
 
 
@@ -788,6 +1024,14 @@ def boundary_source_report(parsed_packs: list[ParsedPack]) -> dict[str, dict[str
     }
 
 
+def history_boundary_source_report(parsed_packs: list[ParsedPack]) -> dict[str, int]:
+    counts: dict[str, int] = {}
+    for parsed in parsed_packs:
+        for claim in parsed.history_claims:
+            increment_boundary_source_count(counts, claim)
+    return dict(sorted(counts.items()))
+
+
 def project_for_export_tier(
     parsed_packs: list[ParsedPack],
     export_tier: str,
@@ -801,9 +1045,12 @@ def project_for_export_tier(
     source_boundary_source_counts = boundary_source_report(parsed_packs)
     allowed_claim_uids: set[str] = set()
     allowed_evidence_uids: set[str] = set()
+    allowed_history_claim_uids: set[str] = set()
     claim_filter_reasons: dict[str, int] = {}
     evidence_filter_reasons: dict[str, int] = {}
     relation_filter_reasons: dict[str, int] = {}
+    history_filter_reasons: dict[str, int] = {}
+    history_relation_filter_reasons: dict[str, int] = {}
 
     all_evidence = {
         evidence.evidence_uid: evidence
@@ -864,6 +1111,50 @@ def project_for_export_tier(
                 increment_reason(relation_filter_reasons, "filtered_target_claim")
                 continue
             relations.append(relation)
+        history_relations: list[HistoryRelation] = []
+        for relation in parsed.history_relations:
+            history_claim = next(
+                (
+                    claim
+                    for claim in parsed.history_claims
+                    if claim.history_claim_uid == relation.to_history_claim_uid
+                ),
+                None,
+            )
+            if relation.from_claim_uid not in allowed_claim_uids:
+                increment_reason(history_filter_reasons, "filtered_successor_claim")
+                increment_reason(history_relation_filter_reasons, "filtered_source_claim")
+                continue
+            if history_claim is None:
+                increment_reason(history_filter_reasons, "missing_history_claim")
+                increment_reason(history_relation_filter_reasons, "missing_history_claim")
+                continue
+            if not is_allowed_for_export(history_claim, export_tier):
+                increment_reason(history_filter_reasons, "boundary_policy")
+                increment_reason(history_relation_filter_reasons, "filtered_history_claim")
+                continue
+            blocked_history_evidence = False
+            for local_evidence_id in history_claim.evidence_ids:
+                uid = evidence_uid(history_claim.pack_id, local_evidence_id)
+                if uid not in all_evidence:
+                    increment_reason(history_filter_reasons, "missing_evidence")
+                    increment_reason(history_relation_filter_reasons, "filtered_history_claim")
+                    blocked_history_evidence = True
+                    break
+                if uid not in allowed_evidence_uids:
+                    increment_reason(history_filter_reasons, "filtered_evidence_dependency")
+                    increment_reason(history_relation_filter_reasons, "filtered_history_claim")
+                    blocked_history_evidence = True
+                    break
+            if blocked_history_evidence:
+                continue
+            allowed_history_claim_uids.add(history_claim.history_claim_uid)
+            history_relations.append(relation)
+        history_claims = [
+            claim
+            for claim in parsed.history_claims
+            if claim.history_claim_uid in allowed_history_claim_uids
+        ]
         projected.append(
             ParsedPack(
                 pack=parsed.pack,
@@ -871,6 +1162,8 @@ def project_for_export_tier(
                 claims=claims,
                 evidence=evidence,
                 relations=relations,
+                history_claims=history_claims,
+                history_relations=history_relations,
             )
         )
 
@@ -890,10 +1183,24 @@ def project_for_export_tier(
         "claim_filter_reasons": dict(sorted(claim_filter_reasons.items())),
         "evidence_filter_reasons": dict(sorted(evidence_filter_reasons.items())),
         "relation_filter_reasons": dict(sorted(relation_filter_reasons.items())),
+        "source_history_claims": sum(len(parsed.history_claims) for parsed in parsed_packs),
+        "retained_history_claims": len(allowed_history_claim_uids),
+        "filtered_history_claims": sum(history_filter_reasons.values()),
+        "source_history_relations": sum(len(parsed.history_relations) for parsed in parsed_packs),
+        "retained_history_relations": sum(
+            len(parsed.history_relations) for parsed in projected
+        ),
+        "filtered_history_relations": sum(history_relation_filter_reasons.values()),
+        "history_filter_reasons": dict(sorted(history_filter_reasons.items())),
+        "history_relation_filter_reasons": dict(
+            sorted(history_relation_filter_reasons.items())
+        ),
         "source_boundary_counts": source_boundary_counts,
         "retained_boundary_counts": retained_boundary_counts,
         "source_boundary_source_counts": source_boundary_source_counts,
         "retained_boundary_source_counts": retained_boundary_source_counts,
+        "source_history_boundary_source_counts": history_boundary_source_report(parsed_packs),
+        "retained_history_boundary_source_counts": history_boundary_source_report(projected),
     }
 
 
@@ -910,18 +1217,28 @@ def validate_explicit_boundaries(parsed_packs: list[ParsedPack]) -> dict[str, An
         for evidence in parsed.evidence
         if evidence.boundary_source == "implicit"
     ]
+    implicit_history_claims = [
+        claim.history_claim_uid
+        for parsed in parsed_packs
+        for claim in parsed.history_claims
+        if claim.boundary_source == "implicit"
+    ]
     report = {
         "required": True,
-        "valid": not implicit_claims and not implicit_evidence,
+        "valid": not implicit_claims and not implicit_evidence and not implicit_history_claims,
         "implicit_claims": len(implicit_claims),
         "implicit_evidence": len(implicit_evidence),
+        "implicit_history_claims": len(implicit_history_claims),
         "boundary_source_counts": boundary_source_report(parsed_packs),
+        "history_boundary_source_counts": history_boundary_source_report(parsed_packs),
     }
     if not report["valid"]:
-        examples = [*implicit_claims[:3], *implicit_evidence[:3]]
+        examples = [*implicit_claims[:3], *implicit_evidence[:3], *implicit_history_claims[:3]]
         raise ValueError(
             "explicit boundary metadata required; missing "
-            f"{report['implicit_claims']} claims and {report['implicit_evidence']} evidence records"
+            f"{report['implicit_claims']} claims, "
+            f"{report['implicit_evidence']} evidence records, and "
+            f"{report['implicit_history_claims']} history claims"
             + (f" (examples: {', '.join(examples)})" if examples else "")
         )
     return report
@@ -1551,7 +1868,7 @@ def compile_sqlite(
         conn.executescript(
             """
             PRAGMA foreign_keys = ON;
-            PRAGMA user_version = 4;
+            PRAGMA user_version = 5;
 
             CREATE TABLE graph_meta (
               key TEXT PRIMARY KEY,
@@ -1629,6 +1946,50 @@ def compile_sqlite(
               FOREIGN KEY (to_claim_uid) REFERENCES kp_claims(claim_uid)
             );
 
+            CREATE TABLE kp_history_claims (
+              history_claim_uid TEXT PRIMARY KEY,
+              pack_id TEXT NOT NULL,
+              local_claim_id TEXT NOT NULL,
+              text TEXT NOT NULL,
+              detail TEXT NOT NULL DEFAULT '',
+              confidence REAL,
+              claim_type TEXT,
+              since TEXT,
+              depth TEXT,
+              nature TEXT,
+              status TEXT NOT NULL DEFAULT 'historical',
+              tier TEXT NOT NULL DEFAULT 'client',
+              sensitivity TEXT NOT NULL DEFAULT 'public',
+              visibility TEXT NOT NULL DEFAULT 'public',
+              boundary_explicit INTEGER NOT NULL DEFAULT 0,
+              superseded_at TEXT,
+              superseded_by TEXT,
+              source_locator TEXT NOT NULL,
+              FOREIGN KEY (pack_id) REFERENCES kp_packs(pack_id)
+            );
+
+            CREATE TABLE kp_history_claim_evidence_links (
+              history_claim_uid TEXT NOT NULL,
+              evidence_uid TEXT NOT NULL,
+              local_evidence_id TEXT NOT NULL,
+              source_locator TEXT NOT NULL,
+              PRIMARY KEY (history_claim_uid, evidence_uid),
+              FOREIGN KEY (history_claim_uid) REFERENCES kp_history_claims(history_claim_uid),
+              FOREIGN KEY (evidence_uid) REFERENCES kp_evidence(evidence_uid)
+            );
+
+            CREATE TABLE kp_history_relations (
+              relation_uid TEXT PRIMARY KEY,
+              from_claim_uid TEXT NOT NULL,
+              to_history_claim_uid TEXT NOT NULL,
+              relation_type TEXT NOT NULL,
+              target_ref TEXT NOT NULL,
+              target_resolved INTEGER NOT NULL,
+              source_locator TEXT NOT NULL,
+              FOREIGN KEY (from_claim_uid) REFERENCES kp_claims(claim_uid),
+              FOREIGN KEY (to_history_claim_uid) REFERENCES kp_history_claims(history_claim_uid)
+            );
+
             CREATE TABLE kp_claim_search (
               claim_uid TEXT PRIMARY KEY,
               pack_id TEXT NOT NULL,
@@ -1659,6 +2020,11 @@ def compile_sqlite(
             CREATE INDEX idx_kp_relations_from ON kp_claim_relations(from_claim_uid);
             CREATE INDEX idx_kp_relations_to ON kp_claim_relations(to_claim_uid);
             CREATE INDEX idx_kp_relations_type ON kp_claim_relations(relation_type);
+            CREATE INDEX idx_kp_history_claims_pack_local ON kp_history_claims(pack_id, local_claim_id);
+            CREATE INDEX idx_kp_history_links_evidence ON kp_history_claim_evidence_links(evidence_uid);
+            CREATE INDEX idx_kp_history_relations_from ON kp_history_relations(from_claim_uid);
+            CREATE INDEX idx_kp_history_relations_to ON kp_history_relations(to_history_claim_uid);
+            CREATE INDEX idx_kp_history_relations_type ON kp_history_relations(relation_type);
             CREATE INDEX idx_kp_claim_search_pack ON kp_claim_search(pack_id, local_claim_id);
             CREATE INDEX idx_kp_claim_vectors_claim_uid ON kp_claim_vectors(claim_uid);
             CREATE INDEX idx_kp_claim_vectors_model ON kp_claim_vectors(
@@ -1681,6 +2047,12 @@ def compile_sqlite(
             "filtered_claim_count": str(projection_report["filtered_claims"]),
             "filtered_evidence_count": str(projection_report["filtered_evidence"]),
             "filtered_relation_count": str(projection_report["filtered_relations"]),
+            "source_history_claim_count": str(projection_report["source_history_claims"]),
+            "retained_history_claim_count": str(projection_report["retained_history_claims"]),
+            "filtered_history_claim_count": str(projection_report["filtered_history_claims"]),
+            "source_history_relation_count": str(projection_report["source_history_relations"]),
+            "retained_history_relation_count": str(projection_report["retained_history_relations"]),
+            "filtered_history_relation_count": str(projection_report["filtered_history_relations"]),
             "require_explicit_boundary": str(projection_report.get("require_explicit_boundary", False)).lower(),
             "unresolved_relation_count": str(unresolved_relation_count),
         }
@@ -1718,6 +2090,16 @@ def compile_sqlite(
             relation
             for parsed_pack in parsed_packs
             for relation in parsed_pack.relations
+        ]
+        history_claims = [
+            claim
+            for parsed_pack in parsed_packs
+            for claim in parsed_pack.history_claims
+        ]
+        history_relations = [
+            relation
+            for parsed_pack in parsed_packs
+            for relation in parsed_pack.history_relations
         ]
         conn.executemany(
             """
@@ -1939,6 +2321,38 @@ def compile_sqlite(
                 for evidence in evidence_rows
             ],
         )
+        conn.executemany(
+            """
+            INSERT INTO kp_history_claims (
+              history_claim_uid, pack_id, local_claim_id, text, detail, confidence,
+              claim_type, since, depth, nature, status, tier, sensitivity, visibility,
+              boundary_explicit, superseded_at, superseded_by, source_locator
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            [
+                (
+                    claim.history_claim_uid,
+                    claim.pack_id,
+                    claim.local_claim_id,
+                    claim.text,
+                    claim.detail,
+                    claim.confidence,
+                    claim.claim_type,
+                    claim.since,
+                    claim.depth,
+                    claim.nature,
+                    claim.status,
+                    claim.tier,
+                    claim.sensitivity,
+                    claim.visibility,
+                    1 if claim.boundary_explicit else 0,
+                    claim.superseded_at,
+                    claim.superseded_by,
+                    claim.source_locator,
+                )
+                for claim in history_claims
+            ],
+        )
         claim_evidence_links = []
         for claim in claims:
             for local_evidence_id in claim.evidence_ids:
@@ -1959,6 +2373,26 @@ def compile_sqlite(
             """,
             claim_evidence_links,
         )
+        history_evidence_links = []
+        for claim in history_claims:
+            for local_evidence_id in claim.evidence_ids:
+                evidence = evidence_by_uid[evidence_uid(claim.pack_id, local_evidence_id)]
+                history_evidence_links.append(
+                    (
+                        claim.history_claim_uid,
+                        evidence.evidence_uid,
+                        local_evidence_id,
+                        claim.source_locator,
+                    )
+                )
+        conn.executemany(
+            """
+            INSERT INTO kp_history_claim_evidence_links (
+              history_claim_uid, evidence_uid, local_evidence_id, source_locator
+            ) VALUES (?, ?, ?, ?)
+            """,
+            history_evidence_links,
+        )
         conn.executemany(
             """
             INSERT INTO kp_claim_relations (
@@ -1977,6 +2411,26 @@ def compile_sqlite(
                     relation.source_locator,
                 )
                 for relation in relations
+            ],
+        )
+        conn.executemany(
+            """
+            INSERT INTO kp_history_relations (
+              relation_uid, from_claim_uid, to_history_claim_uid, relation_type,
+              target_ref, target_resolved, source_locator
+            ) VALUES (?, ?, ?, ?, ?, ?, ?)
+            """,
+            [
+                (
+                    relation.relation_uid,
+                    relation.from_claim_uid,
+                    relation.to_history_claim_uid,
+                    relation.relation_type,
+                    relation.target_ref,
+                    relation.target_resolved,
+                    relation.source_locator,
+                )
+                for relation in history_relations
             ],
         )
         conn.commit()
@@ -2053,6 +2507,20 @@ def validate_projection(db_path: Path, export_tier: str) -> dict[str, Any]:
                 *sorted(policy["visibilities"]),
             ],
         ).fetchone()[0]
+        history_policy_violations = conn.execute(
+            f"""
+            SELECT count(*)
+            FROM kp_history_claims
+            WHERE tier NOT IN ({",".join("?" for _ in policy["tiers"])})
+               OR sensitivity NOT IN ({",".join("?" for _ in policy["sensitivities"])})
+               OR visibility NOT IN ({",".join("?" for _ in policy["visibilities"])})
+            """,
+            [
+                *sorted(policy["tiers"]),
+                *sorted(policy["sensitivities"]),
+                *sorted(policy["visibilities"]),
+            ],
+        ).fetchone()[0]
         dangling_evidence_links = conn.execute(
             """
             SELECT count(*)
@@ -2075,12 +2543,39 @@ def validate_projection(db_path: Path, export_tier: str) -> dict[str, Any]:
         unresolved_relations = conn.execute(
             "SELECT count(*) FROM kp_claim_relations WHERE target_resolved = 0"
         ).fetchone()[0]
+        dangling_history_evidence_links = conn.execute(
+            """
+            SELECT count(*)
+            FROM kp_history_claim_evidence_links link
+            LEFT JOIN kp_history_claims claim ON claim.history_claim_uid = link.history_claim_uid
+            LEFT JOIN kp_evidence evidence ON evidence.evidence_uid = link.evidence_uid
+            WHERE claim.history_claim_uid IS NULL OR evidence.evidence_uid IS NULL
+            """
+        ).fetchone()[0]
+        dangling_history_relations = conn.execute(
+            """
+            SELECT count(*)
+            FROM kp_history_relations relation
+            LEFT JOIN kp_claims source_claim ON source_claim.claim_uid = relation.from_claim_uid
+            LEFT JOIN kp_history_claims target_claim
+              ON target_claim.history_claim_uid = relation.to_history_claim_uid
+            WHERE source_claim.claim_uid IS NULL
+               OR (relation.target_resolved = 1 AND target_claim.history_claim_uid IS NULL)
+            """
+        ).fetchone()[0]
         dangling_search_rows = conn.execute(
             """
             SELECT count(*)
             FROM kp_claim_search search
             LEFT JOIN kp_claims claim ON claim.claim_uid = search.claim_uid
             WHERE claim.claim_uid IS NULL
+            """
+        ).fetchone()[0]
+        history_search_rows = conn.execute(
+            """
+            SELECT count(*)
+            FROM kp_claim_search search
+            JOIN kp_history_claims claim ON claim.history_claim_uid = search.claim_uid
             """
         ).fetchone()[0]
         dangling_vector_rows = conn.execute(
@@ -2111,9 +2606,13 @@ def validate_projection(db_path: Path, export_tier: str) -> dict[str, Any]:
     checks = {
         "claim_policy_violations": claim_policy_violations,
         "evidence_policy_violations": evidence_policy_violations,
+        "history_policy_violations": history_policy_violations,
         "dangling_evidence_links": dangling_evidence_links,
         "dangling_relations": dangling_relations,
+        "dangling_history_evidence_links": dangling_history_evidence_links,
+        "dangling_history_relations": dangling_history_relations,
         "dangling_search_rows": dangling_search_rows,
+        "history_search_rows": history_search_rows,
         "dangling_vector_rows": dangling_vector_rows,
         "dangling_vector_index_rows": dangling_vector_index_rows,
         "dangling_fts_rows": dangling_fts_rows,
@@ -2632,6 +3131,25 @@ def fetch_claims(conn: sqlite3.Connection, claim_uids: set[str]) -> dict[str, di
     return {row["claim_uid"]: row_to_dict(row) for row in rows}
 
 
+def fetch_history_claims(
+    conn: sqlite3.Connection,
+    history_claim_uids: set[str],
+) -> dict[str, dict[str, Any]]:
+    if not history_claim_uids:
+        return {}
+    placeholders = ",".join("?" for _ in history_claim_uids)
+    rows = conn.execute(
+        f"SELECT * FROM kp_history_claims WHERE history_claim_uid IN ({placeholders})",
+        sorted(history_claim_uids),
+    ).fetchall()
+    claims: dict[str, dict[str, Any]] = {}
+    for row in rows:
+        claim = row_to_dict(row)
+        claim["claim_uid"] = claim["history_claim_uid"]
+        claims[claim["history_claim_uid"]] = claim
+    return claims
+
+
 def attach_evidence_lists(conn: sqlite3.Connection, claims: dict[str, dict[str, Any]]) -> None:
     if not claims:
         return
@@ -2650,6 +3168,32 @@ def attach_evidence_lists(conn: sqlite3.Connection, claims: dict[str, dict[str, 
     for row in rows:
         evidence_by_claim[row["claim_uid"]].append(row["local_evidence_id"])
         evidence_uids_by_claim[row["claim_uid"]].append(row["evidence_uid"])
+    for claim_uid, claim in claims.items():
+        claim["evidence"] = evidence_by_claim.get(claim_uid, [])
+        claim["evidence_uids"] = evidence_uids_by_claim.get(claim_uid, [])
+
+
+def attach_history_evidence_lists(
+    conn: sqlite3.Connection,
+    claims: dict[str, dict[str, Any]],
+) -> None:
+    if not claims:
+        return
+    placeholders = ",".join("?" for _ in claims)
+    rows = conn.execute(
+        f"""
+        SELECT history_claim_uid, evidence_uid, local_evidence_id
+        FROM kp_history_claim_evidence_links
+        WHERE history_claim_uid IN ({placeholders})
+        ORDER BY history_claim_uid, local_evidence_id
+        """,
+        sorted(claims),
+    ).fetchall()
+    evidence_by_claim: dict[str, list[str]] = {claim_uid: [] for claim_uid in claims}
+    evidence_uids_by_claim: dict[str, list[str]] = {claim_uid: [] for claim_uid in claims}
+    for row in rows:
+        evidence_by_claim[row["history_claim_uid"]].append(row["local_evidence_id"])
+        evidence_uids_by_claim[row["history_claim_uid"]].append(row["evidence_uid"])
     for claim_uid, claim in claims.items():
         claim["evidence"] = evidence_by_claim.get(claim_uid, [])
         claim["evidence_uids"] = evidence_uids_by_claim.get(claim_uid, [])
@@ -2753,6 +3297,50 @@ def retrieve_packet(
             )
             used_relations.append(relation)
 
+        history_rows = conn.execute(
+            "SELECT * FROM kp_history_relations WHERE from_claim_uid = ?",
+            (matched["claim_uid"],),
+        ).fetchall()
+        history_relations = [
+            {
+                **row_to_dict(row),
+                "to_claim_uid": row["to_history_claim_uid"],
+            }
+            for row in history_rows
+            if row["relation_uid"] not in excluded_relation_uids
+        ]
+        history_claims = fetch_history_claims(
+            conn,
+            {
+                relation["to_history_claim_uid"]
+                for relation in history_relations
+                if relation["to_history_claim_uid"]
+            },
+        )
+        for relation in sorted(history_relations, key=relation_sort_key):
+            if len(nodes) >= max_nodes and relation["to_history_claim_uid"] not in nodes:
+                truncated = True
+                continue
+            target = history_claims.get(relation["to_history_claim_uid"])
+            if target is None:
+                continue
+            if relation["to_history_claim_uid"] not in nodes:
+                projected_tokens = token_budget_used + claim_token_cost(target)
+                if projected_tokens > 1800:
+                    truncated = True
+                    continue
+                token_budget_used = projected_tokens
+            nodes[target["claim_uid"]] = target
+            included_by.setdefault(target["claim_uid"], []).append(relation["relation_type"])
+            relation_reasons.setdefault(target["claim_uid"], []).append(
+                reason_for_relation(
+                    relation["relation_type"],
+                    matched["local_claim_id"],
+                    target["local_claim_id"],
+                )
+            )
+            used_relations.append(relation)
+
         explanatory_relation_types = {"contradicts:error", "supports"}
         included_node_uids = {uid for uid in nodes if uid != matched["claim_uid"]}
         if included_node_uids:
@@ -2801,7 +3389,18 @@ def retrieve_packet(
                 )
                 used_relations.append(relation)
 
-        attach_evidence_lists(conn, nodes)
+        active_nodes = {
+            uid: node
+            for uid, node in nodes.items()
+            if "history_claim_uid" not in node
+        }
+        history_nodes = {
+            uid: node
+            for uid, node in nodes.items()
+            if "history_claim_uid" in node
+        }
+        attach_evidence_lists(conn, active_nodes)
+        attach_history_evidence_lists(conn, history_nodes)
         evidence_uids = sorted(
             {
                 evidence_uid
@@ -2912,6 +3511,7 @@ def render_dossier(packet: dict[str, Any], question: str) -> str:
             lines.append(f"- Basis: {evidence_label(evidence.get(evidence_id))}.")
 
         lines.extend(["", "## Prior / Superseded Belief"])
+        history_change_notes: list[str] = []
         for relation in supersedes:
             target = claims.get(relation["target_ref"])
             if not target:
@@ -2920,6 +3520,8 @@ def render_dossier(packet: dict[str, Any], question: str) -> str:
             for evidence_id in claim_evidence_ids(target):
                 lines.append(f"- Prior basis: {evidence_label(evidence.get(evidence_id))}.")
             lines.append(f"- Status: superseded by {matched['local_claim_id']}, not equally live.")
+            if target.get("detail"):
+                history_change_notes.append(str(target["detail"]))
 
         lines.extend(["", "## Why It Changed"])
         reason_claims = [
@@ -2932,6 +3534,9 @@ def render_dossier(packet: dict[str, Any], question: str) -> str:
             lines.append(f"- {reason_claim['text']}")
             for evidence_id in claim_evidence_ids(reason_claim):
                 lines.append(f"- Reason evidence: {evidence_label(evidence.get(evidence_id))}.")
+        if not reason_claims:
+            for note in history_change_notes:
+                lines.append(f"- {note}")
 
         known_error_edges = [rel for rel in relations if rel["relation_type"] == "contradicts:error"]
         if known_error_edges:
@@ -3110,7 +3715,9 @@ def compile_bundle(
             "valid": True,
             "implicit_claims": None,
             "implicit_evidence": None,
+            "implicit_history_claims": None,
             "boundary_source_counts": boundary_source_report(source_packs),
+            "history_boundary_source_counts": history_boundary_source_report(source_packs),
         }
     )
     parsed_packs, projection_report = project_for_export_tier(
@@ -3171,6 +3778,14 @@ def compile_bundle(
     write_jsonl(
         output_dir / "logical" / "claim-relations.jsonl",
         [relation for parsed_pack in parsed_packs for relation in parsed_pack.relations],
+    )
+    write_jsonl(
+        output_dir / "logical" / "history-claims.jsonl",
+        [claim for parsed_pack in parsed_packs for claim in parsed_pack.history_claims],
+    )
+    write_jsonl(
+        output_dir / "logical" / "history-relations.jsonl",
+        [relation for parsed_pack in parsed_packs for relation in parsed_pack.history_relations],
     )
 
     query_claims = query_claims or []
@@ -3316,6 +3931,8 @@ def compile_bundle(
         "evidence": sum(len(parsed_pack.evidence) for parsed_pack in parsed_packs),
         "evidence_links": evidence_link_count,
         "relations": sum(len(parsed_pack.relations) for parsed_pack in parsed_packs),
+        "history_claims": sum(len(parsed_pack.history_claims) for parsed_pack in parsed_packs),
+        "history_relations": sum(len(parsed_pack.history_relations) for parsed_pack in parsed_packs),
         "unresolved_relations": sum(
             1
             for parsed_pack in parsed_packs

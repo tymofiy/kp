@@ -117,6 +117,85 @@ Synthetic review note.
         )
         return pack
 
+    def write_history_fixture(self, root: Path) -> Path:
+        pack = root / "example-history.kpack"
+        pack.mkdir()
+        (pack / "PACK.yaml").write_text(
+            """name: example-history
+version: 2026.06.19
+domain: test/compiler
+kind: claim
+author: KP Compiler Tests
+
+description: Synthetic compiler history fixture.
+
+confidence:
+  scale: simple
+  normalize: true
+
+freshness: "2026-06-19"
+license: CC-BY-4.0
+sensitivity: public
+visibility: public
+tier: standalone
+
+provenance:
+  author: KP Compiler Tests
+  role: independent
+  reviewed_by: null
+  review_date: null
+  signed: false
+extensions:
+  kp_compiler:
+    boundary:
+      defaults_explicit: true
+"""
+        )
+        (pack / "claims.md").write_text(
+            f"""{ROSETTA}
+---
+pack: example-history | v: 2026.06.19 | domain: test/compiler
+confidence: simple | normalized
+---
+
+# Example History Fixture
+
+## Claims
+
+- [C002] The current reading is Example B. ⊘C001-v1
+  {{0.86|i|E002|2026-06-19|investigated|judgment}} This is the active successor.
+"""
+        )
+        (pack / "history.md").write_text(
+            """---
+pack: example-history | history
+---
+
+# History
+
+- [C001-v1] The prior reading was Example A.
+  {0.70|r|E001|2026-06-18|investigated} Preserved as prior belief.
+  Superseded 2026-06-19: review note replaced the prior reading. See C002.
+"""
+        )
+        (pack / "evidence.md").write_text(
+            """# Evidence
+
+## E001 — Prior Note
+> **type:** synthetic_document | **captured:** 2026-06-18
+> **source:** fixture://prior-note.txt
+
+Synthetic prior note.
+
+## E002 — Review Note
+> **type:** synthetic_report | **captured:** 2026-06-19
+> **source:** fixture://review-note.txt
+
+Synthetic review note.
+"""
+        )
+        return pack
+
     def declare_pack_boundary_defaults_explicit(self, pack: Path) -> None:
         pack_yaml = pack / "PACK.yaml"
         pack_yaml.write_text(
@@ -393,7 +472,7 @@ Synthetic internal-only note.
             try:
                 self.assertEqual(
                     conn.execute("SELECT value FROM graph_meta WHERE key = 'schema_version'").fetchone()[0],
-                    "4",
+                    "5",
                 )
                 self.assertEqual(
                     conn.execute("SELECT count(*) FROM kp_claim_evidence_links").fetchone()[0],
@@ -414,6 +493,71 @@ Synthetic internal-only note.
             self.assertTrue((out / "adapters/openai-compatible/request-C002.json").exists())
             self.assertTrue((out / "adapters/ollama/prompt-C002.txt").exists())
             self.assertTrue((out / "adapters/mcp/tool-response-C002.json").exists())
+
+    def test_compile_bundle_exposes_history_without_search_pollution(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            pack = self.write_history_fixture(root)
+            out = root / "out"
+
+            summary = compile_bundle(
+                pack,
+                out,
+                query_claims=["C002"],
+                questions={"C002": "What is the current reading?"},
+                require_explicit_boundary=True,
+            )
+
+            self.assertEqual(summary["claims"], 1)
+            self.assertEqual(summary["history_claims"], 1)
+            self.assertEqual(summary["relations"], 0)
+            self.assertEqual(summary["history_relations"], 1)
+            self.assertEqual(summary["boundary"]["implicit_history_claims"], 0)
+            self.assertEqual(
+                summary["projection"]["retained_history_boundary_source_counts"],
+                {"pack_default": 1},
+            )
+            self.assertEqual(summary["embedding"]["manifest"]["claim_count"], 1)
+
+            db_path = out / "indices" / "claim-graph.sqlite"
+            conn = sqlite3.connect(db_path)
+            try:
+                self.assertEqual(
+                    conn.execute("SELECT count(*) FROM kp_history_claims").fetchone()[0],
+                    1,
+                )
+                self.assertEqual(
+                    conn.execute("SELECT count(*) FROM kp_history_relations").fetchone()[0],
+                    1,
+                )
+                self.assertEqual(
+                    conn.execute("SELECT count(*) FROM kp_claim_search").fetchone()[0],
+                    1,
+                )
+                self.assertEqual(
+                    conn.execute(
+                        """
+                        SELECT count(*)
+                        FROM kp_claim_search search
+                        JOIN kp_history_claims history
+                          ON history.history_claim_uid = search.claim_uid
+                        """
+                    ).fetchone()[0],
+                    0,
+                )
+            finally:
+                conn.close()
+
+            self.assertEqual(search_claims(db_path, "preserved"), [])
+            packet = retrieve_packet(db_path, "C002")
+            neighbors = {neighbor["local_claim_id"] for neighbor in packet["neighbors"]}
+            self.assertIn("C001-v1", neighbors)
+            self.assertIn("example-history#E001", {row["evidence_uid"] for row in packet["evidence"]})
+
+            dossier = render_dossier(packet, "What is the current reading?")
+            self.assertIn("prior / superseded belief", dossier.lower())
+            self.assertIn("The prior reading was Example A.", dossier)
+            self.assertIn("not equally live", dossier.lower())
 
     def test_compile_bundle_resolves_cross_pack_relation(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -526,9 +670,13 @@ Synthetic internal-only note.
                 {
                     "claim_policy_violations": 0,
                     "evidence_policy_violations": 0,
+                    "history_policy_violations": 0,
                     "dangling_evidence_links": 0,
                     "dangling_relations": 0,
+                    "dangling_history_evidence_links": 0,
+                    "dangling_history_relations": 0,
                     "dangling_search_rows": 0,
+                    "history_search_rows": 0,
                     "dangling_vector_rows": 0,
                     "dangling_vector_index_rows": 0,
                     "dangling_fts_rows": 0,
@@ -666,10 +814,12 @@ Synthetic internal-only note.
                     "valid": True,
                     "implicit_claims": 0,
                     "implicit_evidence": 0,
+                    "implicit_history_claims": 0,
                     "boundary_source_counts": {
                         "claims": {"row": 4},
                         "evidence": {"row": 3},
                     },
+                    "history_boundary_source_counts": {},
                 },
             )
             self.assertEqual(summary["search_reports"][0]["hits"][0]["claim_uid"], "example-tiered#C001")
@@ -693,10 +843,12 @@ Synthetic internal-only note.
                     "valid": True,
                     "implicit_claims": 0,
                     "implicit_evidence": 0,
+                    "implicit_history_claims": 0,
                     "boundary_source_counts": {
                         "claims": {"pack_default": 3},
                         "evidence": {"pack_default": 2},
                     },
+                    "history_boundary_source_counts": {},
                 },
             )
             self.assertEqual(
