@@ -2508,7 +2508,7 @@ def attach_evidence_lists(conn: sqlite3.Connection, claims: dict[str, dict[str, 
     placeholders = ",".join("?" for _ in claims)
     rows = conn.execute(
         f"""
-        SELECT claim_uid, local_evidence_id
+        SELECT claim_uid, evidence_uid, local_evidence_id
         FROM kp_claim_evidence_links
         WHERE claim_uid IN ({placeholders})
         ORDER BY claim_uid, local_evidence_id
@@ -2516,10 +2516,13 @@ def attach_evidence_lists(conn: sqlite3.Connection, claims: dict[str, dict[str, 
         sorted(claims),
     ).fetchall()
     evidence_by_claim: dict[str, list[str]] = {claim_uid: [] for claim_uid in claims}
+    evidence_uids_by_claim: dict[str, list[str]] = {claim_uid: [] for claim_uid in claims}
     for row in rows:
         evidence_by_claim[row["claim_uid"]].append(row["local_evidence_id"])
+        evidence_uids_by_claim[row["claim_uid"]].append(row["evidence_uid"])
     for claim_uid, claim in claims.items():
         claim["evidence"] = evidence_by_claim.get(claim_uid, [])
+        claim["evidence_uids"] = evidence_uids_by_claim.get(claim_uid, [])
 
 
 def relation_sort_key(relation: dict[str, Any]) -> tuple[int, str]:
@@ -2669,12 +2672,18 @@ def retrieve_packet(
                 used_relations.append(relation)
 
         attach_evidence_lists(conn, nodes)
-        evidence_ids = sorted({evidence_id for node in nodes.values() for evidence_id in node["evidence"]})
+        evidence_uids = sorted(
+            {
+                evidence_uid
+                for node in nodes.values()
+                for evidence_uid in node.get("evidence_uids", [])
+            }
+        )
         evidence_rows = []
-        for local_evidence_id in evidence_ids:
+        for uid in evidence_uids:
             row = conn.execute(
-                "SELECT * FROM kp_evidence WHERE local_evidence_id = ?",
-                (local_evidence_id,),
+                "SELECT * FROM kp_evidence WHERE evidence_uid = ?",
+                (uid,),
             ).fetchone()
             if row is not None:
                 evidence_rows.append(row_to_dict(row))
@@ -2720,7 +2729,16 @@ def retrieve_packet(
 
 
 def evidence_by_id(packet: dict[str, Any]) -> dict[str, dict[str, Any]]:
-    return {row["local_evidence_id"]: row for row in packet["evidence"]}
+    evidence: dict[str, dict[str, Any]] = {}
+    for row in packet["evidence"]:
+        evidence[row["evidence_uid"]] = row
+        # Compatibility fallback only. Runtime claims should carry full evidence_uids.
+        evidence.setdefault(row["local_evidence_id"], row)
+    return evidence
+
+
+def claim_evidence_ids(claim: dict[str, Any]) -> list[str]:
+    return claim.get("evidence_uids") or claim.get("evidence", [])
 
 
 def claim_by_id(packet: dict[str, Any]) -> dict[str, dict[str, Any]]:
@@ -2760,7 +2778,7 @@ def render_dossier(packet: dict[str, Any], question: str) -> str:
                 f"- Confidence: {matched['confidence']:.2f}; type: {matched['claim_type']}; depth: {matched['depth']}; nature: {matched['nature']}.",
             ]
         )
-        for evidence_id in matched["evidence"]:
+        for evidence_id in claim_evidence_ids(matched):
             lines.append(f"- Basis: {evidence_label(evidence.get(evidence_id))}.")
 
         lines.extend(["", "## Prior / Superseded Belief"])
@@ -2769,7 +2787,7 @@ def render_dossier(packet: dict[str, Any], question: str) -> str:
             if not target:
                 continue
             lines.append(f"- {target['text']}")
-            for evidence_id in target["evidence"]:
+            for evidence_id in claim_evidence_ids(target):
                 lines.append(f"- Prior basis: {evidence_label(evidence.get(evidence_id))}.")
             lines.append(f"- Status: superseded by {matched['local_claim_id']}, not equally live.")
 
@@ -2782,7 +2800,7 @@ def render_dossier(packet: dict[str, Any], question: str) -> str:
         ]
         for reason_claim in reason_claims:
             lines.append(f"- {reason_claim['text']}")
-            for evidence_id in reason_claim["evidence"]:
+            for evidence_id in claim_evidence_ids(reason_claim):
                 lines.append(f"- Reason evidence: {evidence_label(evidence.get(evidence_id))}.")
 
         known_error_edges = [rel for rel in relations if rel["relation_type"] == "contradicts:error"]
@@ -2814,7 +2832,7 @@ def render_dossier(packet: dict[str, Any], question: str) -> str:
         lines.extend(["", "## Evidence Basis"])
         seen_evidence: set[str] = set()
         for node in [matched, *packet["neighbors"]]:
-            for evidence_id in node["evidence"]:
+            for evidence_id in claim_evidence_ids(node):
                 if evidence_id in seen_evidence:
                     continue
                 seen_evidence.add(evidence_id)

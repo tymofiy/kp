@@ -16,6 +16,7 @@ from compiler.graph_compiler import (
     compile_bundle,
     claim_embedding_text,
     embedding_input_text,
+    evidence_by_id,
     load_sqlite_vec,
     parse_pack,
     project_for_export_tier,
@@ -438,7 +439,12 @@ Synthetic internal-only note.
 
             packet = retrieve_packet(db_path, "example-a#C001")
             neighbors = {neighbor["claim_uid"] for neighbor in packet["neighbors"]}
+            evidence_uids = {row["evidence_uid"] for row in packet["evidence"]}
             self.assertIn("example-b#C001", neighbors)
+            self.assertEqual(evidence_uids, {"example-a#E001", "example-b#E001"})
+            evidence = evidence_by_id(packet)
+            self.assertEqual(evidence["example-a#E001"]["title"], "A Note")
+            self.assertEqual(evidence["example-b#E001"]["title"], "B Note")
 
             self.assertTrue((out / "retrieval/example-a__C001.json").exists())
             self.assertTrue((out / "adapters/openai-compatible/request-example-a__C001.json").exists())
