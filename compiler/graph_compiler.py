@@ -23,7 +23,7 @@ import yaml
 
 
 SCHEMA_VERSION = 4
-COMPILER_VERSION = "0.8.0"
+COMPILER_VERSION = "0.8.1"
 DEFAULT_QUERY_LIMIT = 3
 SEARCH_MODES = ("fts5", "vector", "hybrid", "lexical")
 VECTOR_SEARCH_MODES = ("vector", "hybrid")
@@ -667,6 +667,33 @@ def increment_reason(reasons: dict[str, int], reason: str) -> None:
     reasons[reason] = reasons.get(reason, 0) + 1
 
 
+def boundary_tuple_key(row: Claim | Evidence) -> str:
+    explicit = "true" if row.boundary_explicit else "false"
+    return (
+        f"tier={row.tier}|sensitivity={row.sensitivity}|"
+        f"visibility={row.visibility}|explicit={explicit}"
+    )
+
+
+def increment_boundary_count(counts: dict[str, int], row: Claim | Evidence) -> None:
+    key = boundary_tuple_key(row)
+    counts[key] = counts.get(key, 0) + 1
+
+
+def boundary_count_report(parsed_packs: list[ParsedPack]) -> dict[str, dict[str, int]]:
+    claim_counts: dict[str, int] = {}
+    evidence_counts: dict[str, int] = {}
+    for parsed in parsed_packs:
+        for claim in parsed.claims:
+            increment_boundary_count(claim_counts, claim)
+        for evidence in parsed.evidence:
+            increment_boundary_count(evidence_counts, evidence)
+    return {
+        "claims": dict(sorted(claim_counts.items())),
+        "evidence": dict(sorted(evidence_counts.items())),
+    }
+
+
 def project_for_export_tier(
     parsed_packs: list[ParsedPack],
     export_tier: str,
@@ -676,6 +703,7 @@ def project_for_export_tier(
 
     parsed_packs = resolve_relations(parsed_packs)
     policy = EXPORT_POLICIES[export_tier]
+    source_boundary_counts = boundary_count_report(parsed_packs)
     allowed_claim_uids: set[str] = set()
     allowed_evidence_uids: set[str] = set()
     claim_filter_reasons: dict[str, int] = {}
@@ -751,6 +779,7 @@ def project_for_export_tier(
             )
         )
 
+    retained_boundary_counts = boundary_count_report(projected)
     return projected, {
         "export_tier": export_tier,
         "policy": {
@@ -765,6 +794,8 @@ def project_for_export_tier(
         "claim_filter_reasons": dict(sorted(claim_filter_reasons.items())),
         "evidence_filter_reasons": dict(sorted(evidence_filter_reasons.items())),
         "relation_filter_reasons": dict(sorted(relation_filter_reasons.items())),
+        "source_boundary_counts": source_boundary_counts,
+        "retained_boundary_counts": retained_boundary_counts,
     }
 
 

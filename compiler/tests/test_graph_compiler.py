@@ -471,6 +471,43 @@ Synthetic internal-only note.
             self.assertEqual(summary["projection"]["filtered_claims"], 3)
             self.assertEqual(summary["projection"]["filtered_evidence"], 2)
             self.assertGreaterEqual(summary["projection"]["filtered_relations"], 1)
+            self.assertEqual(
+                summary["projection"]["policy"],
+                {
+                    "allowed_tiers": ["client"],
+                    "allowed_sensitivities": ["public"],
+                    "allowed_visibilities": ["public"],
+                    "allow_unresolved_relations": False,
+                },
+            )
+            self.assertEqual(
+                summary["projection"]["source_boundary_counts"]["claims"],
+                {
+                    "tier=client|sensitivity=public|visibility=public|explicit=true": 2,
+                    "tier=internal|sensitivity=restricted|visibility=private|explicit=true": 1,
+                    "tier=server|sensitivity=internal|visibility=private|explicit=true": 1,
+                },
+            )
+            self.assertEqual(
+                summary["projection"]["source_boundary_counts"]["evidence"],
+                {
+                    "tier=client|sensitivity=public|visibility=public|explicit=true": 1,
+                    "tier=internal|sensitivity=restricted|visibility=private|explicit=true": 1,
+                    "tier=server|sensitivity=internal|visibility=private|explicit=true": 1,
+                },
+            )
+            self.assertEqual(
+                summary["projection"]["retained_boundary_counts"]["claims"],
+                {
+                    "tier=client|sensitivity=public|visibility=public|explicit=true": 1,
+                },
+            )
+            self.assertEqual(
+                summary["projection"]["retained_boundary_counts"]["evidence"],
+                {
+                    "tier=client|sensitivity=public|visibility=public|explicit=true": 1,
+                },
+            )
             self.assertTrue(summary["validation"]["valid"])
             self.assertEqual(
                 summary["validation"]["checks"],
@@ -505,6 +542,16 @@ Synthetic internal-only note.
                     conn.execute("SELECT count(*) FROM kp_claim_relations").fetchone()[0],
                     0,
                 )
+                self.assertIsNone(
+                    conn.execute(
+                        "SELECT value FROM graph_meta WHERE key = 'source_boundary_counts'"
+                    ).fetchone()
+                )
+                self.assertIsNone(
+                    conn.execute(
+                        "SELECT value FROM graph_meta WHERE key = 'retained_boundary_counts'"
+                    ).fetchone()
+                )
             finally:
                 conn.close()
 
@@ -538,6 +585,29 @@ Synthetic internal-only note.
             self.assertEqual(summary["unresolved_relations"], 0)
             self.assertEqual(summary["projection"]["filtered_claims"], 1)
             self.assertEqual(summary["projection"]["filtered_evidence"], 1)
+            self.assertEqual(
+                summary["projection"]["policy"],
+                {
+                    "allowed_tiers": ["client", "server"],
+                    "allowed_sensitivities": ["confidential", "internal", "public"],
+                    "allowed_visibilities": ["private", "public", "shared"],
+                    "allow_unresolved_relations": False,
+                },
+            )
+            self.assertEqual(
+                summary["projection"]["retained_boundary_counts"]["claims"],
+                {
+                    "tier=client|sensitivity=public|visibility=public|explicit=true": 2,
+                    "tier=server|sensitivity=internal|visibility=private|explicit=true": 1,
+                },
+            )
+            self.assertEqual(
+                summary["projection"]["retained_boundary_counts"]["evidence"],
+                {
+                    "tier=client|sensitivity=public|visibility=public|explicit=true": 1,
+                    "tier=server|sensitivity=internal|visibility=private|explicit=true": 1,
+                },
+            )
             self.assertTrue(summary["validation"]["valid"])
 
             db_path = out / "indices" / "claim-graph.sqlite"

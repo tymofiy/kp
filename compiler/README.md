@@ -16,6 +16,8 @@ The current compiler is intentionally small. It can:
 - store graph metadata such as schema version, compiler version, source hash,
   and unresolved relation count;
 - project the graph for `client`, `server`, or `internal` export tiers;
+- report projection policy plus source/retained boundary tuple counts for
+  claims and evidence;
 - validate tier projections for forbidden nodes, dangling evidence links,
   dangling relations, search-table leaks, and unresolved relation pointers;
 - search compiled, export-tier-safe claims with fail-fast SQLite FTS5/BM25,
@@ -45,6 +47,16 @@ Evidence entries can also use blockquote metadata fields:
 The default export tier is `client`, which only emits `client` / `public` /
 `public` material. `server` includes client and server material, while
 `internal` is the full-trust profile.
+
+Each compile summary includes the projection policy and boundary tuple counts in
+the form `tier=<tier>|sensitivity=<sensitivity>|visibility=<visibility>|explicit=<true|false>`.
+This lets downstream promotion gates distinguish "filtered for the expected
+boundary reason" from "empty because source rows disappeared."
+
+Boundary tuple counts are build-side audit metadata. They disclose the volume
+and labels of filtered material, so they must not be copied into client runtime
+bundles or user-facing adapter artifacts. The compiler keeps them in
+`summary.json` and out of SQLite `graph_meta`.
 
 Use `--require-explicit-boundary` for stricter local builds. In that mode every
 claim and evidence record must declare compiler boundary metadata explicitly;
