@@ -564,6 +564,189 @@ Synthetic internal-only note.
         )
         return pack
 
+    def write_canary_fixture(self, root: Path) -> Path:
+        """Tier fixture whose server/internal material carries unique, improbable
+        sentinel strings, so a client bundle can be adversarially probed for any
+        cross-tier recovery (raw bytes, SQLite contents, FTS, or vectors)."""
+        pack = root / "example-canary.kpack"
+        pack.mkdir()
+        (pack / "PACK.yaml").write_text(
+            """name: example-canary
+version: 2026.06.19
+domain: test/compiler
+kind: claim
+author: KP Compiler Tests
+
+description: Synthetic tier canary fixture for leak proofs.
+
+confidence:
+  scale: simple
+  normalize: true
+
+freshness: "2026-06-19"
+license: CC-BY-4.0
+sensitivity: public
+visibility: public
+tier: standalone
+
+provenance:
+  author: KP Compiler Tests
+  role: independent
+  reviewed_by: null
+  review_date: null
+  signed: false
+"""
+        )
+        (pack / "claims.md").write_text(
+            f"""{ROSETTA}
+---
+pack: example-canary | v: 2026.06.19 | domain: test/compiler
+confidence: simple | normalized
+---
+
+# Example Canary Fixture
+
+## Claims
+
+- [C001] The client-safe conclusion can be shown.
+  {{0.80|i|E001|2026-06-19|investigated|judgment}} Public rationale only. ↔C002 <!-- kp-compiler: tier=client sensitivity=public visibility=public -->
+
+- [C002] The server method ZZSERVERCANARYALPHA explains the conclusion.
+  {{0.90|i|E002|2026-06-19|investigated|meta}} Server rationale ZZSERVERMETHODBETA. <!-- kp-compiler: tier=server sensitivity=internal visibility=private -->
+
+- [C003] This claim ZZDEPENDENTCANARYGAMMA looks public but depends on server-only evidence.
+  {{0.70|i|E002|2026-06-19|investigated|judgment}} Must not survive client slicing. <!-- kp-compiler: tier=client sensitivity=public visibility=public -->
+
+- [C004] The internal operator note ZZINTERNALCANARYDELTA is not server-shippable.
+  {{0.95|i|E003|2026-06-19|investigated|meta}} Operator rationale ZZOPERATORNOTEEPSILON. <!-- kp-compiler: tier=internal sensitivity=restricted visibility=private -->
+"""
+        )
+        (pack / "evidence.md").write_text(
+            """# Evidence
+
+## E001 — Public Note
+> **type:** synthetic_document | **captured:** 2026-06-19 | **tier:** client | **sensitivity:** public | **visibility:** public
+> **source:** fixture://public-note.txt
+
+Synthetic public note with no secrets.
+
+## E002 — Server Method
+> **type:** synthetic_report | **captured:** 2026-06-19 | **tier:** server | **sensitivity:** internal | **visibility:** private
+> **source:** fixture://server-method.txt
+
+Synthetic server-only method ZZSERVEREVIDENCEZETA.
+
+## E003 — Internal Note
+> **type:** synthetic_report | **captured:** 2026-06-19 | **tier:** internal | **sensitivity:** restricted | **visibility:** private
+> **source:** fixture://internal-note.txt
+
+Synthetic internal-only note ZZINTERNALEVIDENCEETA.
+"""
+        )
+        return pack
+
+    def test_client_bundle_leaks_no_cross_tier_canary(self) -> None:
+        """Adversarial complement to the structural projection tests: a client
+        bundle must not surface any server/internal canary through ANY artifact —
+        raw bytes, SQLite contents, FTS search, or vectors — even when the vector
+        producer wrongly supplies vectors for the forbidden claims."""
+        sentinels = (
+            "ZZSERVERCANARYALPHA",
+            "ZZSERVERMETHODBETA",
+            "ZZDEPENDENTCANARYGAMMA",
+            "ZZINTERNALCANARYDELTA",
+            "ZZOPERATORNOTEEPSILON",
+            "ZZSERVEREVIDENCEZETA",
+            "ZZINTERNALEVIDENCEETA",
+        )
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            pack = self.write_canary_fixture(root)
+            # An over-broad producer that (wrongly) supplies vectors for the
+            # server/internal claims too; the client bundle must still drop them.
+            vectors_path = self.write_vectors(
+                root / "canary-vectors.jsonl",
+                pack,
+                {
+                    "C001": [1.0, 0.0, 0.0],
+                    "C002": [0.0, 1.0, 0.0],
+                    "C003": [0.0, 0.0, 1.0],
+                    "C004": [1.0, 1.0, 0.0],
+                },
+                export_tier="internal",
+            )
+            out = root / "client"
+
+            summary = compile_bundle(
+                pack,
+                out,
+                export_tier="client",
+                vectors_jsonl=vectors_path,
+                query_texts=["client safe conclusion"],
+                query_vectors=[self.query_vector([1.0, 0.0, 0.0])],
+                query_limit=1,
+                search_mode="vector",
+            )
+
+            # Only the client-safe claim/evidence/vector survive projection.
+            self.assertEqual(summary["claims"], 1)
+            self.assertEqual(summary["graph_meta"]["vector_claim_count"], "1")
+            self.assertEqual(summary["graph_meta"]["vector_ignored_row_count"], "3")
+
+            db_path = out / "indices" / "claim-graph.sqlite"
+
+            # (1) Raw-byte scan of EVERY emitted client file — airtight; covers
+            # SQLite pages, FTS shadow tables, vector blobs, JSONL, and reports.
+            byte_leaks = []
+            for path in sorted(out.rglob("*")):
+                if path.is_file():
+                    data = path.read_bytes()
+                    for sentinel in sentinels:
+                        if sentinel.encode("utf-8") in data:
+                            byte_leaks.append((str(path.relative_to(out)), sentinel))
+            self.assertEqual(byte_leaks, [], f"client bundle leaked canaries in bytes: {byte_leaks}")
+
+            # (2) SQLite content dump across all readable tables.
+            conn = sqlite3.connect(db_path)
+            try:
+                table_names = [
+                    row[0]
+                    for row in conn.execute(
+                        "SELECT name FROM sqlite_master WHERE type='table'"
+                    )
+                ]
+                sql_leaks = []
+                for table in table_names:
+                    try:
+                        rows = conn.execute(f'SELECT * FROM "{table}"').fetchall()
+                    except sqlite3.OperationalError:
+                        continue  # virtual tables; content covered by the byte scan
+                    blob = json.dumps(rows, default=str)
+                    for sentinel in sentinels:
+                        if sentinel in blob:
+                            sql_leaks.append((table, sentinel))
+                self.assertEqual(sql_leaks, [], f"client SQLite leaked canaries: {sql_leaks}")
+
+                # (3) Only the client-safe rows survive.
+                self.assertEqual(
+                    [r[0] for r in conn.execute("SELECT claim_uid FROM kp_claims")],
+                    ["example-canary#C001"],
+                )
+                self.assertEqual(
+                    [r[0] for r in conn.execute("SELECT claim_uid FROM kp_claim_vectors")],
+                    ["example-canary#C001"],
+                )
+            finally:
+                conn.close()
+
+            # (4) FTS retrieval cannot surface any canary term.
+            for sentinel in sentinels:
+                self.assertEqual(
+                    search_claims(db_path, sentinel, limit=5),
+                    [],
+                    f"FTS surfaced canary {sentinel}",
+                )
+
     def test_compile_bundle_retrieves_supersession_neighborhood(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
