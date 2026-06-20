@@ -1,4 +1,12 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" role="img" aria-label="KP:1">
-  <rect width="32" height="32" rx="6.5" fill="#142a40"/>
-  <text x="15.5" y="21.6" text-anchor="middle" font-family="Georgia, 'Iowan Old Style', 'Times New Roman', serif" font-size="15" font-weight="600" letter-spacing="-0.6"><tspan fill="#f8f5ef">KP</tspan><tspan fill="#e76b00">:1</tspan></text>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="KP:1">
+  <title>KP:1</title>
+  <rect width="64" height="64" rx="14" fill="#142a40"/>
+  <g fill="none" stroke="#f8f5ef" stroke-width="5.5" stroke-linecap="square" stroke-linejoin="round">
+    <path d="M17 14 V40"/>
+    <path d="M17 27 L30 14"/>
+    <path d="M17 27 L30 40"/>
+    <path d="M38 14 V40"/>
+    <path d="M38 14 H46 a7 7 0 0 1 0 13 H38"/>
+  </g>
+  <rect x="17" y="45" width="29" height="4" rx="2" fill="#e76b00"/>
 </svg>
