@@ -41,6 +41,16 @@ pre-commit:
           fi
         done
 
+    # Generated-file guard: docs/index.html carries version/date/DOIs
+    # projected from CITATION.cff by scripts/build_docs.py. Block a commit
+    # that would publish a page out of sync with the citation record.
+    # Prefers the repo venv; falls back to python3 (needs PyYAML, which
+    # `make install` provides).
+    docs-sync:
+      run: |
+        if [ -x .venv/bin/python ]; then PY=.venv/bin/python; else PY=python3; fi
+        "$PY" scripts/build_docs.py --check
+
     # Public repo: scan staged content for AI-consultation process language.
     # This is a backstop — the primary defense is agent awareness in the
     # containing workspace. Workspace-specific codename and path patterns
@@ -50,7 +60,7 @@ pre-commit:
     # keep the two pattern sets in sync. ci.yml is excluded below for the
     # same reason this file is: it carries the patterns themselves.
     deny-list:
-      glob: "*.{md,txt,yml,yaml,json,cff,toml}"
+      glob: "*.{md,txt,yml,yaml,json,cff,toml,html}"
       exclude:
         - "lefthook.yml"
         - ".github/workflows/ci.yml"
@@ -78,7 +88,7 @@ pre-commit:
     # local patterns file), this check is a no-op and the only defense
     # is the behavioral rule in AGENTS.md §"What you MUST NOT do".
     client-names:
-      glob: "*.{md,txt,yml,yaml,json,cff,toml}"
+      glob: "*.{md,txt,yml,yaml,json,cff,toml,html}"
       # Array-of-globs form: a bare string here is a glob, not a regex,
       # so pipe-delimited lists silently exclude nothing.
       exclude:
