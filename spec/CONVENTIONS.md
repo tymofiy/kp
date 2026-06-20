@@ -37,7 +37,7 @@ Source of truth: this document.
 |---|------|-----------|---------|-------|
 | 1 | **Spelling authority** | Merriam-Webster (first listed entry) | "canceled" not "cancelled" | M-W is the de facto standard referenced by AP, Chicago, Google, Microsoft, Apple |
 | 2 | **Style fallback** | Chicago Manual of Style, 18th ed. | — | For questions M-W doesn't answer (hyphenation edge cases, etc.) |
-| 3 | **Locale tag** | `en-US` | PACK.yaml: `linguistic_epoch: en-US-2026` | BCP 47 language tag; year suffix anchors semantic drift. Note: `linguistic_epoch` is a decoration field per CORE.md §3 (no consumer behavior in v0.8.3-preview; new producers SHOULD prefer `extensions.*`) |
+| 3 | **Locale tag** | `en-US` | PACK.yaml: `linguistic_epoch: en-US-2026` | BCP 47 language tag; year suffix anchors semantic drift. Note: `linguistic_epoch` is a decoration field per CORE.md §3 (no consumer behavior in v0.8.4-preview; new producers SHOULD prefer `extensions.*`) |
 | 4 | **Dates** | ISO 8601: `YYYY-MM-DD` | `2026-03-22` | Never "March 22, 2026" in claims. Views may localize |
 | 5 | **Date ranges** | ISO 8601 with "to" | `2026-01-01 to 2026-03-31` | Not en-dash ranges in claims; views may use en-dash |
 | 6 | **Times** | ISO 8601 with UTC | `14:30 UTC` or `2026-03-22T14:30:00Z` | UTC always; IANA zone in parentheses if local matters: `(America/New_York)` |

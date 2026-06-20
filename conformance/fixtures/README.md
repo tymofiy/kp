@@ -1,7 +1,7 @@
 # KP:1 Conformance Fixtures
 
 > **Status:** Complete — Phase C3 (automated runner passes 23/23: 18 fixtures + 5 example packs)
-> **Spec version:** KP:1 v0.8.3-preview
+> **Spec version:** KP:1 v0.8.4-preview
 
 Test fixtures for KP:1 conformance validation. Each fixture is a complete
 `.kpack` directory. Standard packs include `PACK.yaml`, `claims.md`, and

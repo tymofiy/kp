@@ -25,7 +25,10 @@ import yaml
 
 
 SCHEMA_VERSION = 6
-COMPILER_VERSION = "0.9.0"
+# Mirrors the kp repo release version (the spec tag) — the compiler ships with
+# the repo, not on an independent axis. Bump together on release. (SCHEMA_VERSION
+# above is the separate output-format revision counter.)
+COMPILER_VERSION = "0.8.4-preview"
 RELATION_PROFILE_SCHEMA_VERSION = "kp-relation-profile-v0"
 DEFAULT_QUERY_LIMIT = 3
 SEARCH_MODES = ("fts5", "vector", "hybrid", "lexical")

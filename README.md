@@ -14,7 +14,7 @@
 > as structure. AI-first, human-accessible.
 
 **Editor:** Timothy Kompanchenko
-**Status:** Editor's Draft — `KP:1 Public Draft — 2026-06` (`v0.8.3-preview`)
+**Status:** Editor's Draft — `KP:1 Public Draft — 2026-06` (`v0.8.4-preview`)
 **Cite:** [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.19445262.svg)](https://doi.org/10.5281/zenodo.19445262) (concept DOI — always resolves to latest version)
 **See also:** [`spec/CORE.md`](spec/CORE.md), [`spec/SPEC.md`](spec/SPEC.md), [`spec/AUTHORING.md`](spec/AUTHORING.md), [`AGENTS.md`](AGENTS.md) (AI-first routing), [`GOVERNANCE.md`](GOVERNANCE.md), [`CONTRIBUTING.md`](CONTRIBUTING.md)
 
@@ -218,7 +218,7 @@ format's genuinely novel contributions.
 
 ## Status
 
-KP:1 is published as `KP:1 Public Draft — 2026-06` (current git tag `v0.8.3-preview`, with the v0.7.x preview series and the iterative v0.8.x preview line documented in [`spec/CHANGELOG.md`](spec/CHANGELOG.md)). It has a formal grammar, a JSON Schema, a conformance suite with 18 test fixtures plus 5 reference examples (23/23 validated).
+KP:1 is published as `KP:1 Public Draft — 2026-06` (current git tag `v0.8.4-preview`, with the v0.7.x preview series and the iterative v0.8.x preview line documented in [`spec/CHANGELOG.md`](spec/CHANGELOG.md)). It has a formal grammar, a JSON Schema, a conformance suite with 18 test fixtures plus 5 reference examples (23/23 validated).
 
 This is an **editor's draft** maintained by a single editor in a public repository. The specification is **not final** and may change in any way at any time, including breaking changes. It is **not yet ratified** by any standards body. Compatibility commitments will arrive only with a non-draft version. See [`GOVERNANCE.md`](GOVERNANCE.md) for the full governance picture, including how decisions are made during the preview phase and what changes when the Knowledge Pack Foundation is incorporated.
 
@@ -239,7 +239,7 @@ If you reference KP:1 in academic, technical, or evaluative work, please use the
 
 The recommended short form (using the concept DOI for the current preview) is:
 
-> Kompanchenko, T. (2026). *KP:1 — Knowledge Pack Format Specification* (Version 0.8.3-preview). Zenodo. <https://doi.org/10.5281/zenodo.19445262>
+> Kompanchenko, T. (2026). *KP:1 — Knowledge Pack Format Specification* (Version 0.8.4-preview). Zenodo. <https://doi.org/10.5281/zenodo.19445262>
 
 The editor and an acknowledgment of AI drafting assistance are also recorded in [`ACKNOWLEDGMENTS.md`](ACKNOWLEDGMENTS.md).
 
