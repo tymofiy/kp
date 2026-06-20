@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# SPDX-FileCopyrightText: 2026 Timothy Kompanchenko
 """Experimental KP graph compiler package."""
 
 from .graph_compiler import (

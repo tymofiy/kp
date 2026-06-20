@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: Apache-2.0
+# SPDX-FileCopyrightText: 2026 Timothy Kompanchenko
 """Experimental KP graph compiler.
 
 Compiles a KP:1 pack into a small graph projection, retrieves bounded claim
@@ -1475,6 +1477,30 @@ def string_list_sha256(values: list[str]) -> str:
     return "sha256:" + digest.hexdigest()
 
 
+def projected_pack_hash(parsed_pack: ParsedPack) -> str:
+    """Content hash of a pack's RETAINED (post-projection) rows only.
+
+    The pre-projection ``source_hash`` (``stable_pack_hash``) fingerprints the
+    full pack, including rows an export tier filters out, so shipping it in a
+    lower-tier bundle is a confirmation oracle for withheld content. This hash
+    covers only the claims/evidence/history that survive the projection, so it
+    is safe to expose at the projected tier.
+    """
+    digest = hashlib.sha256()
+    digest.update(parsed_pack.pack["name"].encode("utf-8"))
+    digest.update(b"\0")
+    digest.update(str(parsed_pack.pack["version"]).encode("utf-8"))
+    digest.update(b"\0")
+    rows: list[Any] = []
+    rows.extend(sorted(parsed_pack.claims, key=lambda row: row.claim_uid))
+    rows.extend(sorted(parsed_pack.evidence, key=lambda row: row.evidence_uid))
+    rows.extend(sorted(parsed_pack.history_claims, key=lambda row: row.history_claim_uid))
+    for row in rows:
+        digest.update(json.dumps(as_jsonable(row), sort_keys=True).encode("utf-8"))
+        digest.update(b"\n")
+    return digest.hexdigest()
+
+
 def claim_search_text(claim: Claim, evidence_by_uid: dict[str, Evidence]) -> str:
     evidence_parts = []
     for local_evidence_id in claim.evidence_ids:
@@ -2274,6 +2300,14 @@ def compile_sqlite(
             "INSERT INTO graph_meta (key, value) VALUES (?, ?)",
             sorted(graph_meta.items()),
         )
+        # Runtime pack rows describe the PROJECTED pack, never the source pack.
+        # A pack whose every claim/evidence/history row was filtered out of this
+        # export tier is dropped entirely; surviving packs carry neither the
+        # source manifest sensitivity/visibility nor the full pre-projection
+        # source_hash. This keeps a lower-tier bundle from disclosing the
+        # existence, classification, or a content fingerprint of filtered
+        # (higher-tier) source material. The full source_hash stays build-side
+        # in graph_meta/summary.json for provenance.
         conn.executemany(
             """
             INSERT INTO kp_packs (
@@ -2286,11 +2320,12 @@ def compile_sqlite(
                     parsed_pack.pack["name"],
                     str(parsed_pack.pack["version"]),
                     parsed_pack.pack["domain"],
-                    parsed_pack.pack.get("sensitivity"),
-                    parsed_pack.pack.get("visibility"),
-                    parsed_pack.source_hash,
+                    None,
+                    None,
+                    projected_pack_hash(parsed_pack),
                 )
                 for parsed_pack in parsed_packs
+                if parsed_pack.claims or parsed_pack.evidence or parsed_pack.history_claims
             ],
         )
         claims = [claim for parsed_pack in parsed_packs for claim in parsed_pack.claims]
@@ -4185,11 +4220,14 @@ def compile_bundle(
                 "name": parsed_pack.pack["name"],
                 "version": str(parsed_pack.pack["version"]),
                 "domain": parsed_pack.pack["domain"],
-                "sensitivity": parsed_pack.pack.get("sensitivity"),
-                "visibility": parsed_pack.pack.get("visibility"),
-                "source_hash": parsed_pack.source_hash,
+                # Projected, not source: redact the manifest classification and
+                # expose only a retained-content hash (see kp_packs above).
+                "sensitivity": None,
+                "visibility": None,
+                "source_hash": projected_pack_hash(parsed_pack),
             }
             for parsed_pack in parsed_packs
+            if parsed_pack.claims or parsed_pack.evidence or parsed_pack.history_claims
         ],
     )
     write_jsonl(

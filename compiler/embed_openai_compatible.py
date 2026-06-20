@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: Apache-2.0
+# SPDX-FileCopyrightText: 2026 Timothy Kompanchenko
 """Reference KP embedding producer for OpenAI-compatible endpoints.
 
 This adapter is intentionally small and public-safe: it consumes the graph

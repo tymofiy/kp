@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# SPDX-FileCopyrightText: 2026 Timothy Kompanchenko
 import contextlib
 import io
 import json
@@ -24,6 +26,7 @@ from compiler.graph_compiler import (
     render_dossier,
     retrieve_packet,
     search_claims,
+    stable_pack_hash,
     VECTOR_INDEX_TABLE,
     vector_text_hash,
 )
@@ -746,6 +749,105 @@ Synthetic internal-only note ZZINTERNALEVIDENCEETA.
                     [],
                     f"FTS surfaced canary {sentinel}",
                 )
+
+    def test_client_bundle_drops_filtered_pack_metadata(self) -> None:
+        """Pack-level metadata is a leak surface distinct from claim/evidence
+        text. A pack whose every row is filtered out of the client tier must not
+        leak its manifest (name/domain/sensitivity/visibility) or a full-content
+        source_hash into the client bundle, and surviving packs must not expose
+        the source manifest classification or the pre-projection source_hash."""
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            # Survives client projection (its C001 is tier=client/public).
+            public_pack = self.write_canary_fixture(root)
+            # Manifest internal/private with one server-tier claim: zero rows
+            # survive a client projection, so the whole pack must disappear.
+            filtered = root / "filtered.kpack"
+            filtered.mkdir()
+            (filtered / "PACK.yaml").write_text(
+                """name: ZZFILTEREDPACKNAME
+version: 2026.06.19
+domain: ZZFILTEREDDOMAIN
+kind: claim
+author: KP Compiler Tests
+description: Synthetic fully-filtered pack for metadata leak proofs.
+confidence:
+  scale: simple
+  normalize: true
+freshness: "2026-06-19"
+license: CC-BY-4.0
+sensitivity: internal
+visibility: private
+tier: standalone
+"""
+            )
+            (filtered / "claims.md").write_text(
+                f"""{ROSETTA}
+---
+pack: ZZFILTEREDPACKNAME | v: 2026.06.19 | domain: ZZFILTEREDDOMAIN
+confidence: simple | normalized
+---
+
+# Filtered
+
+## Claims
+
+- [C001] Server-only claim ZZFILTEREDCLAIMTEXT must not survive client slicing.
+  {{0.90|i|E001|2026-06-19|investigated|meta}} Server rationale. <!-- kp-compiler: tier=server sensitivity=internal visibility=private -->
+"""
+            )
+            (filtered / "evidence.md").write_text(
+                """# Evidence
+
+## E001 — Server Note
+> **type:** synthetic_report | **captured:** 2026-06-19 | **tier:** server | **sensitivity:** internal | **visibility:** private
+> **source:** fixture://server-note.txt
+
+Synthetic server-only evidence ZZFILTEREDEVIDENCETEXT.
+"""
+            )
+            out = root / "client"
+            compile_bundle([public_pack, filtered], out, export_tier="client")
+            db_path = out / "indices" / "claim-graph.sqlite"
+
+            conn = sqlite3.connect(db_path)
+            try:
+                pack_ids = [row[0] for row in conn.execute("SELECT pack_id FROM kp_packs")]
+                # The fully-filtered pack is dropped entirely.
+                self.assertEqual(pack_ids, ["example-canary"])
+                # No surviving pack row leaks a higher-tier classification label
+                # or the original pre-projection source_hash.
+                for sensitivity, visibility, source_hash in conn.execute(
+                    "SELECT sensitivity, visibility, source_hash FROM kp_packs"
+                ):
+                    self.assertIsNone(sensitivity)
+                    self.assertIsNone(visibility)
+                    self.assertNotEqual(source_hash, stable_pack_hash(public_pack))
+                    self.assertEqual(len(source_hash), 64)  # projection-scoped hash
+            finally:
+                conn.close()
+
+            # Raw-byte scan: the filtered pack's manifest, text, and full hash
+            # must not appear anywhere in the client bundle.
+            sentinels = [
+                "ZZFILTEREDPACKNAME",
+                "ZZFILTEREDDOMAIN",
+                "ZZFILTEREDCLAIMTEXT",
+                "ZZFILTEREDEVIDENCETEXT",
+                stable_pack_hash(filtered),
+                "\"sensitivity\": \"internal\"",
+                "\"visibility\": \"private\"",
+            ]
+            byte_leaks = []
+            for path in sorted(out.rglob("*")):
+                if path.is_file():
+                    data = path.read_bytes()
+                    for sentinel in sentinels:
+                        if sentinel.encode("utf-8") in data:
+                            byte_leaks.append((str(path.relative_to(out)), sentinel))
+            self.assertEqual(
+                byte_leaks, [], f"client bundle leaked filtered-pack metadata: {byte_leaks}"
+            )
 
     def test_compile_bundle_retrieves_supersession_neighborhood(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
