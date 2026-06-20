@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>KP:1 — Knowledge Pack Format Specification</title>
+<meta name="description" content="KP:1 is an open, text-native format for packaging epistemic state — claims with confidence, evidence, contradictions, and the trace of how beliefs evolved, designed for AI inspectability and portability.">
+<meta name="theme-color" content="#142a40">
+
+<!-- Open Graph -->
+<meta property="og:type" content="article">
+<meta property="og:title" content="KP:1 — Knowledge Pack Format Specification">
+<meta property="og:description" content="An open, text-native format for packaging epistemic state: claims, confidence, evidence, contradictions, and the evolution of belief — preserved as structure.">
+<meta property="og:url" content="https://tymofiy.github.io/kp/">
+<meta property="og:image" content="https://tymofiy.github.io/kp/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="KP:1 — an open, text-native format for packaging epistemic state.">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="KP:1 — Knowledge Pack Format Specification">
+<meta name="twitter:description" content="An open, text-native format for packaging epistemic state: claims, confidence, evidence, contradictions, and the evolution of belief.">
+<meta name="twitter:image" content="https://tymofiy.github.io/kp/og-image.png">
+
+<!-- Highwire Press citation tags (Google Scholar / Crossref-style indexing) -->
+<meta name="citation_title" content="KP:1 — Knowledge Pack Format Specification">
+<meta name="citation_author" content="Kompanchenko, Timothy">
+<meta name="citation_publication_date" content="2026/06/13">
+<meta name="citation_online_date" content="2026/06/13">
+<meta name="citation_technical_report_number" content="v0.8.4-preview">
+<meta name="citation_doi" content="10.5281/zenodo.20683340">
+<meta name="citation_public_url" content="https://tymofiy.github.io/kp/">
+<meta name="citation_keywords" content="knowledge representation; epistemic state; AI specification; confidence calibration; evidence reference; contradiction qualifiers; text-native format">
+<meta name="citation_abstract" content="KP:1 is a text-native specification for representing epistemic state — claims with confidence, evidence, contradictions, and the trace of how beliefs evolved — designed for AI inspectability and portability across systems.">
+
+<!-- Dublin Core -->
+<meta name="DC.title" content="KP:1 — Knowledge Pack Format Specification">
+<meta name="DC.creator" content="Kompanchenko, Timothy">
+<meta name="DC.date" content="2026-06-13">
+<meta name="DC.identifier" content="https://doi.org/10.5281/zenodo.19445262">
+<meta name="DC.rights" content="CC-BY-4.0">
+
+<link rel="canonical" href="https://tymofiy.github.io/kp/">
+<link rel="icon" href="kp.svg" type="image/svg+xml">
+
+<link rel="preload" href="fonts/Canela-Regular.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="fonts/InterVariable.woff2" as="font" type="font/woff2" crossorigin>
+
+<style>
+  /* ---- Type faces (self-hosted woff2) --------------------------------- */
+  @font-face { font-family:"Canela"; src:url("fonts/Canela-Regular.woff2") format("woff2");
+    font-weight:400; font-style:normal; font-display:swap; }
+  @font-face { font-family:"Inter"; src:url("fonts/InterVariable.woff2") format("woff2");
+    font-weight:300 700; font-style:normal; font-display:swap; }
+  @font-face { font-family:"IBM Plex Mono"; src:url("fonts/IBMPlexMono-Regular.woff2") format("woff2");
+    font-weight:400; font-style:normal; font-display:swap; }
+
+  /* ---- Tokens ----------------------------------------------------------- */
+  :root {
+    --font-display:"Canela","Iowan Old Style",Palatino,"Book Antiqua",Georgia,serif;
+    --font-sans:"Inter",system-ui,-apple-system,"Segoe UI",sans-serif;
+    --font-mono:"IBM Plex Mono","SFMono-Regular",Menlo,Monaco,Consolas,monospace;
+
+    --navy:#142a40; --ivory:#f8f5ef; --saffron:#e76b00; --saffron-ink:#b44800;
+    --slate:#2d3a4a; --green:#1d6e30;
+
+    --paper:var(--ivory); --ink:var(--navy); --ink-2:var(--slate); --ink-3:#55606d;
+    --rule:rgba(20,42,64,.13); --rule-strong:rgba(20,42,64,.24);
+    --paper-raised:#fcfaf5; --paper-sunk:#f1ece2;
+    --on-navy:var(--ivory); --on-navy-2:rgba(248,245,239,.76);
+    --on-navy-3:rgba(248,245,239,.54); --on-navy-rule:rgba(248,245,239,.18);
+
+    --content:1060px; --measure:40rem;
+    --section-y:clamp(3.75rem,7.5vw,6.5rem);
+    --gutter:clamp(1.25rem,5vw,3rem);
+
+    --t-display:clamp(3.5rem,12vw,6rem);
+    --t-h2:clamp(1.55rem,3.2vw,2.15rem);
+    --t-h3:1.12rem;
+    --t-lead:clamp(1.16rem,1.7vw,1.4rem);
+    --t-body:1.0625rem; --t-small:.9375rem; --t-mono:.85rem; --t-eyebrow:.74rem;
+
+    --ease:cubic-bezier(.16,1,.3,1);
+    color-scheme:light;
+  }
+
+  /* ---- Reset / base ----------------------------------------------------- */
+  *,*::before,*::after { box-sizing:border-box; }
+  * { margin:0; }
+  html { -webkit-text-size-adjust:100%; scroll-behavior:smooth; }
+  @media (prefers-reduced-motion:reduce){ html{ scroll-behavior:auto; } }
+
+  body {
+    min-height:100svh; background:var(--paper); color:var(--ink);
+    font-family:var(--font-sans); font-size:var(--t-body); line-height:1.62; font-weight:400;
+    font-feature-settings:"kern","liga","calt";
+    -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale;
+    text-rendering:optimizeLegibility; position:relative; overflow-x:hidden;
+  }
+  /* warm paper grain — a subtle fixed texture on the paper ground */
+  body::before {
+    content:""; position:fixed; inset:0; z-index:0; pointer-events:none;
+    opacity:.55; mix-blend-mode:multiply;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.82' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='220' height='220' filter='url(%23n)' opacity='0.045'/%3E%3C/svg%3E");
+  }
+
+  a { color:inherit; text-decoration:none; }
+  strong,b { font-weight:600; }
+  ::selection { background:var(--navy); color:var(--ivory); }
+  :focus-visible { outline:2px solid var(--saffron-ink); outline-offset:3px; border-radius:2px; }
+  /* saffron-ink fails 3:1 on navy; brighten the ring inside the dark section */
+  .section--navy :focus-visible { outline-color:var(--saffron); }
+
+  .sr-only { position:absolute; width:1px; height:1px; padding:0; margin:-1px;
+    overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0; }
+  .skip-link { position:fixed; top:-120%; left:var(--gutter); z-index:50;
+    background:var(--navy); color:var(--ivory); padding:.7rem 1rem; border-radius:0 0 6px 6px;
+    font:500 var(--t-small)/1 var(--font-sans); }
+  .skip-link:focus { top:0; }
+
+  /* ---- Layout ----------------------------------------------------------- */
+  .wrap { width:100%; max-width:var(--content); margin-inline:auto; padding-inline:var(--gutter); }
+  .section { position:relative; z-index:1; padding-block:var(--section-y); }
+  .section + .section .sec-h { } /* spacing handled by section padding */
+  .section--band { background:var(--paper-sunk); }
+  .section--navy { background:var(--navy); color:var(--on-navy); }
+  .section--navy ::selection { background:var(--saffron); color:var(--navy); }
+
+  /* ---- Type ------------------------------------------------------------- */
+  .mark {
+    font-family:var(--font-display); font-weight:400; font-size:var(--t-display);
+    line-height:.92; letter-spacing:-.035em; color:var(--ink); text-wrap:balance;
+  }
+  .sec-h {
+    font-family:var(--font-display); font-weight:400; font-size:var(--t-h2);
+    line-height:1.1; letter-spacing:-.018em; color:var(--ink); text-wrap:balance;
+    margin-bottom:clamp(1.25rem,2.4vw,1.9rem);
+  }
+  .section--navy .sec-h { color:var(--on-navy); }
+  .h3 { font-family:var(--font-sans); font-weight:600; font-size:var(--t-h3);
+    line-height:1.3; letter-spacing:-.01em; color:var(--ink); }
+
+  .lead { font-size:var(--t-lead); line-height:1.5; color:var(--ink-2);
+    max-width:var(--measure); text-wrap:pretty; }
+  .prose { max-width:var(--measure); color:var(--ink-2); }
+  .prose p { text-wrap:pretty; }
+  .prose p + p { margin-top:1rem; }
+  .muted { color:var(--ink-3); }
+
+  code { font-family:var(--font-mono); font-size:.9em; background:color-mix(in srgb,var(--navy) 6%,transparent);
+    padding:.08em .35em; border-radius:4px; }
+  .mono { font-family:var(--font-mono); font-size:var(--t-mono); letter-spacing:-.01em;
+    font-feature-settings:"liga" 0,"calt" 0; }
+
+  /* a quiet text link */
+  .tlink { color:var(--saffron-ink); font-weight:500;
+    box-shadow:inset 0 -1px 0 0 color-mix(in srgb,var(--saffron-ink) 32%,transparent);
+    transition:box-shadow .2s var(--ease); }
+  .tlink:hover { box-shadow:inset 0 -2px 0 0 var(--saffron-ink); }
+  .section--navy .tlink { color:var(--saffron);
+    box-shadow:inset 0 -1px 0 0 color-mix(in srgb,var(--saffron) 40%,transparent); }
+  .section--navy .tlink:hover { box-shadow:inset 0 -2px 0 0 var(--saffron); }
+
+  /* ---- Buttons ---------------------------------------------------------- */
+  .btn-row { display:flex; flex-wrap:wrap; gap:.85rem; align-items:center; }
+  .btn { display:inline-flex; align-items:center; gap:.5rem; min-height:2.875rem;
+    padding:.7rem 1.3rem; border:1px solid transparent; border-radius:5px;
+    font:500 var(--t-small)/1 var(--font-sans); letter-spacing:.005em; cursor:pointer;
+    transition:background-color .2s var(--ease),color .2s var(--ease),border-color .2s var(--ease),transform .2s var(--ease); }
+  .btn--primary { background:var(--saffron-ink); color:var(--ivory); border-color:var(--saffron-ink); }
+  .btn--primary:hover { background:var(--navy); border-color:var(--navy); }
+  .btn--secondary { background:transparent; color:var(--ink); border-color:var(--rule-strong); }
+  .btn--secondary:hover { border-color:var(--ink); transform:translateY(-1px); }
+
+  /* ---- Hero ------------------------------------------------------------- */
+  .hero { padding-block:clamp(4.5rem,11vw,8rem) clamp(3.25rem,6vw,5rem); }
+  .status { display:inline-flex; align-items:center; gap:.55rem; margin-bottom:clamp(1.5rem,3vw,2.25rem);
+    font:600 var(--t-eyebrow)/1 var(--font-sans); letter-spacing:.14em; text-transform:uppercase; color:var(--saffron-ink); }
+  .status-dot { width:7px; height:7px; border-radius:50%; background:var(--saffron); flex:none; }
+  .hero-rule { display:block; width:clamp(3rem,7vw,4.5rem); height:3px; background:var(--saffron);
+    margin:clamp(1.4rem,3vw,2rem) 0 clamp(1.5rem,3vw,2.1rem); border-radius:2px; }
+  .hero-lead { font-size:clamp(1.22rem,2vw,1.55rem); color:var(--ink-2); max-width:36rem; }
+  .hero .btn-row { margin-top:clamp(2rem,4vw,2.75rem); }
+  .meta-line { margin-top:clamp(1.75rem,3vw,2.25rem); color:var(--ink-3); letter-spacing:0;
+    display:flex; flex-wrap:wrap; gap:.35rem .85rem; }
+
+  /* ---- Distinct features ------------------------------------------------ */
+  .features { list-style:none; padding:0; margin:clamp(2.5rem,5vw,3.5rem) 0 0;
+    border-top:1px solid var(--rule); }
+  .feature { display:grid; grid-template-columns:11rem 1fr; gap:clamp(.4rem,2.5vw,2rem);
+    padding:clamp(1.4rem,2.6vw,1.8rem) 0; border-bottom:1px solid var(--rule); }
+  .feature-glyph { font-family:var(--font-mono); font-size:1.05rem; color:var(--saffron-ink);
+    letter-spacing:.04em; padding-top:.15rem; font-feature-settings:"liga" 0,"calt" 0; }
+  .feature-h { font-family:var(--font-sans); font-weight:600; font-size:1.08rem; color:var(--ink);
+    letter-spacing:-.01em; margin-bottom:.3rem; }
+  .feature p { color:var(--ink-3); max-width:34rem; }
+
+  /* ---- The self-demonstrating specimen ---------------------------------- */
+  .specimen { margin:clamp(2.25rem,4.5vw,3rem) 0 0; background:var(--paper-raised);
+    border:1px solid var(--rule-strong); border-radius:10px;
+    box-shadow:0 30px 60px -44px rgba(20,42,64,.5); overflow:hidden; }
+  .specimen-bar { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:.6rem;
+    padding:.8rem clamp(1rem,2.5vw,1.4rem); background:color-mix(in srgb,var(--navy) 5%,var(--paper-raised));
+    border-bottom:1px solid var(--rule); }
+  .specimen-title { color:var(--ink-2); }
+  .specimen-tags { display:flex; gap:.4rem; flex-wrap:wrap; }
+  .chip { font-family:var(--font-mono); font-size:.72rem; padding:.2rem .5rem; border-radius:4px;
+    background:color-mix(in srgb,var(--navy) 8%,transparent); color:var(--ink-2);
+    font-feature-settings:"liga" 0,"calt" 0; }
+  .chip--ok { background:color-mix(in srgb,var(--green) 11%,transparent); color:var(--green); }
+  .specimen-code { margin:0; padding:clamp(1.1rem,2.8vw,1.7rem) clamp(1rem,2.5vw,1.5rem); overflow-x:auto;
+    font-family:var(--font-mono); font-size:clamp(.78rem,1.25vw,.86rem); line-height:1.75; color:var(--ink);
+    font-feature-settings:"liga" 0,"calt" 0; -webkit-font-smoothing:auto; }
+  .specimen-code .c-comment { color:var(--ink-3); }
+  .specimen-code .c-id { color:var(--navy); font-weight:600; }
+  .specimen-code .c-meta { color:var(--slate); }
+  .specimen-code .c-conf { color:var(--saffron-ink); font-weight:600; }
+  .specimen-code .c-rel { color:var(--saffron-ink); font-weight:600; }
+  .specimen-note { display:flex; gap:.85rem; align-items:baseline; margin:0;
+    padding:clamp(1rem,2.5vw,1.3rem) clamp(1rem,2.5vw,1.5rem);
+    background:color-mix(in srgb,var(--saffron) 6%,transparent); border-top:1px solid var(--rule); }
+  /* a single structural accent rule — used once, on the specimen note */
+  .railed { padding-left:clamp(1rem,2vw,1.3rem); border-left:2px solid var(--saffron); }
+  .specimen-note-label { color:var(--saffron-ink); white-space:nowrap; }
+  .specimen-note-text { color:var(--ink-2); font-size:var(--t-small); }
+
+  /* ---- Read-the-spec index --------------------------------------------- */
+  .index { list-style:none; padding:0; margin:0; border-top:1px solid var(--rule); }
+  .index-item { border-bottom:1px solid var(--rule); }
+  .index-item a { display:grid; grid-template-columns:1fr; gap:.2rem;
+    padding:clamp(1.1rem,2.2vw,1.45rem) 0; transition:background-color .15s var(--ease); }
+  .index-title { font-family:var(--font-sans); font-weight:600; font-size:1.08rem; color:var(--ink);
+    letter-spacing:-.01em; display:flex; align-items:center; gap:.5rem; }
+  .index-arrow { color:var(--saffron-ink); transition:transform .2s var(--ease); }
+  .index-item a:hover .index-arrow { transform:translateX(4px); }
+  .index-item a:hover .index-title { color:var(--saffron-ink); }
+  .index-desc { color:var(--ink-3); font-size:var(--t-small); }
+
+  /* ---- Close (navy gravity register) ----------------------------------- */
+  .close-grid { display:grid; grid-template-columns:1fr 1fr; gap:clamp(2rem,5vw,4rem); align-items:start; }
+  .close-body { color:var(--on-navy-2); max-width:30rem; line-height:1.6; }
+  .cite { color:var(--on-navy-2); font-size:.82rem; line-height:1.75; letter-spacing:0;
+    border-left:2px solid var(--on-navy-rule); padding-left:1rem; }
+  .cite .c-strong { color:var(--on-navy); }
+  .cite-note { color:var(--on-navy-3); }
+  .legal { margin-top:clamp(2.5rem,5vw,3.5rem); padding-top:clamp(1.5rem,3vw,2rem);
+    border-top:1px solid var(--on-navy-rule); color:var(--on-navy-3); font-size:var(--t-small); max-width:42rem; }
+  .close-mark { font-family:var(--font-display); font-size:clamp(2rem,5vw,3rem); color:var(--on-navy-rule);
+    letter-spacing:-.03em; margin-top:clamp(2rem,4vw,3rem); line-height:1; user-select:none; }
+
+  /* ---- Motion: one restrained page-load. The static default is VISIBLE;
+     the reveal only enhances, so content never ships hidden to a crawler or a
+     renderer that skips animation (load-bearing for Scholar/Crossref indexing). */
+  @media (prefers-reduced-motion:no-preference) {
+    @keyframes rise { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:none; } }
+    .load-in { animation:rise .8s var(--ease) both; }
+    .load-in.d1 { animation-delay:.06s; } .load-in.d2 { animation-delay:.12s; }
+    .load-in.d3 { animation-delay:.18s; } .load-in.d4 { animation-delay:.24s; }
+  }
+
+  /* ---- Responsive ------------------------------------------------------- */
+  @media (max-width:720px) {
+    .feature { grid-template-columns:1fr; gap:.5rem; }
+    .feature-glyph { padding-top:0; }
+    .close-grid { grid-template-columns:1fr; }
+  }
+</style>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+<main id="main">
+
+  <!-- ============ HERO ============ -->
+  <header class="hero">
+    <div class="wrap">
+      <p class="status load-in"><span class="status-dot" aria-hidden="true"></span> Editor's Draft · Public Draft <span data-kp="ym">2026-06</span></p>
+      <h1 class="mark load-in d1">KP:1</h1>
+      <span class="hero-rule load-in d2" aria-hidden="true"></span>
+      <p class="hero-lead load-in d2">An open, text-native format for packaging <strong>epistemic state</strong> — claims, confidence, evidence, contradictions, and the trace of how beliefs evolved, preserved as structure.</p>
+      <div class="btn-row load-in d3">
+        <a class="btn btn--primary" href="https://github.com/tymofiy/kp/blob/main/spec/SPEC.md">Read the specification</a>
+        <a class="btn btn--secondary" href="https://github.com/tymofiy/kp">GitHub repository</a>
+      </div>
+      <p class="meta-line mono load-in d4">
+        <span data-kp="version">v0.8.4-preview</span><span aria-hidden="true">·</span>
+        <span data-kp="date">2026-06-13</span><span aria-hidden="true">·</span>
+        <span data-kp="license">CC BY 4.0</span><span aria-hidden="true">·</span>
+        <span>DOI <span data-kp="concept-doi">10.5281/zenodo.19445262</span></span>
+      </p>
+    </div>
+  </header>
+
+  <!-- ============ ABSTRACT ============ -->
+  <section class="section" aria-labelledby="abstract-h">
+    <div class="wrap">
+      <h2 class="sec-h" id="abstract-h">Abstract</h2>
+      <div class="prose">
+        <p>KP:1 is a text-native specification for representing epistemic state — claims with confidence, evidence, contradictions, and the trace of how beliefs evolved — designed for AI inspectability and portability across systems. The format defines a strict normative core (<code>CORE.md</code>, JSON Schema, PEG grammar) plus topic-authoritative companions for voice surfaces, multilingual support, archival, composition, and extension blocks.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ WHAT MAKES KP:1 DISTINCT ============ -->
+  <section class="section" aria-labelledby="distinct-h">
+    <div class="wrap">
+      <h2 class="sec-h" id="distinct-h">What makes KP:1 distinct</h2>
+      <p class="lead">Most formats flatten knowledge into settled facts. KP:1 keeps its shape: the uncertainty, the tension, and the history stay as addressable structure. The clearest way to see that is the format itself.</p>
+
+      <!-- the format demonstrating itself: a real, compact fragment -->
+      <figure class="specimen" aria-label="Annotated KP:1 example fragment">
+        <div class="specimen-bar">
+          <span class="specimen-title mono">claims.md — acquisition review</span>
+          <span class="specimen-tags">
+            <span class="chip">3 claims</span>
+            <span class="chip chip--ok">self-describing</span>
+          </span>
+        </div>
+<pre class="specimen-code" tabindex="0" role="region" aria-label="KP:1 example fragment"><code><span class="c-comment">&lt;!-- KP:1 — self-describing header: a reader bootstraps the format from the file
+     - [ID] assertion  {confidence|type|evidence|date|depth|nature}   (depth, nature optional)
+     type   o observed · r reported · c computed · i inferred
+     rel    → supports · ⊗ contradicts · ⊗! error · ⊗~ tension · ⊘ supersedes --&gt;</span>
+
+- <span class="c-id">[C005]</span> Dating follows the catalogue raisonné: 1962, not 1957.
+  <span class="c-meta">{<span class="c-conf">0.93</span>|r|E003|2020-04-30|exhaustive}</span> <span class="c-rel">⊗!C004</span>
+
+- <span class="c-id">[C014]</span> The 2025 appraisal values the work at €950,000.
+  <span class="c-meta">{<span class="c-conf">0.91</span>|r|E008|2025-12-15|investigated}</span> <span class="c-rel">⊘C013</span>
+
+- <span class="c-id">[C017]</span> The 1953–1962 provenance gap is a material risk.
+  <span class="c-meta">{<span class="c-conf">0.45</span>|i|E005,E010|2026-05-09|investigated|judgment}</span> <span class="c-rel">⊗~C019</span></code></pre>
+        <figcaption class="specimen-note railed">
+          <span class="specimen-note-label mono">C017 ⊗~ C019</span>
+          <span class="specimen-note-text">A judgment held at 0.45, on two cited sources, kept in productive tension with the recommendation, not rounded away. Every line stays addressable, and the header lets any reader read the notation without fetching a schema.</span>
+        </figcaption>
+      </figure>
+
+      <!-- the four distinctive features -->
+      <ul class="features" role="list">
+        <li class="feature">
+          <span class="feature-glyph" aria-hidden="true">⊗ ⊗! ⊗~</span>
+          <div>
+            <h3 class="feature-h">Typed contradiction qualifiers</h3>
+            <p>Disagreement is kept in tension: plain contradiction, known error, or productive tension. Nothing is flattened away.</p>
+          </div>
+        </li>
+        <li class="feature">
+          <span class="feature-glyph" aria-hidden="true">&lt;!-- … --&gt;</span>
+          <div>
+            <h3 class="feature-h">Voyager-Principle Rosetta header</h3>
+            <p>Zero-dependency parsing: a reader can bootstrap the format from the file itself, with no external schema to fetch.</p>
+          </div>
+        </li>
+        <li class="feature">
+          <span class="feature-glyph" aria-hidden="true">⊘ →</span>
+          <div>
+            <h3 class="feature-h">Supersession with append-only history</h3>
+            <p>When a belief changes, the prior claim is superseded, not deleted, so how the thinking moved stays legible.</p>
+          </div>
+        </li>
+        <li class="feature">
+          <span class="feature-glyph" aria-hidden="true">◳ ◰ ◱</span>
+          <div>
+            <h3 class="feature-h">Three-surface architecture</h3>
+            <p>One source of truth, three reads: claims for AI reasoning, display views for visual reading, voice views for spoken delivery.</p>
+          </div>
+        </li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ============ READ THE SPECIFICATION ============ -->
+  <section class="section section--band" aria-labelledby="read-h">
+    <div class="wrap">
+      <h2 class="sec-h" id="read-h">Read the specification</h2>
+      <ul class="index" role="list">
+        <li class="index-item">
+          <a href="https://github.com/tymofiy/kp/blob/main/spec/SPEC.md">
+            <span class="index-title">Specification <span class="index-arrow" aria-hidden="true">→</span></span>
+            <span class="index-desc">The normative spec — CORE.md, SPEC.md, and the topic-authoritative companions.</span>
+          </a>
+        </li>
+        <li class="index-item">
+          <a href="https://github.com/tymofiy/kp/tree/main/reference">
+            <span class="index-title">Reference implementation <span class="index-arrow" aria-hidden="true">→</span></span>
+            <span class="index-desc">Parser and CLI in Python — <code>kpack lint</code> and <code>kpack new</code>.</span>
+          </a>
+        </li>
+        <li class="index-item">
+          <a href="https://github.com/tymofiy/kp/tree/main/examples">
+            <span class="index-title">Examples <span class="index-arrow" aria-hidden="true">→</span></span>
+            <span class="index-desc">Five worked packs, validated by the conformance suite, including a copy-this starter.</span>
+          </a>
+        </li>
+        <li class="index-item">
+          <a href="https://doi.org/10.5281/zenodo.19445262">
+            <span class="index-title">Zenodo record <span class="index-arrow" aria-hidden="true">→</span></span>
+            <span class="index-desc">Archived, citable releases under an evergreen concept DOI.</span>
+          </a>
+        </li>
+        <li class="index-item">
+          <a href="https://github.com/tymofiy/kp">
+            <span class="index-title">GitHub repository <span class="index-arrow" aria-hidden="true">→</span></span>
+            <span class="index-desc">Source, governance, conformance grammar and schema, and contribution process.</span>
+          </a>
+        </li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ============ CLOSE (author · cite · legal) ============ -->
+  <footer class="section section--navy" aria-labelledby="cite-h">
+    <div class="wrap">
+      <div class="close-grid">
+        <div>
+          <h2 class="sec-h">Author</h2>
+          <p class="close-body">
+            <strong>Timothy Kompanchenko</strong> — creator of KP:1; Co-Founder &amp; CEO of
+            <a class="tlink" href="https://hellobernard.ai/">Bernard</a>.<br>
+            <a class="tlink" href="https://orcid.org/0009-0007-5355-2764">ORCID 0009-0007-5355-2764</a>
+          </p>
+        </div>
+        <div>
+          <h2 class="sec-h" id="cite-h">How to cite</h2>
+          <p class="cite mono">
+            Kompanchenko, T. (<span data-kp="year">2026</span>). <span class="c-strong">KP:1 — Knowledge Pack Format Specification</span>. Zenodo.
+            https://doi.org/<span data-kp="concept-doi">10.5281/zenodo.19445262</span>
+            <span class="cite-note">— concept DOI (resolves to the latest version). This version: <span data-kp="version">v0.8.4-preview</span>, https://doi.org/<span data-kp="version-doi">10.5281/zenodo.20683340</span></span>
+          </p>
+        </div>
+      </div>
+      <p class="legal">
+        “KP:1” and “Knowledge Pack” are trademark terms of the author (USPTO application 99747548).
+        The specification is licensed under <a class="tlink" href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a>.
+      </p>
+      <p class="close-mark" aria-hidden="true">KP:1</p>
+    </div>
+  </footer>
+
+</main>
+</body>
+</html>

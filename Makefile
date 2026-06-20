@@ -8,7 +8,7 @@
 PYTHON ?= python3
 PACK   ?=
 
-.PHONY: help install conformance compiler-test pack lint clean
+.PHONY: help install conformance compiler-test pack lint clean docs docs-check
 
 help:
 	@echo "KP:1 conformance targets"
@@ -18,6 +18,8 @@ help:
 	@echo "  make compiler-test  Run the experimental graph compiler unit tests"
 	@echo "  make pack PACK=path Validate a single pack at PATH"
 	@echo "  make lint           Same as conformance (alias)"
+	@echo "  make docs           Sync docs/index.html metadata from CITATION.cff"
+	@echo "  make docs-check     Verify docs/index.html is in sync (CI / pre-commit)"
 	@echo "  make clean          Remove __pycache__ and .pyc files"
 	@echo ""
 	@echo "Examples:"
@@ -34,6 +36,12 @@ compiler-test:
 	$(PYTHON) -m unittest compiler.tests.test_graph_compiler
 
 lint: conformance
+
+docs:
+	$(PYTHON) scripts/build_docs.py
+
+docs-check:
+	$(PYTHON) scripts/build_docs.py --check
 
 pack:
 	@if [ -z "$(PACK)" ]; then \

@@ -66,6 +66,13 @@ jobs:
           done
       - name: Check relative links
         run: python3 scripts/check_links.py
+      # The spec home page (docs/index.html) carries release metadata —
+      # version, date, DOIs — projected from CITATION.cff by
+      # scripts/build_docs.py. This gate fails if the page was not
+      # regenerated after a CITATION.cff change, so the published page can
+      # never show a stale version/date/DOI.
+      - name: Check docs metadata in sync with CITATION.cff
+        run: python3 scripts/build_docs.py --check
       - name: Run conformance suite
         run: python3 conformance/run.py
       - name: Run conformance suite (strict PEG)
