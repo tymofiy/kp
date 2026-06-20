@@ -1,0 +1,2215 @@
+# SPDX-License-Identifier: Apache-2.0
+# SPDX-FileCopyrightText: 2026 Timothy Kompanchenko
+import contextlib
+import io
+import json
+import sqlite3
+import sys
+import tempfile
+import unittest
+from pathlib import Path
+from unittest.mock import patch
+
+import compiler.embed_openai_compatible as reference_adapter
+from compiler.graph_compiler import (
+    EMBEDDING_PREFIX_SCHEME,
+    EMBEDDING_SURFACE_VERSION,
+    VECTOR_CONTRACT_VERSION,
+    bundle_source_hash,
+    compile_bundle,
+    claim_embedding_text,
+    embedding_input_text,
+    evidence_by_id,
+    load_sqlite_vec,
+    parse_pack,
+    project_for_export_tier,
+    render_dossier,
+    retrieve_packet,
+    search_claims,
+    stable_pack_hash,
+    VECTOR_INDEX_TABLE,
+    vector_text_hash,
+)
+from compiler.embed_openai_compatible import (
+    load_surfaces as reference_load_surfaces,
+    validate_manifest as reference_validate_manifest,
+    write_vectors as reference_write_vectors,
+)
+
+
+TEST_MODEL_FINGERPRINT = "sha256:" + "a" * 64
+
+
+ROSETTA = """<!-- KP:1 — Knowledge Pack Format
+Claims: - [ID] assertion {confidence|type|evidence|date|depth|nature} context
+  Positions 5-6 optional. Verbose named-field syntax also accepted.
+Types: o=observed r=reported c=computed i=inferred
+Depth: assumed | investigated | exhaustive (optional, position 5)
+Nature: judgment | prediction | meta (optional, position 6; omitted=factual)
+Relations: →supports ⊗contradicts ⊗!error ⊗~tension ←requires ~refines ⊘supersedes ↔see_also
+Files: evidence.md=sources history.md=past entities.md=graph
+-->"""
+
+
+class GraphCompilerTests(unittest.TestCase):
+    def write_fixture(self, root: Path) -> Path:
+        pack = root / "example-supersession.kpack"
+        pack.mkdir()
+        (pack / "PACK.yaml").write_text(
+            """name: example-supersession
+version: 2026.06.18
+domain: test/compiler
+kind: claim
+author: KP Compiler Tests
+
+description: Synthetic compiler fixture.
+
+confidence:
+  scale: simple
+  normalize: true
+
+freshness: "2026-06-18"
+license: CC-BY-4.0
+sensitivity: public
+visibility: public
+tier: standalone
+
+provenance:
+  author: KP Compiler Tests
+  role: independent
+  reviewed_by: null
+  review_date: null
+  signed: false
+"""
+        )
+        (pack / "claims.md").write_text(
+            f"""{ROSETTA}
+---
+pack: example-supersession | v: 2026.06.18 | domain: test/compiler
+confidence: simple | normalized
+---
+
+# Example Supersession Fixture
+
+## Claims
+
+- [C001] The prior reading was Example A.
+  {{0.70|r|E001|2026-06-18|investigated}} Preserved as prior belief.
+
+- [C002] The current reading is Example B.
+  {{0.86|i|E002|2026-06-18|investigated|judgment}} Supersedes the prior reading. ⊘C001, ←C003
+
+- [C003] The source behind Example A is unreliable.
+  {{0.88|i|E002|2026-06-18|investigated|judgment}} Explains why Example A changed. ⊗!C001
+"""
+        )
+        (pack / "evidence.md").write_text(
+            """# Evidence
+
+## E001 — Prior Note
+> **type:** synthetic_document | **captured:** 2026-06-18
+> **source:** fixture://prior-note.txt
+
+Synthetic prior note.
+
+## E002 — Review Note
+> **type:** synthetic_report | **captured:** 2026-06-18
+> **source:** fixture://review-note.txt
+
+Synthetic review note.
+"""
+        )
+        return pack
+
+    def write_history_fixture(self, root: Path) -> Path:
+        pack = root / "example-history.kpack"
+        pack.mkdir()
+        (pack / "PACK.yaml").write_text(
+            """name: example-history
+version: 2026.06.19
+domain: test/compiler
+kind: claim
+author: KP Compiler Tests
+
+description: Synthetic compiler history fixture.
+
+confidence:
+  scale: simple
+  normalize: true
+
+freshness: "2026-06-19"
+license: CC-BY-4.0
+sensitivity: public
+visibility: public
+tier: standalone
+
+provenance:
+  author: KP Compiler Tests
+  role: independent
+  reviewed_by: null
+  review_date: null
+  signed: false
+extensions:
+  kp_compiler:
+    boundary:
+      defaults_explicit: true
+"""
+        )
+        (pack / "claims.md").write_text(
+            f"""{ROSETTA}
+---
+pack: example-history | v: 2026.06.19 | domain: test/compiler
+confidence: simple | normalized
+---
+
+# Example History Fixture
+
+## Claims
+
+- [C002] The current reading is Example B. ⊘C001-v1
+  {{0.86|i|E002|2026-06-19|investigated|judgment}} This is the active successor.
+"""
+        )
+        (pack / "history.md").write_text(
+            """---
+pack: example-history | history
+---
+
+# History
+
+- [C001-v1] The prior reading was Example A.
+  {0.70|r|E001|2026-06-18|investigated} Preserved as prior belief.
+  Superseded 2026-06-19: review note replaced the prior reading. See C002.
+"""
+        )
+        (pack / "evidence.md").write_text(
+            """# Evidence
+
+## E001 — Prior Note
+> **type:** synthetic_document | **captured:** 2026-06-18
+> **source:** fixture://prior-note.txt
+
+Synthetic prior note.
+
+## E002 — Review Note
+> **type:** synthetic_report | **captured:** 2026-06-19
+> **source:** fixture://review-note.txt
+
+Synthetic review note.
+"""
+        )
+        return pack
+
+    def write_relation_profile_fixture(self, root: Path) -> tuple[Path, Path]:
+        pack = root / "example-relation-profile.kpack"
+        pack.mkdir()
+        (pack / "PACK.yaml").write_text(
+            """name: example-relation-profile
+version: 2026.06.19
+domain: test/compiler
+kind: claim
+author: KP Compiler Tests
+
+description: Synthetic compiler relation-profile fixture.
+
+confidence:
+  scale: simple
+  normalize: true
+
+freshness: "2026-06-19"
+license: CC-BY-4.0
+sensitivity: public
+visibility: public
+tier: standalone
+
+provenance:
+  author: KP Compiler Tests
+  role: independent
+  reviewed_by: null
+  review_date: null
+  signed: false
+"""
+        )
+        (pack / "claims.md").write_text(
+            f"""{ROSETTA}
+---
+pack: example-relation-profile | v: 2026.06.19 | domain: test/compiler
+confidence: simple | normalized
+---
+
+# Example Relation Profile Fixture
+
+## Claims
+
+- [C001] Anti-pattern: treating no results as clean.
+  {{0.91|o|E001|2026-06-19|investigated|meta}} Known bad result.
+
+- [C002] No-hit doctrine requires searched-source evidence.
+  {{0.92|o|E002|2026-06-19|investigated|meta}} Method doctrine.
+
+- [C003] A coverage ledger records the searched lane.
+  {{0.93|o|E003|2026-06-19|investigated|meta}} Required coverage proof.
+
+- [C004] No hit is valid only after documented coverage.
+  {{0.94|o|E004|2026-06-19|investigated|meta}} Runtime guardrail.
+"""
+        )
+        (pack / "evidence.md").write_text(
+            """# Evidence
+
+## E001 — Anti Pattern
+> **type:** synthetic_document | **captured:** 2026-06-19
+> **source:** fixture://anti-pattern.txt
+
+Synthetic anti-pattern note.
+
+## E002 — Doctrine
+> **type:** synthetic_document | **captured:** 2026-06-19
+> **source:** fixture://doctrine.txt
+
+Synthetic doctrine note.
+
+## E003 — Coverage
+> **type:** synthetic_document | **captured:** 2026-06-19
+> **source:** fixture://coverage.txt
+
+Synthetic coverage note.
+
+## E004 — Guardrail
+> **type:** synthetic_document | **captured:** 2026-06-19
+> **source:** fixture://guardrail.txt
+
+Synthetic guardrail note.
+"""
+        )
+        parsed = [parse_pack(pack)]
+        source_hash = bundle_source_hash(parsed)
+        profile = root / "relation-profile.yaml"
+        profile.write_text(
+            f"""schemaVersion: kp-relation-profile-v0
+name: example-relation-profile-v0
+expectedSourceHash: {source_hash}
+relations:
+  - from: example-relation-profile#C004
+    relationType: contradicts:error
+    role: warns_against
+    to: example-relation-profile#C001
+    family: no_hit_discipline
+    direction: directed
+    fixture: true
+  - from: example-relation-profile#C004
+    relationType: refines
+    role: operationalizes
+    to: example-relation-profile#C002
+    family: no_hit_discipline
+    direction: directed
+    fixture: true
+  - from: example-relation-profile#C004
+    relationType: requires
+    role: depends_on_coverage_ledger
+    to: example-relation-profile#C003
+    family: no_hit_discipline
+    direction: directed
+    fixture: true
+"""
+        )
+        return pack, profile
+
+    def declare_pack_boundary_defaults_explicit(self, pack: Path) -> None:
+        pack_yaml = pack / "PACK.yaml"
+        pack_yaml.write_text(
+            pack_yaml.read_text()
+            + """
+extensions:
+  kp_compiler:
+    boundary:
+      defaults_explicit: true
+"""
+        )
+
+    def write_vectors(
+        self,
+        path: Path,
+        pack: Path,
+        vectors_by_local_id: dict[str, list[float]],
+        *,
+        model_id: str = "test-embedder-v1",
+        export_tier: str = "client",
+        stale_claim_uid: str | None = None,
+        extra_rows: list[dict[str, object]] | None = None,
+    ) -> Path:
+        parsed_packs, _projection = project_for_export_tier([parse_pack(pack)], export_tier)
+        evidence_by_uid = {
+            evidence.evidence_uid: evidence
+            for parsed_pack in parsed_packs
+            for evidence in parsed_pack.evidence
+        }
+        rows = []
+        for parsed_pack in parsed_packs:
+            for claim in parsed_pack.claims:
+                embedding = vectors_by_local_id[claim.local_claim_id]
+                embedding_text = claim_embedding_text(claim, evidence_by_uid)
+                source_text = embedding_input_text(embedding_text, role="document")
+                source_hash = vector_text_hash(source_text)
+                if claim.claim_uid == stale_claim_uid:
+                    source_hash = "sha256:" + "0" * 64
+                rows.append(
+                    {
+                        "contract_version": VECTOR_CONTRACT_VERSION,
+                        "claim_uid": claim.claim_uid,
+                        "model_id": model_id,
+                        "model_fingerprint": TEST_MODEL_FINGERPRINT,
+                        "embedding_prefix_scheme": EMBEDDING_PREFIX_SCHEME,
+                        "dimensions": len(embedding),
+                        "distance": "cosine",
+                        "embedding_surface_version": EMBEDDING_SURFACE_VERSION,
+                        "normalized": False,
+                        "source_text_hash": source_hash,
+                        "embedding": embedding,
+                    }
+                )
+        for row in extra_rows or []:
+            rows.append(
+                {
+                    "contract_version": VECTOR_CONTRACT_VERSION,
+                    "model_id": model_id,
+                    "model_fingerprint": TEST_MODEL_FINGERPRINT,
+                    "embedding_prefix_scheme": EMBEDDING_PREFIX_SCHEME,
+                    "dimensions": len(row.get("embedding", [])),
+                    "distance": "cosine",
+                    "embedding_surface_version": EMBEDDING_SURFACE_VERSION,
+                    "normalized": False,
+                    **row,
+                }
+            )
+        path.write_text("\n".join(json.dumps(row, sort_keys=True) for row in rows) + "\n")
+        return path
+
+    def query_vector(
+        self,
+        embedding: list[float],
+        *,
+        model_id: str = "test-embedder-v1",
+        model_fingerprint: str = TEST_MODEL_FINGERPRINT,
+    ) -> dict[str, object]:
+        return {
+            "contract_version": VECTOR_CONTRACT_VERSION,
+            "model_id": model_id,
+            "model_fingerprint": model_fingerprint,
+            "embedding_prefix_scheme": EMBEDDING_PREFIX_SCHEME,
+            "dimensions": len(embedding),
+            "distance": "cosine",
+            "embedding": embedding,
+        }
+
+    def write_cross_pack_fixtures(self, root: Path) -> tuple[Path, Path]:
+        pack_a = root / "example-a.kpack"
+        pack_b = root / "example-b.kpack"
+        pack_a.mkdir()
+        pack_b.mkdir()
+
+        for pack, name in [(pack_a, "example-a"), (pack_b, "example-b")]:
+            (pack / "PACK.yaml").write_text(
+                f"""name: {name}
+version: 2026.06.18
+domain: test/compiler
+kind: claim
+author: KP Compiler Tests
+
+description: Synthetic cross-pack compiler fixture.
+
+confidence:
+  scale: simple
+  normalize: true
+
+freshness: "2026-06-18"
+license: CC-BY-4.0
+sensitivity: public
+visibility: public
+tier: standalone
+
+provenance:
+  author: KP Compiler Tests
+  role: independent
+  reviewed_by: null
+  review_date: null
+  signed: false
+"""
+            )
+
+        (pack_a / "claims.md").write_text(
+            f"""{ROSETTA}
+---
+pack: example-a | v: 2026.06.18 | domain: test/compiler
+confidence: simple | normalized
+---
+
+# Example A
+
+## Claims
+
+- [C001] Example A should be read with Example B.
+  {{0.76|i|E001|2026-06-18|investigated|judgment}} Cross-pack context is required. ↔example-b#C001
+"""
+        )
+        (pack_a / "evidence.md").write_text(
+            """# Evidence
+
+## E001 — A Note
+> **type:** synthetic_document | **captured:** 2026-06-18
+> **source:** fixture://a-note.txt
+
+Synthetic A note.
+"""
+        )
+        (pack_b / "claims.md").write_text(
+            f"""{ROSETTA}
+---
+pack: example-b | v: 2026.06.18 | domain: test/compiler
+confidence: simple | normalized
+---
+
+# Example B
+
+## Claims
+
+- [C001] Example B provides cross-pack context.
+  {{0.80|r|E001|2026-06-18|investigated}} Related contextual claim.
+"""
+        )
+        (pack_b / "evidence.md").write_text(
+            """# Evidence
+
+## E001 — B Note
+> **type:** synthetic_document | **captured:** 2026-06-18
+> **source:** fixture://b-note.txt
+
+Synthetic B note.
+"""
+        )
+        return pack_a, pack_b
+
+    def write_tier_fixture(self, root: Path) -> Path:
+        pack = root / "example-tiered.kpack"
+        pack.mkdir()
+        (pack / "PACK.yaml").write_text(
+            """name: example-tiered
+version: 2026.06.18
+domain: test/compiler
+kind: claim
+author: KP Compiler Tests
+
+description: Synthetic tier-slicing compiler fixture.
+
+confidence:
+  scale: simple
+  normalize: true
+
+freshness: "2026-06-18"
+license: CC-BY-4.0
+sensitivity: public
+visibility: public
+tier: standalone
+
+provenance:
+  author: KP Compiler Tests
+  role: independent
+  reviewed_by: null
+  review_date: null
+  signed: false
+"""
+        )
+        (pack / "claims.md").write_text(
+            f"""{ROSETTA}
+---
+pack: example-tiered | v: 2026.06.18 | domain: test/compiler
+confidence: simple | normalized
+---
+
+# Example Tiered Fixture
+
+## Claims
+
+- [C001] The client-safe conclusion can be shown.
+  {{0.80|i|E001|2026-06-18|investigated|judgment}} Public rationale. ↔C002 <!-- kp-compiler: tier=client sensitivity=public visibility=public -->
+
+- [C002] The server-only method explains the conclusion.
+  {{0.90|i|E002|2026-06-18|investigated|meta}} Server method. <!-- kp-compiler: tier=server sensitivity=internal visibility=private -->
+
+- [C003] This claim looks public but depends on server-only evidence.
+  {{0.70|i|E002|2026-06-18|investigated|judgment}} Must not survive client slicing. <!-- kp-compiler: tier=client sensitivity=public visibility=public -->
+
+- [C004] The internal operator note is not server-shippable.
+  {{0.95|i|E003|2026-06-18|investigated|meta}} Operator-only note. <!-- kp-compiler: tier=internal sensitivity=restricted visibility=private -->
+"""
+        )
+        (pack / "evidence.md").write_text(
+            """# Evidence
+
+## E001 — Public Note
+> **type:** synthetic_document | **captured:** 2026-06-18 | **tier:** client | **sensitivity:** public | **visibility:** public
+> **source:** fixture://public-note.txt
+
+Synthetic public note.
+
+## E002 — Server Method
+> **type:** synthetic_report | **captured:** 2026-06-18 | **tier:** server | **sensitivity:** internal | **visibility:** private
+> **source:** fixture://server-method.txt
+
+Synthetic server-only method.
+
+## E003 — Internal Note
+> **type:** synthetic_report | **captured:** 2026-06-18 | **tier:** internal | **sensitivity:** restricted | **visibility:** private
+> **source:** fixture://internal-note.txt
+
+Synthetic internal-only note.
+"""
+        )
+        return pack
+
+    def write_canary_fixture(self, root: Path) -> Path:
+        """Tier fixture whose server/internal material carries unique, improbable
+        sentinel strings, so a client bundle can be adversarially probed for any
+        cross-tier recovery (raw bytes, SQLite contents, FTS, or vectors)."""
+        pack = root / "example-canary.kpack"
+        pack.mkdir()
+        (pack / "PACK.yaml").write_text(
+            """name: example-canary
+version: 2026.06.19
+domain: test/compiler
+kind: claim
+author: KP Compiler Tests
+
+description: Synthetic tier canary fixture for leak proofs.
+
+confidence:
+  scale: simple
+  normalize: true
+
+freshness: "2026-06-19"
+license: CC-BY-4.0
+sensitivity: public
+visibility: public
+tier: standalone
+
+provenance:
+  author: KP Compiler Tests
+  role: independent
+  reviewed_by: null
+  review_date: null
+  signed: false
+"""
+        )
+        (pack / "claims.md").write_text(
+            f"""{ROSETTA}
+---
+pack: example-canary | v: 2026.06.19 | domain: test/compiler
+confidence: simple | normalized
+---
+
+# Example Canary Fixture
+
+## Claims
+
+- [C001] The client-safe conclusion can be shown.
+  {{0.80|i|E001|2026-06-19|investigated|judgment}} Public rationale only. ↔C002 <!-- kp-compiler: tier=client sensitivity=public visibility=public -->
+
+- [C002] The server method ZZSERVERCANARYALPHA explains the conclusion.
+  {{0.90|i|E002|2026-06-19|investigated|meta}} Server rationale ZZSERVERMETHODBETA. <!-- kp-compiler: tier=server sensitivity=internal visibility=private -->
+
+- [C003] This claim ZZDEPENDENTCANARYGAMMA looks public but depends on server-only evidence.
+  {{0.70|i|E002|2026-06-19|investigated|judgment}} Must not survive client slicing. <!-- kp-compiler: tier=client sensitivity=public visibility=public -->
+
+- [C004] The internal operator note ZZINTERNALCANARYDELTA is not server-shippable.
+  {{0.95|i|E003|2026-06-19|investigated|meta}} Operator rationale ZZOPERATORNOTEEPSILON. <!-- kp-compiler: tier=internal sensitivity=restricted visibility=private -->
+"""
+        )
+        (pack / "evidence.md").write_text(
+            """# Evidence
+
+## E001 — Public Note
+> **type:** synthetic_document | **captured:** 2026-06-19 | **tier:** client | **sensitivity:** public | **visibility:** public
+> **source:** fixture://public-note.txt
+
+Synthetic public note with no secrets.
+
+## E002 — Server Method
+> **type:** synthetic_report | **captured:** 2026-06-19 | **tier:** server | **sensitivity:** internal | **visibility:** private
+> **source:** fixture://server-method.txt
+
+Synthetic server-only method ZZSERVEREVIDENCEZETA.
+
+## E003 — Internal Note
+> **type:** synthetic_report | **captured:** 2026-06-19 | **tier:** internal | **sensitivity:** restricted | **visibility:** private
+> **source:** fixture://internal-note.txt
+
+Synthetic internal-only note ZZINTERNALEVIDENCEETA.
+"""
+        )
+        return pack
+
+    def test_client_bundle_leaks_no_cross_tier_canary(self) -> None:
+        """Adversarial complement to the structural projection tests: a client
+        bundle must not surface any server/internal canary through ANY artifact —
+        raw bytes, SQLite contents, FTS search, or vectors — even when the vector
+        producer wrongly supplies vectors for the forbidden claims."""
+        sentinels = (
+            "ZZSERVERCANARYALPHA",
+            "ZZSERVERMETHODBETA",
+            "ZZDEPENDENTCANARYGAMMA",
+            "ZZINTERNALCANARYDELTA",
+            "ZZOPERATORNOTEEPSILON",
+            "ZZSERVEREVIDENCEZETA",
+            "ZZINTERNALEVIDENCEETA",
+        )
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            pack = self.write_canary_fixture(root)
+            # An over-broad producer that (wrongly) supplies vectors for the
+            # server/internal claims too; the client bundle must still drop them.
+            vectors_path = self.write_vectors(
+                root / "canary-vectors.jsonl",
+                pack,
+                {
+                    "C001": [1.0, 0.0, 0.0],
+                    "C002": [0.0, 1.0, 0.0],
+                    "C003": [0.0, 0.0, 1.0],
+                    "C004": [1.0, 1.0, 0.0],
+                },
+                export_tier="internal",
+            )
+            out = root / "client"
+
+            summary = compile_bundle(
+                pack,
+                out,
+                export_tier="client",
+                vectors_jsonl=vectors_path,
+                query_texts=["client safe conclusion"],
+                query_vectors=[self.query_vector([1.0, 0.0, 0.0])],
+                query_limit=1,
+                search_mode="vector",
+            )
+
+            # Only the client-safe claim/evidence/vector survive projection.
+            self.assertEqual(summary["claims"], 1)
+            self.assertEqual(summary["graph_meta"]["vector_claim_count"], "1")
+            self.assertEqual(summary["graph_meta"]["vector_ignored_row_count"], "3")
+
+            db_path = out / "indices" / "claim-graph.sqlite"
+
+            # (1) Raw-byte scan of EVERY emitted client file — airtight; covers
+            # SQLite pages, FTS shadow tables, vector blobs, JSONL, and reports.
+            byte_leaks = []
+            for path in sorted(out.rglob("*")):
+                if path.is_file():
+                    data = path.read_bytes()
+                    for sentinel in sentinels:
+                        if sentinel.encode("utf-8") in data:
+                            byte_leaks.append((str(path.relative_to(out)), sentinel))
+            self.assertEqual(byte_leaks, [], f"client bundle leaked canaries in bytes: {byte_leaks}")
+
+            # (2) SQLite content dump across all readable tables.
+            conn = sqlite3.connect(db_path)
+            try:
+                table_names = [
+                    row[0]
+                    for row in conn.execute(
+                        "SELECT name FROM sqlite_master WHERE type='table'"
+                    )
+                ]
+                sql_leaks = []
+                for table in table_names:
+                    try:
+                        rows = conn.execute(f'SELECT * FROM "{table}"').fetchall()
+                    except sqlite3.OperationalError:
+                        continue  # virtual tables; content covered by the byte scan
+                    blob = json.dumps(rows, default=str)
+                    for sentinel in sentinels:
+                        if sentinel in blob:
+                            sql_leaks.append((table, sentinel))
+                self.assertEqual(sql_leaks, [], f"client SQLite leaked canaries: {sql_leaks}")
+
+                # (3) Only the client-safe rows survive.
+                self.assertEqual(
+                    [r[0] for r in conn.execute("SELECT claim_uid FROM kp_claims")],
+                    ["example-canary#C001"],
+                )
+                self.assertEqual(
+                    [r[0] for r in conn.execute("SELECT claim_uid FROM kp_claim_vectors")],
+                    ["example-canary#C001"],
+                )
+            finally:
+                conn.close()
+
+            # (4) FTS retrieval cannot surface any canary term.
+            for sentinel in sentinels:
+                self.assertEqual(
+                    search_claims(db_path, sentinel, limit=5),
+                    [],
+                    f"FTS surfaced canary {sentinel}",
+                )
+
+    def test_client_bundle_drops_filtered_pack_metadata(self) -> None:
+        """Pack-level metadata is a leak surface distinct from claim/evidence
+        text. A pack whose every row is filtered out of the client tier must not
+        leak its manifest (name/domain/sensitivity/visibility) or a full-content
+        source_hash into the client bundle, and surviving packs must not expose
+        the source manifest classification or the pre-projection source_hash."""
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            # Survives client projection (its C001 is tier=client/public).
+            public_pack = self.write_canary_fixture(root)
+            # Manifest internal/private with one server-tier claim: zero rows
+            # survive a client projection, so the whole pack must disappear.
+            filtered = root / "filtered.kpack"
+            filtered.mkdir()
+            (filtered / "PACK.yaml").write_text(
+                """name: ZZFILTEREDPACKNAME
+version: 2026.06.19
+domain: ZZFILTEREDDOMAIN
+kind: claim
+author: KP Compiler Tests
+description: Synthetic fully-filtered pack for metadata leak proofs.
+confidence:
+  scale: simple
+  normalize: true
+freshness: "2026-06-19"
+license: CC-BY-4.0
+sensitivity: internal
+visibility: private
+tier: standalone
+"""
+            )
+            (filtered / "claims.md").write_text(
+                f"""{ROSETTA}
+---
+pack: ZZFILTEREDPACKNAME | v: 2026.06.19 | domain: ZZFILTEREDDOMAIN
+confidence: simple | normalized
+---
+
+# Filtered
+
+## Claims
+
+- [C001] Server-only claim ZZFILTEREDCLAIMTEXT must not survive client slicing.
+  {{0.90|i|E001|2026-06-19|investigated|meta}} Server rationale. <!-- kp-compiler: tier=server sensitivity=internal visibility=private -->
+"""
+            )
+            (filtered / "evidence.md").write_text(
+                """# Evidence
+
+## E001 — Server Note
+> **type:** synthetic_report | **captured:** 2026-06-19 | **tier:** server | **sensitivity:** internal | **visibility:** private
+> **source:** fixture://server-note.txt
+
+Synthetic server-only evidence ZZFILTEREDEVIDENCETEXT.
+"""
+            )
+            out = root / "client"
+            compile_bundle([public_pack, filtered], out, export_tier="client")
+            db_path = out / "indices" / "claim-graph.sqlite"
+
+            conn = sqlite3.connect(db_path)
+            try:
+                pack_ids = [row[0] for row in conn.execute("SELECT pack_id FROM kp_packs")]
+                # The fully-filtered pack is dropped entirely.
+                self.assertEqual(pack_ids, ["example-canary"])
+                # No surviving pack row leaks a higher-tier classification label
+                # or the original pre-projection source_hash.
+                for sensitivity, visibility, source_hash in conn.execute(
+                    "SELECT sensitivity, visibility, source_hash FROM kp_packs"
+                ):
+                    self.assertIsNone(sensitivity)
+                    self.assertIsNone(visibility)
+                    self.assertNotEqual(source_hash, stable_pack_hash(public_pack))
+                    self.assertEqual(len(source_hash), 64)  # projection-scoped hash
+            finally:
+                conn.close()
+
+            # Raw-byte scan: the filtered pack's manifest, text, and full hash
+            # must not appear anywhere in the client bundle.
+            sentinels = [
+                "ZZFILTEREDPACKNAME",
+                "ZZFILTEREDDOMAIN",
+                "ZZFILTEREDCLAIMTEXT",
+                "ZZFILTEREDEVIDENCETEXT",
+                stable_pack_hash(filtered),
+                "\"sensitivity\": \"internal\"",
+                "\"visibility\": \"private\"",
+            ]
+            byte_leaks = []
+            for path in sorted(out.rglob("*")):
+                if path.is_file():
+                    data = path.read_bytes()
+                    for sentinel in sentinels:
+                        if sentinel.encode("utf-8") in data:
+                            byte_leaks.append((str(path.relative_to(out)), sentinel))
+            self.assertEqual(
+                byte_leaks, [], f"client bundle leaked filtered-pack metadata: {byte_leaks}"
+            )
+
+    def test_compile_bundle_retrieves_supersession_neighborhood(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            pack = self.write_fixture(root)
+            out = root / "out"
+
+            summary = compile_bundle(
+                pack,
+                out,
+                query_claims=["C002"],
+                questions={"C002": "What is the current reading?"},
+            )
+
+            self.assertEqual(summary["claims"], 3)
+            self.assertEqual(summary["evidence"], 2)
+            self.assertEqual(summary["evidence_links"], 3)
+            self.assertEqual(summary["relations"], 3)
+            self.assertEqual(summary["unresolved_relations"], 0)
+
+            db_path = out / "indices" / "claim-graph.sqlite"
+            conn = sqlite3.connect(db_path)
+            try:
+                self.assertEqual(
+                    conn.execute("SELECT value FROM graph_meta WHERE key = 'schema_version'").fetchone()[0],
+                    "6",
+                )
+                self.assertEqual(
+                    conn.execute("SELECT count(*) FROM kp_claim_evidence_links").fetchone()[0],
+                    3,
+                )
+            finally:
+                conn.close()
+
+            packet = retrieve_packet(db_path, "C002")
+            neighbors = {neighbor["local_claim_id"] for neighbor in packet["neighbors"]}
+            self.assertTrue({"C001", "C003"}.issubset(neighbors))
+
+            dossier = render_dossier(packet, "What is the current reading?")
+            self.assertIn("current best reading", dossier.lower())
+            self.assertIn("superseded", dossier.lower())
+            self.assertIn("not equally live", dossier.lower())
+
+            self.assertTrue((out / "adapters/openai-compatible/request-C002.json").exists())
+            self.assertTrue((out / "adapters/ollama/prompt-C002.txt").exists())
+            self.assertTrue((out / "adapters/mcp/tool-response-C002.json").exists())
+
+    def test_compile_bundle_exposes_history_without_search_pollution(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            pack = self.write_history_fixture(root)
+            out = root / "out"
+
+            summary = compile_bundle(
+                pack,
+                out,
+                query_claims=["C002"],
+                questions={"C002": "What is the current reading?"},
+                require_explicit_boundary=True,
+            )
+
+            self.assertEqual(summary["claims"], 1)
+            self.assertEqual(summary["history_claims"], 1)
+            self.assertEqual(summary["relations"], 0)
+            self.assertEqual(summary["history_relations"], 1)
+            self.assertEqual(summary["boundary"]["implicit_history_claims"], 0)
+            self.assertEqual(
+                summary["projection"]["retained_history_boundary_source_counts"],
+                {"pack_default": 1},
+            )
+            self.assertEqual(summary["embedding"]["manifest"]["claim_count"], 1)
+
+            db_path = out / "indices" / "claim-graph.sqlite"
+            conn = sqlite3.connect(db_path)
+            try:
+                self.assertEqual(
+                    conn.execute("SELECT count(*) FROM kp_history_claims").fetchone()[0],
+                    1,
+                )
+                self.assertEqual(
+                    conn.execute("SELECT count(*) FROM kp_history_relations").fetchone()[0],
+                    1,
+                )
+                self.assertEqual(
+                    conn.execute("SELECT count(*) FROM kp_claim_search").fetchone()[0],
+                    1,
+                )
+                self.assertEqual(
+                    conn.execute(
+                        """
+                        SELECT count(*)
+                        FROM kp_claim_search search
+                        JOIN kp_history_claims history
+                          ON history.history_claim_uid = search.claim_uid
+                        """
+                    ).fetchone()[0],
+                    0,
+                )
+            finally:
+                conn.close()
+
+            self.assertEqual(search_claims(db_path, "preserved"), [])
+            packet = retrieve_packet(db_path, "C002")
+            neighbors = {neighbor["local_claim_id"] for neighbor in packet["neighbors"]}
+            self.assertIn("C001-v1", neighbors)
+            self.assertIn("example-history#E001", {row["evidence_uid"] for row in packet["evidence"]})
+
+            dossier = render_dossier(packet, "What is the current reading?")
+            self.assertIn("prior / superseded belief", dossier.lower())
+            self.assertIn("The prior reading was Example A.", dossier)
+            self.assertIn("not equally live", dossier.lower())
+
+    def test_relation_profile_edges_are_retrievable_and_rendered(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            pack, profile = self.write_relation_profile_fixture(root)
+            out = root / "out"
+
+            summary = compile_bundle(
+                pack,
+                out,
+                relation_profiles=[profile],
+                query_claims=["C004"],
+                questions={"C004": "Can no results be treated as clean?"},
+            )
+
+            self.assertEqual(summary["relations"], 0)
+            self.assertEqual(summary["relation_profile"]["retainedEdges"], 3)
+            self.assertEqual(
+                summary["relation_profile"]["roleCounts"],
+                {
+                    "depends_on_coverage_ledger": 1,
+                    "operationalizes": 1,
+                    "warns_against": 1,
+                },
+            )
+
+            db_path = out / "indices" / "claim-graph.sqlite"
+            conn = sqlite3.connect(db_path)
+            try:
+                self.assertEqual(
+                    conn.execute("SELECT count(*) FROM kp_relation_profile_edges").fetchone()[0],
+                    3,
+                )
+            finally:
+                conn.close()
+
+            packet = retrieve_packet(db_path, "C004")
+            neighbors = {neighbor["local_claim_id"] for neighbor in packet["neighbors"]}
+            self.assertEqual(neighbors, {"C001", "C002", "C003"})
+            roles = {
+                relation["profile_role"]
+                for relation in packet["relations"]
+                if relation.get("profile_role")
+            }
+            self.assertEqual(
+                roles,
+                {"depends_on_coverage_ledger", "operationalizes", "warns_against"},
+            )
+
+            dossier = render_dossier(packet, "Can no results be treated as clean?")
+            self.assertIn("## No-Hit Guardrail", dossier)
+            self.assertIn("## Anti-Pattern", dossier)
+            self.assertIn("## Required Coverage", dossier)
+            self.assertIn("## Method Doctrine", dossier)
+            self.assertIn("not treat a generic no-results statement as a clean result", dossier)
+
+    def test_method_runtime_pair_profile_uses_method_pair_dossier(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            pack, _ = self.write_relation_profile_fixture(root)
+            source_hash = bundle_source_hash([parse_pack(pack)])
+            profile = root / "method-runtime-profile.yaml"
+            profile.write_text(
+                f"""schemaVersion: kp-relation-profile-v0
+name: example-method-runtime-profile-v0
+expectedSourceHash: {source_hash}
+relations:
+  - from: example-relation-profile#C004
+    relationType: see_also
+    role: method_runtime_pair
+    to: example-relation-profile#C002
+    family: bootstrap_before_target
+    direction: directed
+    fixture: true
+"""
+            )
+            out = root / "out"
+
+            summary = compile_bundle(
+                pack,
+                out,
+                relation_profiles=[profile],
+                query_claims=["C004"],
+                questions={"C004": "What method should pair with this runtime guardrail?"},
+            )
+
+            self.assertEqual(summary["relation_profile"]["retainedEdges"], 1)
+            db_path = out / "indices" / "claim-graph.sqlite"
+            packet = retrieve_packet(db_path, "C004")
+            dossier = render_dossier(packet, "What method should pair with this runtime guardrail?")
+
+            self.assertIn("## Method Runtime Pair", dossier)
+            self.assertIn("No-hit doctrine requires searched-source evidence", dossier)
+            self.assertNotIn("## No-Hit Guardrail", dossier)
+            self.assertNotIn("generic no-results statement", dossier)
+
+    def test_compile_bundle_resolves_cross_pack_relation(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            pack_a, pack_b = self.write_cross_pack_fixtures(root)
+            out = root / "out"
+
+            summary = compile_bundle(
+                [pack_a, pack_b],
+                out,
+                query_claims=["example-a#C001"],
+                questions={"example-a#C001": "What context is required?"},
+            )
+
+            self.assertEqual(summary["packs"], 2)
+            self.assertEqual(summary["claims"], 2)
+            self.assertEqual(summary["relations"], 1)
+            self.assertEqual(summary["unresolved_relations"], 0)
+
+            db_path = out / "indices" / "claim-graph.sqlite"
+            conn = sqlite3.connect(db_path)
+            try:
+                relation = conn.execute(
+                    """
+                    SELECT to_claim_uid, target_resolved
+                    FROM kp_claim_relations
+                    WHERE from_claim_uid = 'example-a#C001'
+                    """
+                ).fetchone()
+            finally:
+                conn.close()
+
+            self.assertEqual(relation[0], "example-b#C001")
+            self.assertEqual(relation[1], 1)
+
+            packet = retrieve_packet(db_path, "example-a#C001")
+            neighbors = {neighbor["claim_uid"] for neighbor in packet["neighbors"]}
+            evidence_uids = {row["evidence_uid"] for row in packet["evidence"]}
+            self.assertIn("example-b#C001", neighbors)
+            self.assertEqual(evidence_uids, {"example-a#E001", "example-b#E001"})
+            evidence = evidence_by_id(packet)
+            self.assertEqual(evidence["example-a#E001"]["title"], "A Note")
+            self.assertEqual(evidence["example-b#E001"]["title"], "B Note")
+
+            self.assertTrue((out / "retrieval/example-a__C001.json").exists())
+            self.assertTrue((out / "adapters/openai-compatible/request-example-a__C001.json").exists())
+
+    def test_client_export_filters_forbidden_nodes_edges_and_evidence(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            pack = self.write_tier_fixture(root)
+            out = root / "client"
+
+            summary = compile_bundle(
+                pack,
+                out,
+                export_tier="client",
+                query_claims=["C001"],
+                questions={"C001": "What can the client see?"},
+            )
+
+            self.assertEqual(summary["export_tier"], "client")
+            self.assertEqual(summary["claims"], 1)
+            self.assertEqual(summary["evidence"], 1)
+            self.assertEqual(summary["relations"], 0)
+            self.assertEqual(summary["unresolved_relations"], 0)
+            self.assertEqual(summary["projection"]["filtered_claims"], 3)
+            self.assertEqual(summary["projection"]["filtered_evidence"], 2)
+            self.assertGreaterEqual(summary["projection"]["filtered_relations"], 1)
+            self.assertEqual(
+                summary["projection"]["policy"],
+                {
+                    "allowed_tiers": ["client"],
+                    "allowed_sensitivities": ["public"],
+                    "allowed_visibilities": ["public"],
+                    "allow_unresolved_relations": False,
+                },
+            )
+            self.assertEqual(
+                summary["projection"]["source_boundary_counts"]["claims"],
+                {
+                    "tier=client|sensitivity=public|visibility=public|explicit=true": 2,
+                    "tier=internal|sensitivity=restricted|visibility=private|explicit=true": 1,
+                    "tier=server|sensitivity=internal|visibility=private|explicit=true": 1,
+                },
+            )
+            self.assertEqual(
+                summary["projection"]["source_boundary_counts"]["evidence"],
+                {
+                    "tier=client|sensitivity=public|visibility=public|explicit=true": 1,
+                    "tier=internal|sensitivity=restricted|visibility=private|explicit=true": 1,
+                    "tier=server|sensitivity=internal|visibility=private|explicit=true": 1,
+                },
+            )
+            self.assertEqual(
+                summary["projection"]["retained_boundary_counts"]["claims"],
+                {
+                    "tier=client|sensitivity=public|visibility=public|explicit=true": 1,
+                },
+            )
+            self.assertEqual(
+                summary["projection"]["retained_boundary_counts"]["evidence"],
+                {
+                    "tier=client|sensitivity=public|visibility=public|explicit=true": 1,
+                },
+            )
+            self.assertTrue(summary["validation"]["valid"])
+            self.assertEqual(
+                summary["validation"]["checks"],
+                {
+                    "claim_policy_violations": 0,
+                    "evidence_policy_violations": 0,
+                    "history_policy_violations": 0,
+                    "dangling_evidence_links": 0,
+                    "dangling_relations": 0,
+                    "dangling_history_evidence_links": 0,
+                    "dangling_history_relations": 0,
+                    "dangling_search_rows": 0,
+                    "history_search_rows": 0,
+                    "dangling_vector_rows": 0,
+                    "dangling_vector_index_rows": 0,
+                    "dangling_fts_rows": 0,
+                    "missing_vector_index": 0,
+                    "incomplete_vector_coverage": 0,
+                    "incomplete_vector_index_coverage": 0,
+                    "blocked_unresolved_relations": 0,
+                },
+            )
+
+            db_path = out / "indices" / "claim-graph.sqlite"
+            conn = sqlite3.connect(db_path)
+            try:
+                self.assertEqual(
+                    conn.execute("SELECT group_concat(local_claim_id) FROM kp_claims").fetchone()[0],
+                    "C001",
+                )
+                self.assertEqual(
+                    conn.execute("SELECT group_concat(local_evidence_id) FROM kp_evidence").fetchone()[0],
+                    "E001",
+                )
+                self.assertEqual(
+                    conn.execute("SELECT count(*) FROM kp_claim_relations").fetchone()[0],
+                    0,
+                )
+                self.assertIsNone(
+                    conn.execute(
+                        "SELECT value FROM graph_meta WHERE key = 'source_boundary_counts'"
+                    ).fetchone()
+                )
+                self.assertIsNone(
+                    conn.execute(
+                        "SELECT value FROM graph_meta WHERE key = 'retained_boundary_counts'"
+                    ).fetchone()
+                )
+            finally:
+                conn.close()
+
+            packet = retrieve_packet(db_path, "C001")
+            self.assertEqual(packet["policy"]["export_tier"], "client")
+            self.assertEqual(packet["policy"]["filtered_claim_count"], 3)
+            self.assertEqual(packet["neighbors"], [])
+            self.assertEqual([row["local_evidence_id"] for row in packet["evidence"]], ["E001"])
+
+            with self.assertRaisesRegex(ValueError, "claim not found"):
+                retrieve_packet(db_path, "C002")
+
+    def test_server_export_keeps_server_material_but_filters_internal(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            pack = self.write_tier_fixture(root)
+            out = root / "server"
+
+            summary = compile_bundle(
+                pack,
+                out,
+                export_tier="server",
+                query_claims=["C001"],
+                questions={"C001": "What can the server see?"},
+            )
+
+            self.assertEqual(summary["export_tier"], "server")
+            self.assertEqual(summary["claims"], 3)
+            self.assertEqual(summary["evidence"], 2)
+            self.assertEqual(summary["relations"], 1)
+            self.assertEqual(summary["unresolved_relations"], 0)
+            self.assertEqual(summary["projection"]["filtered_claims"], 1)
+            self.assertEqual(summary["projection"]["filtered_evidence"], 1)
+            self.assertEqual(
+                summary["projection"]["policy"],
+                {
+                    "allowed_tiers": ["client", "server"],
+                    "allowed_sensitivities": ["confidential", "internal", "public"],
+                    "allowed_visibilities": ["private", "public", "shared"],
+                    "allow_unresolved_relations": False,
+                },
+            )
+            self.assertEqual(
+                summary["projection"]["retained_boundary_counts"]["claims"],
+                {
+                    "tier=client|sensitivity=public|visibility=public|explicit=true": 2,
+                    "tier=server|sensitivity=internal|visibility=private|explicit=true": 1,
+                },
+            )
+            self.assertEqual(
+                summary["projection"]["retained_boundary_counts"]["evidence"],
+                {
+                    "tier=client|sensitivity=public|visibility=public|explicit=true": 1,
+                    "tier=server|sensitivity=internal|visibility=private|explicit=true": 1,
+                },
+            )
+            self.assertTrue(summary["validation"]["valid"])
+
+            db_path = out / "indices" / "claim-graph.sqlite"
+            packet = retrieve_packet(db_path, "C001")
+            neighbors = {neighbor["local_claim_id"] for neighbor in packet["neighbors"]}
+            evidence_ids = {row["local_evidence_id"] for row in packet["evidence"]}
+            self.assertEqual(packet["policy"]["export_tier"], "server")
+            self.assertIn("C002", neighbors)
+            self.assertEqual(evidence_ids, {"E001", "E002"})
+
+            with self.assertRaisesRegex(ValueError, "claim not found"):
+                retrieve_packet(db_path, "C004")
+
+    def test_require_explicit_boundary_rejects_implicit_defaults(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            pack = self.write_fixture(root)
+
+            with self.assertRaisesRegex(ValueError, "explicit boundary metadata required"):
+                compile_bundle(
+                    pack,
+                    root / "strict",
+                    require_explicit_boundary=True,
+                )
+
+    def test_require_explicit_boundary_accepts_annotated_fixture(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            pack = self.write_tier_fixture(root)
+            out = root / "strict"
+
+            summary = compile_bundle(
+                pack,
+                out,
+                require_explicit_boundary=True,
+                query_texts=["client safe conclusion"],
+                query_limit=1,
+            )
+
+            self.assertEqual(
+                summary["boundary"],
+                {
+                    "required": True,
+                    "valid": True,
+                    "implicit_claims": 0,
+                    "implicit_evidence": 0,
+                    "implicit_history_claims": 0,
+                    "boundary_source_counts": {
+                        "claims": {"row": 4},
+                        "evidence": {"row": 3},
+                    },
+                    "history_boundary_source_counts": {},
+                },
+            )
+            self.assertEqual(summary["search_reports"][0]["hits"][0]["claim_uid"], "example-tiered#C001")
+
+    def test_require_explicit_boundary_accepts_pack_default_declaration(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            pack = self.write_fixture(root)
+            self.declare_pack_boundary_defaults_explicit(pack)
+
+            summary = compile_bundle(
+                pack,
+                root / "strict-defaults",
+                require_explicit_boundary=True,
+            )
+
+            self.assertEqual(
+                summary["boundary"],
+                {
+                    "required": True,
+                    "valid": True,
+                    "implicit_claims": 0,
+                    "implicit_evidence": 0,
+                    "implicit_history_claims": 0,
+                    "boundary_source_counts": {
+                        "claims": {"pack_default": 3},
+                        "evidence": {"pack_default": 2},
+                    },
+                    "history_boundary_source_counts": {},
+                },
+            )
+            self.assertEqual(
+                summary["projection"]["source_boundary_counts"]["claims"],
+                {
+                    "tier=client|sensitivity=public|visibility=public|explicit=false": 3,
+                },
+            )
+            self.assertEqual(
+                summary["projection"]["source_boundary_counts"]["evidence"],
+                {
+                    "tier=client|sensitivity=public|visibility=public|explicit=false": 2,
+                },
+            )
+            self.assertEqual(
+                summary["projection"]["source_boundary_source_counts"],
+                {
+                    "claims": {"pack_default": 3},
+                    "evidence": {"pack_default": 2},
+                },
+            )
+
+    def test_partial_claim_boundary_annotation_fails_fast(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            pack = self.write_fixture(root)
+            self.declare_pack_boundary_defaults_explicit(pack)
+            claims_path = pack / "claims.md"
+            claims_path.write_text(
+                claims_path.read_text().replace(
+                    "Preserved as prior belief.",
+                    "Preserved as prior belief. <!-- kp-compiler: sensitivity=internal -->",
+                )
+            )
+
+            with self.assertRaisesRegex(ValueError, "partial compiler boundary metadata"):
+                compile_bundle(pack, root / "partial-claim")
+
+    def test_partial_evidence_boundary_metadata_fails_fast(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            pack = self.write_fixture(root)
+            self.declare_pack_boundary_defaults_explicit(pack)
+            evidence_path = pack / "evidence.md"
+            evidence_path.write_text(
+                evidence_path.read_text().replace(
+                    "> **type:** synthetic_document | **captured:** 2026-06-18",
+                    "> **type:** synthetic_document | **captured:** 2026-06-18 | **sensitivity:** internal",
+                )
+            )
+
+            with self.assertRaisesRegex(ValueError, "partial compiler boundary metadata"):
+                compile_bundle(pack, root / "partial-evidence")
+
+    def test_pack_boundary_declaration_requires_boolean(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            pack = self.write_fixture(root)
+            pack_yaml = pack / "PACK.yaml"
+            pack_yaml.write_text(
+                pack_yaml.read_text()
+                + """
+extensions:
+  kp_compiler:
+    boundary:
+      defaults_explicit: "true"
+"""
+            )
+
+            with self.assertRaisesRegex(ValueError, "defaults_explicit must be a boolean"):
+                compile_bundle(pack, root / "bad-manifest")
+
+    def test_pack_boundary_declaration_requires_manifest_defaults(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            pack = self.write_fixture(root)
+            pack_yaml = pack / "PACK.yaml"
+            pack_yaml.write_text(pack_yaml.read_text().replace("visibility: public\n", ""))
+            self.declare_pack_boundary_defaults_explicit(pack)
+
+            with self.assertRaisesRegex(
+                ValueError,
+                "requires explicit pack sensitivity and visibility",
+            ):
+                compile_bundle(pack, root / "missing-pack-default")
+
+    def test_text_query_renders_graph_expanded_artifacts(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            pack = self.write_fixture(root)
+            out = root / "search"
+
+            summary = compile_bundle(
+                pack,
+                out,
+                query_texts=["current reading"],
+                query_limit=1,
+            )
+
+            self.assertEqual(summary["query_texts"], ["current reading"])
+            self.assertEqual(len(summary["search_reports"]), 1)
+            hits = summary["search_reports"][0]["hits"]
+            self.assertEqual(len(hits), 1)
+            self.assertEqual(hits[0]["claim_uid"], "example-supersession#C002")
+            self.assertEqual(hits[0]["search_engine"], "fts5")
+            self.assertTrue(Path(hits[0]["artifacts"]["retrieval"]).exists())
+            self.assertTrue(Path(hits[0]["artifacts"]["dossier"]).exists())
+            self.assertTrue(Path(hits[0]["artifacts"]["openai_request"]).exists())
+            self.assertTrue(Path(hits[0]["artifacts"]["ollama_prompt"]).exists())
+            self.assertTrue(Path(hits[0]["artifacts"]["mcp_tool_response"]).exists())
+
+            search_report_path = out / "search" / "1-current-reading.json"
+            search_report = json.loads(search_report_path.read_text())
+            self.assertEqual(search_report["hits"][0]["claim_uid"], "example-supersession#C002")
+
+            packet = json.loads(Path(hits[0]["artifacts"]["retrieval"]).read_text())
+            neighbors = {neighbor["local_claim_id"] for neighbor in packet["neighbors"]}
+            self.assertTrue({"C001", "C003"}.issubset(neighbors))
+
+    def test_client_search_excludes_filtered_claims(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            pack = self.write_tier_fixture(root)
+            out = root / "client-search"
+
+            summary = compile_bundle(
+                pack,
+                out,
+                export_tier="client",
+                query_texts=["server method"],
+                query_limit=3,
+            )
+
+            self.assertEqual(summary["claims"], 1)
+            self.assertEqual(summary["search_reports"][0]["hits"], [])
+
+            db_path = out / "indices" / "claim-graph.sqlite"
+            self.assertEqual(search_claims(db_path, "server method", limit=3), [])
+
+            public_hits = search_claims(db_path, "client safe conclusion", limit=3)
+            self.assertEqual([hit["claim_uid"] for hit in public_hits], ["example-tiered#C001"])
+
+    def test_text_query_can_use_explicit_lexical_debug_mode(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            pack = self.write_fixture(root)
+            out = root / "lexical-search"
+
+            summary = compile_bundle(
+                pack,
+                out,
+                query_texts=["current reading"],
+                query_limit=1,
+                search_mode="lexical",
+            )
+
+            hits = summary["search_reports"][0]["hits"]
+            self.assertEqual(hits[0]["claim_uid"], "example-supersession#C002")
+            self.assertEqual(hits[0]["search_engine"], "lexical")
+
+            db_path = out / "indices" / "claim-graph.sqlite"
+            direct_hits = search_claims(db_path, "current reading", limit=1, mode="lexical")
+            self.assertEqual(direct_hits[0]["search_engine"], "lexical")
+            self.assertEqual(direct_hits[0]["claim_uid"], "example-supersession#C002")
+
+    def test_fts5_search_fails_when_index_is_missing(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            pack = self.write_fixture(root)
+            out = root / "missing-fts"
+
+            summary = compile_bundle(pack, out)
+            self.assertEqual(summary["graph_meta"]["search_engine"], "fts5")
+
+            db_path = out / "indices" / "claim-graph.sqlite"
+            conn = sqlite3.connect(db_path)
+            try:
+                conn.execute("DROP TABLE kp_claim_search_fts")
+                conn.commit()
+            finally:
+                conn.close()
+
+            with self.assertRaisesRegex(ValueError, "FTS5 search requested"):
+                search_claims(db_path, "current reading", limit=1, mode="fts5")
+
+            lexical_hits = search_claims(db_path, "current reading", limit=1, mode="lexical")
+            self.assertEqual(lexical_hits[0]["search_engine"], "lexical")
+
+    def test_default_text_query_uses_fts5(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            pack = self.write_fixture(root)
+            out = root / "fts5-search"
+
+            summary = compile_bundle(
+                pack,
+                out,
+                query_texts=["current reading"],
+                query_limit=1,
+            )
+
+            self.assertEqual(summary["graph_meta"]["search_engine"], "fts5")
+            self.assertEqual(summary["search_mode"], "fts5")
+            self.assertEqual(summary["search_reports"][0]["hits"][0]["search_engine"], "fts5")
+
+    def test_compile_bundle_emits_embedding_surfaces_and_manifest(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            pack = self.write_fixture(root)
+            out = root / "embedding-inputs"
+
+            summary = compile_bundle(pack, out)
+
+            artifacts = summary["embedding"]["artifacts"]
+            surfaces_path = Path(artifacts["claim_surfaces"])
+            manifest_path = Path(artifacts["embedding_manifest"])
+            self.assertTrue(surfaces_path.exists())
+            self.assertTrue(manifest_path.exists())
+
+            rows = [
+                json.loads(line)
+                for line in surfaces_path.read_text().splitlines()
+                if line.strip()
+            ]
+            manifest = json.loads(manifest_path.read_text())
+            self.assertEqual(len(rows), 3)
+            self.assertEqual(manifest["kind"], "kp-embedding-manifest")
+            self.assertEqual(manifest["claim_count"], 3)
+            self.assertEqual(manifest["export_tier"], "client")
+            self.assertEqual(manifest["embedding_surface_version"], EMBEDDING_SURFACE_VERSION)
+            self.assertEqual(manifest["embedding_prefix_scheme"], EMBEDDING_PREFIX_SCHEME)
+            self.assertEqual(manifest["embedding"]["status"], "surfaces-ready")
+            self.assertFalse(summary["embedding"]["sealed"])
+
+            row_by_uid = {row["claim_uid"]: row for row in rows}
+            parsed_packs, _projection = project_for_export_tier([parse_pack(pack)], "client")
+            evidence_by_uid = {
+                evidence.evidence_uid: evidence
+                for parsed_pack in parsed_packs
+                for evidence in parsed_pack.evidence
+            }
+            claim = next(
+                claim
+                for parsed_pack in parsed_packs
+                for claim in parsed_pack.claims
+                if claim.local_claim_id == "C002"
+            )
+            self.assertEqual(
+                row_by_uid["example-supersession#C002"]["source_text_hash"],
+                vector_text_hash(
+                    embedding_input_text(
+                        claim_embedding_text(claim, evidence_by_uid),
+                        role="document",
+                    )
+                ),
+            )
+            self.assertEqual(
+                row_by_uid["example-supersession#C002"]["embedding_prefix_scheme"],
+                EMBEDDING_PREFIX_SCHEME,
+            )
+            self.assertEqual(
+                row_by_uid["example-supersession#C002"]["embedding_role"],
+                "document",
+            )
+            self.assertTrue(
+                row_by_uid["example-supersession#C002"]["source_text"].startswith(
+                    "search_document: "
+                )
+            )
+
+    def test_reference_embedding_adapter_writes_sealable_vectors(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            pack = self.write_fixture(root)
+            out = root / "embedding-inputs"
+            summary = compile_bundle(pack, out)
+
+            surfaces_path = Path(summary["embedding"]["artifacts"]["claim_surfaces"])
+            manifest_path = Path(summary["embedding"]["artifacts"]["embedding_manifest"])
+            surfaces = reference_load_surfaces(surfaces_path)
+            manifest = json.loads(manifest_path.read_text())
+            reference_validate_manifest(
+                manifest,
+                surfaces_path=surfaces_path,
+                surface_count=len(surfaces),
+            )
+
+            vectors_path = root / "adapter" / "claim-vectors.jsonl"
+            dimensions = reference_write_vectors(
+                surfaces=surfaces,
+                vectors=[[3.0, 4.0, 0.0], [0.0, 5.0, 0.0], [0.0, 0.0, 6.0]],
+                output_path=vectors_path,
+                model="test-embedder-v1",
+                model_fingerprint=TEST_MODEL_FINGERPRINT,
+                distance="cosine",
+                normalize=True,
+            )
+
+            self.assertEqual(dimensions, 3)
+            rows = [
+                json.loads(line)
+                for line in vectors_path.read_text().splitlines()
+                if line.strip()
+            ]
+            self.assertEqual(rows[0]["model_fingerprint"], TEST_MODEL_FINGERPRINT)
+            self.assertEqual(rows[0]["embedding_prefix_scheme"], EMBEDDING_PREFIX_SCHEME)
+            self.assertEqual(rows[0]["embedding_surface_version"], EMBEDDING_SURFACE_VERSION)
+            self.assertTrue(rows[0]["normalized"])
+            self.assertAlmostEqual(rows[0]["embedding"][0], 0.6)
+            self.assertAlmostEqual(rows[0]["embedding"][1], 0.8)
+
+    def test_reference_embedding_adapter_prefixes_query_vectors(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            query_vector_path = root / "query-vector.json"
+            captured_inputs = []
+
+            def fake_request_embeddings(**kwargs: object) -> list[list[float]]:
+                captured_inputs.extend(kwargs["inputs"])  # type: ignore[arg-type]
+                return [[0.0, 3.0, 4.0]]
+
+            with patch.object(reference_adapter, "request_embeddings", fake_request_embeddings):
+                reference_adapter.write_query_vector(
+                    query_text="current reading",
+                    output_path=query_vector_path,
+                    endpoint="http://localhost:1234/v1",
+                    model="test-embedder-v1",
+                    model_fingerprint=TEST_MODEL_FINGERPRINT,
+                    dimensions=3,
+                    distance="cosine",
+                    timeout=1,
+                    normalize=True,
+                )
+
+            row = json.loads(query_vector_path.read_text())
+            self.assertEqual(captured_inputs, ["search_query: current reading"])
+            self.assertEqual(row["model_fingerprint"], TEST_MODEL_FINGERPRINT)
+            self.assertEqual(row["embedding_prefix_scheme"], EMBEDDING_PREFIX_SCHEME)
+            self.assertAlmostEqual(row["embedding"][1], 0.6)
+            self.assertAlmostEqual(row["embedding"][2], 0.8)
+
+    def test_reference_embedding_adapter_query_only_cli_writes_query_vector(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            query_vector_path = root / "query-vector.json"
+            captured_inputs = []
+
+            def fake_request_embeddings(**kwargs: object) -> list[list[float]]:
+                captured_inputs.extend(kwargs["inputs"])  # type: ignore[arg-type]
+                return [[0.0, 3.0, 4.0]]
+
+            with (
+                patch.object(reference_adapter, "request_embeddings", fake_request_embeddings),
+                patch.object(
+                    sys,
+                    "argv",
+                    [
+                        "embed_openai_compatible.py",
+                        "--query-only",
+                        "--query-text",
+                        "current reading",
+                        "--query-output",
+                        str(query_vector_path),
+                        "--endpoint",
+                        "http://localhost:1234/v1",
+                        "--model",
+                        "test-embedder-v1",
+                        "--model-fingerprint",
+                        TEST_MODEL_FINGERPRINT,
+                        "--dimensions",
+                        "3",
+                        "--normalize",
+                    ],
+                ),
+                contextlib.redirect_stdout(io.StringIO()),
+            ):
+                exit_code = reference_adapter.main()
+
+            self.assertEqual(exit_code, 0)
+            row = json.loads(query_vector_path.read_text())
+            self.assertEqual(captured_inputs, ["search_query: current reading"])
+            self.assertEqual(row["dimensions"], 3)
+            self.assertEqual(row["model_fingerprint"], TEST_MODEL_FINGERPRINT)
+            self.assertAlmostEqual(row["embedding"][1], 0.6)
+            self.assertAlmostEqual(row["embedding"][2], 0.8)
+
+    def test_sealed_bundle_validates_manifest_and_writes_seal(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            pack = self.write_fixture(root)
+            input_summary = compile_bundle(pack, root / "embedding-inputs")
+            manifest_path = Path(input_summary["embedding"]["artifacts"]["embedding_manifest"])
+            vectors_path = self.write_vectors(
+                root / "claim-vectors.jsonl",
+                pack,
+                {
+                    "C001": [0.0, 1.0, 0.0],
+                    "C002": [1.0, 0.0, 0.0],
+                    "C003": [0.0, 0.0, 1.0],
+                },
+            )
+
+            summary = compile_bundle(
+                pack,
+                root / "sealed",
+                vectors_jsonl=vectors_path,
+                embedding_manifest=manifest_path,
+                seal_bundle=True,
+                query_texts=["semantic current reading"],
+                query_vectors=[
+                    self.query_vector([1.0, 0.0, 0.0])
+                ],
+                search_mode="vector",
+                query_limit=1,
+            )
+
+            self.assertTrue(summary["embedding"]["validated_input_manifest"])
+            self.assertTrue(summary["embedding"]["sealed"])
+            self.assertTrue(summary["bundle_seal"]["sealed"])
+            self.assertEqual(summary["graph_meta"]["bundle_sealed"], "true")
+            self.assertEqual(summary["graph_meta"]["vector_ignored_row_count"], "0")
+            self.assertEqual(
+                summary["embedding"]["manifest"]["embedding"]["status"],
+                "vectors-imported",
+            )
+            self.assertTrue(Path(summary["embedding"]["artifacts"]["bundle_seal"]).exists())
+            self.assertEqual(
+                summary["search_reports"][0]["hits"][0]["claim_uid"],
+                "example-supersession#C002",
+            )
+
+    def test_sealed_bundle_rejects_manifest_mismatch(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            pack = self.write_fixture(root)
+            input_summary = compile_bundle(pack, root / "embedding-inputs")
+            manifest_path = Path(input_summary["embedding"]["artifacts"]["embedding_manifest"])
+            manifest = json.loads(manifest_path.read_text())
+            manifest["export_tier"] = "server"
+            manifest_path.write_text(json.dumps(manifest, indent=2, sort_keys=True) + "\n")
+            vectors_path = self.write_vectors(
+                root / "claim-vectors.jsonl",
+                pack,
+                {
+                    "C001": [0.0, 1.0, 0.0],
+                    "C002": [1.0, 0.0, 0.0],
+                    "C003": [0.0, 0.0, 1.0],
+                },
+            )
+
+            with self.assertRaisesRegex(ValueError, "embedding manifest mismatch for export_tier"):
+                compile_bundle(
+                    pack,
+                    root / "sealed",
+                    vectors_jsonl=vectors_path,
+                    embedding_manifest=manifest_path,
+                    seal_bundle=True,
+                )
+
+    def test_sealed_bundle_rejects_filtered_vector_rows(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            pack = self.write_tier_fixture(root)
+            input_summary = compile_bundle(
+                pack,
+                root / "client-inputs",
+                export_tier="client",
+            )
+            manifest_path = Path(input_summary["embedding"]["artifacts"]["embedding_manifest"])
+            vectors_path = self.write_vectors(
+                root / "tier-vectors.jsonl",
+                pack,
+                {
+                    "C001": [1.0, 0.0, 0.0],
+                    "C002": [0.0, 1.0, 0.0],
+                    "C003": [0.0, 0.0, 1.0],
+                    "C004": [1.0, 1.0, 0.0],
+                },
+                export_tier="internal",
+            )
+
+            with self.assertRaisesRegex(ValueError, "outside the projected embedding manifest"):
+                compile_bundle(
+                    pack,
+                    root / "sealed-client",
+                    export_tier="client",
+                    vectors_jsonl=vectors_path,
+                    embedding_manifest=manifest_path,
+                    seal_bundle=True,
+                )
+
+    def test_vector_query_uses_imported_claim_vectors(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            pack = self.write_fixture(root)
+            vectors_path = self.write_vectors(
+                root / "claim-vectors.jsonl",
+                pack,
+                {
+                    "C001": [0.0, 1.0, 0.0],
+                    "C002": [1.0, 0.0, 0.0],
+                    "C003": [0.0, 0.0, 1.0],
+                },
+            )
+            out = root / "vector-search"
+
+            query_vector = self.query_vector([1.0, 0.0, 0.0])
+            summary = compile_bundle(
+                pack,
+                out,
+                vectors_jsonl=vectors_path,
+                query_texts=["semantic current reading"],
+                query_vectors=[query_vector],
+                query_limit=1,
+                search_mode="vector",
+            )
+
+            self.assertEqual(summary["graph_meta"]["vector_index"], "sqlite-vec")
+            self.assertEqual(summary["graph_meta"]["vector_index_engine"], "sqlite-vec")
+            self.assertEqual(summary["graph_meta"]["vector_claim_count"], "3")
+            hit = summary["search_reports"][0]["hits"][0]
+            self.assertEqual(hit["claim_uid"], "example-supersession#C002")
+            self.assertEqual(hit["search_engine"], "vector")
+            self.assertEqual(hit["vector_model_id"], "test-embedder-v1")
+            self.assertEqual(hit["vector_model_fingerprint"], TEST_MODEL_FINGERPRINT)
+            self.assertEqual(hit["embedding_prefix_scheme"], EMBEDDING_PREFIX_SCHEME)
+            self.assertEqual(hit["vector_index_engine"], "sqlite-vec")
+            self.assertEqual(hit["vector_distance"], 0.0)
+
+            db_path = out / "indices" / "claim-graph.sqlite"
+            conn = sqlite3.connect(db_path)
+            try:
+                load_sqlite_vec(conn)
+                self.assertEqual(
+                    conn.execute("SELECT typeof(vector_blob) FROM kp_claim_vectors LIMIT 1").fetchone()[0],
+                    "blob",
+                )
+                self.assertEqual(
+                    conn.execute(f"SELECT count(*) FROM {VECTOR_INDEX_TABLE}").fetchone()[0],
+                    3,
+                )
+            finally:
+                conn.close()
+            direct_hits = search_claims(
+                db_path,
+                "semantic current reading",
+                limit=1,
+                mode="vector",
+                query_vector=query_vector,
+            )
+            self.assertEqual(direct_hits[0]["claim_uid"], "example-supersession#C002")
+
+            conn = sqlite3.connect(db_path)
+            try:
+                load_sqlite_vec(conn)
+                conn.execute("DELETE FROM kp_claim_vectors WHERE claim_uid = 'example-supersession#C003'")
+                conn.commit()
+                self.assertEqual(
+                    conn.execute(f"SELECT count(*) FROM {VECTOR_INDEX_TABLE}").fetchone()[0],
+                    2,
+                )
+            finally:
+                conn.close()
+
+    def test_hybrid_query_requires_and_fuses_fts5_and_vectors(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            pack = self.write_fixture(root)
+            vectors_path = self.write_vectors(
+                root / "claim-vectors.jsonl",
+                pack,
+                {
+                    "C001": [0.0, 1.0, 0.0],
+                    "C002": [1.0, 0.0, 0.0],
+                    "C003": [0.0, 0.0, 1.0],
+                },
+            )
+            out = root / "hybrid-search"
+
+            summary = compile_bundle(
+                pack,
+                out,
+                vectors_jsonl=vectors_path,
+                query_texts=["current reading"],
+                query_vectors=[
+                    self.query_vector([1.0, 0.0, 0.0])
+                ],
+                query_limit=1,
+                search_mode="hybrid",
+            )
+
+            hit = summary["search_reports"][0]["hits"][0]
+            self.assertEqual(hit["claim_uid"], "example-supersession#C002")
+            self.assertEqual(hit["search_engine"], "hybrid")
+            self.assertEqual(hit["vector_model_fingerprint"], TEST_MODEL_FINGERPRINT)
+            self.assertEqual(hit["embedding_prefix_scheme"], EMBEDDING_PREFIX_SCHEME)
+            self.assertEqual(hit["component_ranks"]["fts5"], 1)
+            self.assertEqual(hit["component_ranks"]["vector"], 1)
+
+    def test_hybrid_search_fails_when_fts5_index_is_missing(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            pack = self.write_fixture(root)
+            vectors_path = self.write_vectors(
+                root / "claim-vectors.jsonl",
+                pack,
+                {
+                    "C001": [0.0, 1.0, 0.0],
+                    "C002": [1.0, 0.0, 0.0],
+                    "C003": [0.0, 0.0, 1.0],
+                },
+            )
+            out = root / "hybrid-missing-fts"
+
+            compile_bundle(pack, out, vectors_jsonl=vectors_path)
+
+            db_path = out / "indices" / "claim-graph.sqlite"
+            conn = sqlite3.connect(db_path)
+            try:
+                conn.execute("DROP TABLE kp_claim_search_fts")
+                conn.commit()
+            finally:
+                conn.close()
+
+            with self.assertRaisesRegex(ValueError, "no FTS5 index"):
+                search_claims(
+                    db_path,
+                    "current reading",
+                    limit=1,
+                    mode="hybrid",
+                    query_vector=self.query_vector([1.0, 0.0, 0.0]),
+                )
+
+    def test_vector_search_fails_when_index_is_missing(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            pack = self.write_fixture(root)
+            out = root / "missing-vector"
+
+            compile_bundle(pack, out)
+
+            db_path = out / "indices" / "claim-graph.sqlite"
+            with self.assertRaisesRegex(ValueError, "no claim vector index"):
+                search_claims(
+                    db_path,
+                    "semantic current reading",
+                    limit=1,
+                    mode="vector",
+                    query_vector=self.query_vector([1.0, 0.0, 0.0]),
+                )
+
+    def test_vector_search_fails_when_sqlite_vec_table_is_missing(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            pack = self.write_fixture(root)
+            vectors_path = self.write_vectors(
+                root / "claim-vectors.jsonl",
+                pack,
+                {
+                    "C001": [0.0, 1.0, 0.0],
+                    "C002": [1.0, 0.0, 0.0],
+                    "C003": [0.0, 0.0, 1.0],
+                },
+            )
+            out = root / "missing-vec0"
+
+            compile_bundle(pack, out, vectors_jsonl=vectors_path)
+
+            db_path = out / "indices" / "claim-graph.sqlite"
+            conn = sqlite3.connect(db_path)
+            try:
+                load_sqlite_vec(conn)
+                conn.execute(f"DROP TABLE {VECTOR_INDEX_TABLE}")
+                conn.commit()
+            finally:
+                conn.close()
+
+            with self.assertRaisesRegex(ValueError, "no sqlite-vec index"):
+                search_claims(
+                    db_path,
+                    "semantic current reading",
+                    limit=1,
+                    mode="vector",
+                    query_vector=self.query_vector([1.0, 0.0, 0.0]),
+                )
+
+    def test_vector_search_requires_query_vector(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            pack = self.write_fixture(root)
+            vectors_path = self.write_vectors(
+                root / "claim-vectors.jsonl",
+                pack,
+                {
+                    "C001": [0.0, 1.0, 0.0],
+                    "C002": [1.0, 0.0, 0.0],
+                    "C003": [0.0, 0.0, 1.0],
+                },
+            )
+
+            with self.assertRaisesRegex(ValueError, "one query vector per query text"):
+                compile_bundle(
+                    pack,
+                    root / "missing-query-vector",
+                    vectors_jsonl=vectors_path,
+                    query_texts=["current reading"],
+                    search_mode="vector",
+                )
+
+    def test_client_vector_import_ignores_filtered_source_vectors(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            pack = self.write_tier_fixture(root)
+            vectors_path = self.write_vectors(
+                root / "tier-vectors.jsonl",
+                pack,
+                {
+                    "C001": [1.0, 0.0, 0.0],
+                    "C002": [0.0, 1.0, 0.0],
+                    "C003": [0.0, 0.0, 1.0],
+                    "C004": [1.0, 1.0, 0.0],
+                },
+                export_tier="internal",
+            )
+            out = root / "client-vector"
+
+            summary = compile_bundle(
+                pack,
+                out,
+                export_tier="client",
+                vectors_jsonl=vectors_path,
+                query_texts=["client safe conclusion"],
+                query_vectors=[
+                    self.query_vector([1.0, 0.0, 0.0])
+                ],
+                query_limit=1,
+                search_mode="vector",
+            )
+
+            self.assertEqual(summary["claims"], 1)
+            self.assertEqual(summary["graph_meta"]["vector_claim_count"], "1")
+            self.assertEqual(summary["graph_meta"]["vector_ignored_row_count"], "3")
+            self.assertEqual(summary["search_reports"][0]["hits"][0]["claim_uid"], "example-tiered#C001")
+
+            db_path = out / "indices" / "claim-graph.sqlite"
+            conn = sqlite3.connect(db_path)
+            try:
+                self.assertEqual(
+                    conn.execute("SELECT group_concat(claim_uid) FROM kp_claim_vectors").fetchone()[0],
+                    "example-tiered#C001",
+                )
+            finally:
+                conn.close()
+
+    def test_vector_import_rejects_unknown_claim_uid(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            pack = self.write_fixture(root)
+            vectors_path = self.write_vectors(
+                root / "claim-vectors.jsonl",
+                pack,
+                {
+                    "C001": [0.0, 1.0, 0.0],
+                    "C002": [1.0, 0.0, 0.0],
+                    "C003": [0.0, 0.0, 1.0],
+                },
+                extra_rows=[
+                    {
+                        "contract_version": 1,
+                        "claim_uid": "other-pack#C999",
+                        "model_id": "test-embedder-v1",
+                        "dimensions": 3,
+                        "distance": "cosine",
+                        "embedding_surface_version": EMBEDDING_SURFACE_VERSION,
+                        "normalized": False,
+                        "source_text_hash": "sha256:" + "1" * 64,
+                        "embedding": [1.0, 0.0, 0.0],
+                    }
+                ],
+            )
+
+            with self.assertRaisesRegex(ValueError, "unknown claim vector"):
+                compile_bundle(
+                    pack,
+                    root / "unknown-vector",
+                    vectors_jsonl=vectors_path,
+                )
+
+    def test_vector_import_fails_when_source_hash_is_stale(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            pack = self.write_fixture(root)
+            vectors_path = self.write_vectors(
+                root / "claim-vectors.jsonl",
+                pack,
+                {
+                    "C001": [0.0, 1.0, 0.0],
+                    "C002": [1.0, 0.0, 0.0],
+                    "C003": [0.0, 0.0, 1.0],
+                },
+                stale_claim_uid="example-supersession#C002",
+            )
+
+            with self.assertRaisesRegex(ValueError, "source_text_hash mismatch"):
+                compile_bundle(
+                    pack,
+                    root / "stale-vector",
+                    vectors_jsonl=vectors_path,
+                )
+
+    def test_query_vector_model_mismatch_fails_fast(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            pack = self.write_fixture(root)
+            vectors_path = self.write_vectors(
+                root / "claim-vectors.jsonl",
+                pack,
+                {
+                    "C001": [0.0, 1.0, 0.0],
+                    "C002": [1.0, 0.0, 0.0],
+                    "C003": [0.0, 0.0, 1.0],
+                },
+            )
+
+            with self.assertRaisesRegex(ValueError, "query vector model_id mismatch"):
+                compile_bundle(
+                    pack,
+                    root / "bad-query-vector",
+                    vectors_jsonl=vectors_path,
+                    query_texts=["current reading"],
+                    query_vectors=[
+                        self.query_vector([1.0, 0.0, 0.0], model_id="other-embedder")
+                    ],
+                    search_mode="vector",
+                )
+
+    def test_query_vector_model_fingerprint_mismatch_fails_fast(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            pack = self.write_fixture(root)
+            vectors_path = self.write_vectors(
+                root / "claim-vectors.jsonl",
+                pack,
+                {
+                    "C001": [0.0, 1.0, 0.0],
+                    "C002": [1.0, 0.0, 0.0],
+                    "C003": [0.0, 0.0, 1.0],
+                },
+            )
+
+            with self.assertRaisesRegex(ValueError, "query vector model_fingerprint mismatch"):
+                compile_bundle(
+                    pack,
+                    root / "bad-query-fingerprint",
+                    vectors_jsonl=vectors_path,
+                    query_texts=["current reading"],
+                    query_vectors=[
+                        self.query_vector(
+                            [1.0, 0.0, 0.0],
+                            model_fingerprint="sha256:" + "b" * 64,
+                        )
+                    ],
+                    search_mode="vector",
+                )
+
+
+if __name__ == "__main__":
+    unittest.main()

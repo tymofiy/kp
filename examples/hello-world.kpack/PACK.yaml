@@ -4,7 +4,7 @@ domain: examples/getting-started
 author: Your Name Here
 description: The smallest idiomatic Knowledge Pack — copy this directory to start your own.
 spec_uri: https://github.com/tymofiy/kp
-spec_version: v0.8.3-preview
+spec_version: v0.8.4-preview
 confidence:
   scale: simple
   normalize: true

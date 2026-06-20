@@ -70,6 +70,8 @@ jobs:
         run: python3 conformance/run.py
       - name: Run conformance suite (strict PEG)
         run: python3 conformance/run.py --strict
+      - name: Run graph compiler tests
+        run: python3 -m unittest compiler.tests.test_graph_compiler
     timeout-minutes: 5
   # Portability gate for implementers: the conformance suite on the
   # supported Python floor and intermediate versions. Required status
@@ -94,6 +96,8 @@ jobs:
         run: python3 conformance/run.py
       - name: Run conformance suite (strict PEG)
         run: python3 conformance/run.py --strict
+      - name: Run graph compiler tests
+        run: python3 -m unittest compiler.tests.test_graph_compiler
     timeout-minutes: 5
 concurrency:
   group: ci-${{ github.ref }}
