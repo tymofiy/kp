@@ -60,7 +60,7 @@ pre-commit:
     # keep the two pattern sets in sync. ci.yml is excluded below for the
     # same reason this file is: it carries the patterns themselves.
     deny-list:
-      glob: "*.{md,txt,yml,yaml,json,cff,toml}"
+      glob: "*.{md,txt,yml,yaml,json,cff,toml,html}"
       exclude:
         - "lefthook.yml"
         - ".github/workflows/ci.yml"
@@ -88,7 +88,7 @@ pre-commit:
     # local patterns file), this check is a no-op and the only defense
     # is the behavioral rule in AGENTS.md §"What you MUST NOT do".
     client-names:
-      glob: "*.{md,txt,yml,yaml,json,cff,toml}"
+      glob: "*.{md,txt,yml,yaml,json,cff,toml,html}"
       # Array-of-globs form: a bare string here is a glob, not a regex,
       # so pipe-delimited lists silently exclude nothing.
       exclude:

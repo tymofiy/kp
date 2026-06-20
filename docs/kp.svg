@@ -1,12 +1,11 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="KP:1">
   <title>KP:1</title>
   <rect width="64" height="64" rx="14" fill="#142a40"/>
-  <g fill="none" stroke="#f8f5ef" stroke-width="5.5" stroke-linecap="square" stroke-linejoin="round">
-    <path d="M17 14 V40"/>
-    <path d="M17 27 L30 14"/>
-    <path d="M17 27 L30 40"/>
-    <path d="M38 14 V40"/>
-    <path d="M38 14 H46 a7 7 0 0 1 0 13 H38"/>
+  <g transform="translate(8.50 41.48) scale(0.02563 -0.02563)">
+    <path transform="translate(0.0 0)" fill="#f8f5ef" d="M666 0 665 2C615 37 582 73 543 125L311 433L441 581C495 643 536 686 623 730V732H465V730C488 699 474 654 409 579L220 361L492 0ZM49 0H244V2C211 64 204 98 204 181V551C204 634 211 668 244 730V732H49V730C81 668 89 634 89 551V181C89 99 81 64 49 2Z"/>
+    <path transform="translate(645.0 0)" fill="#f8f5ef" d="M89 181C89 99 81 64 49 2V0H244V2C211 64 204 98 204 181V300H270C465 300 568 397 568 530C568 637 503 732 285 732H49V730C81 668 89 634 89 551ZM268 712C370 712 452 673 452 528C452 421 399 320 266 320H204V710C236 712 254 712 268 712Z"/>
+    <circle cx="1353.0" cy="88.8" r="62.9" fill="#e76b00"/>
+    <circle cx="1353.0" cy="340.4" r="62.9" fill="#e76b00"/>
+    <path transform="translate(1483.0 0)" fill="#f8f5ef" d="M295 0V2C254 55 245 84 245 156V742H233C176 679 113 626 42 587V577H130V156C130 85 121 55 80 2V0Z"/>
   </g>
-  <rect x="17" y="45" width="29" height="4" rx="2" fill="#e76b00"/>
 </svg>

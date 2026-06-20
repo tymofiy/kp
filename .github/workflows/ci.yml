@@ -23,7 +23,7 @@ jobs:
         run: |
           if grep -rinE \
             --include='*.md' --include='*.txt' --include='*.yml' --include='*.yaml' \
-            --include='*.json' --include='*.cff' --include='*.toml' \
+            --include='*.json' --include='*.cff' --include='*.toml' --include='*.html' \
             --exclude='lefthook.yml' --exclude='ci.yml' --exclude-dir='.git' \
             'cross-model (review|consultation|spec review)|multi-model (synthesis|analysis|consultation|spec review)|three-model consultation|two-model consultation|round [0-9]+ (review|verify|cross-model|findings)|consulted (codex|gemini|claude)|adversarial review|(codex|gemini|claude) feedback|reviewer [0-9]+\b|session handover|model attributions' \
             .; then

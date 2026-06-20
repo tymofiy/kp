@@ -66,7 +66,8 @@ def load_fields() -> dict:
                            for k in ("evergreen", "across all versions", "always resolves"))]
     version_hits = [i["value"] for i in dois if version in str(i.get("description", ""))]
     if len(concept_hits) != 1:
-        fail(f"expected exactly one concept DOI (description containing 'concept'); found {len(concept_hits)}")
+        fail("expected exactly one concept (evergreen) DOI: an identifier whose description says "
+             f"'evergreen' / 'across all versions' / 'always resolves'; found {len(concept_hits)}")
     if len(version_hits) != 1:
         fail(f"expected exactly one DOI whose description names {version!r}; found {len(version_hits)}")
     concept = concept_hits[0]
@@ -95,7 +96,7 @@ def apply(html: str, f: dict):
     def meta(name: str, value: str, html: str) -> str:
         # Tolerate attribute order/spacing so an IDE reformat of <head> can't
         # silently skip a field (a true miss still fails loudly via search()).
-        pat = re.compile(r'(<meta[^>]*\bname="' + re.escape(name) + r'"[^>]*\bcontent=")([^"]*)(")')
+        pat = re.compile(r'(<meta(?=[^>]*\bname="' + re.escape(name) + r'")[^>]*?\bcontent=")([^"]*)(")')
         mt = pat.search(html)
         if not mt:
             fail(f"meta tag not found: {name}")
