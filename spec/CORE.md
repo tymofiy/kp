@@ -253,6 +253,8 @@ Each claim is a markdown list item. A claim uses EITHER dense OR verbose form fo
 
 Positions 1–4 are REQUIRED. Positions 5–6 are OPTIONAL. Empty interior slots are valid: `{0.85|r|E020|2026-03-10||prediction}`.
 
+**Single claim identity (normative).** The bracket id (`[C001]`) is a claim's sole serialized identity — relations, history entries, and cross-pack references (AR-16) all resolve to it. The dense metadata block carries EXACTLY the positional fields defined above and no others: a producer MUST NOT append fields beyond position 6, and a conforming reader MUST treat any non-empty token past them as a malformed claim (rejecting it) rather than silently discarding it. An opaque or storage-layer identifier a system keeps for a claim (e.g. a database key) is non-wire — it is never emitted into, nor reconstructed from, the serialized claim; preserve it out-of-band if it must survive a round-trip. Storage-layer identity is a non-normative concern (see [STORAGE.md](STORAGE.md)).
+
 **Context prose** may follow the metadata on the same line (trailing prose) or on subsequent indented continuation lines (2+ spaces, AR-11).
 
 **Relations** MAY appear on the metadata line after the closing `}` (separated from it by a space) — either starting the trailing text or following the context prose — and/or on subsequent continuation lines. In every position, relations form a comma-separated list that ends the line, and a relation symbol is parsed as a relation only when immediately followed by a valid claim-ID reference (`C` + digits or a cross-pack reference, per AR-10); other occurrences are prose. Relations use symbol syntax:
@@ -623,6 +625,7 @@ The following normative decisions resolve ambiguities identified during grammar 
 | AR-15 | `tier` is optional. When `hub`, `sub_packs` is required. |
 | AR-16 | Cross-pack references: `pack_name#section_ref`. `#` is the separator. |
 | AR-17 | Blank lines are permitted between structural elements (frontmatter, headings, descriptions, sections, claims). A section MAY open with a blockquote description, mirroring the document heading. Whitespace-only lines are not blank lines. |
+| AR-18 | The bracket id is a claim's sole serialized identity; relations, history, and cross-pack references (AR-16) resolve to it. A claim's metadata block (dense §6.1 or verbose §6.2) carries exactly its defined fields — producers MUST NOT add fields beyond them, and readers MUST reject a non-empty undefined/trailing token rather than silently dropping it. Opaque or storage-layer identifiers are non-wire (storage is non-normative; see STORAGE.md). |
 
 ---
 
