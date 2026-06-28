@@ -51,6 +51,17 @@ pre-commit:
         if [ -x .venv/bin/python ]; then PY=.venv/bin/python; else PY=python3; fi
         "$PY" scripts/build_docs.py --check
 
+    # Committed, no-secret leak guard mirrored in .github/workflows/ci.yml:
+    # block a staged docs/index.html that links to a non-allowlisted external
+    # host (a stray client/vendor/product domain — the leak shape, not a name).
+    # The private client-name list (Option A in the deny-scan proposal) is a
+    # separate, deferred layer; this one needs no secret and covers fresh clones.
+    external-domains:
+      glob: "docs/index.html"
+      run: |
+        if [ -x .venv/bin/python ]; then PY=.venv/bin/python; else PY=python3; fi
+        "$PY" scripts/check_external_domains.py
+
     # Public repo: scan staged content for AI-consultation process language.
     # This is a backstop — the primary defense is agent awareness in the
     # containing workspace. Workspace-specific codename and path patterns
