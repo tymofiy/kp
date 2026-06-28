@@ -240,6 +240,8 @@ Each claim is a markdown list item. A claim uses EITHER dense OR verbose form fo
 
 **Claim ID:** `[C` + one or more digits + optional `-v` version suffix + `]`. Bold wrapping (`**[C001]**`) is optional syntactic sugar with no semantic meaning (AR-03). Zero-padding is conventional but not required (AR-01). IDs need not be sequential (AR-12).
 
+**One identifier per claim.** A claim's `[C…]` id is both its reference target (for relations and evidence cross-references) and its human-readable label — there is no second, separate id in the file form (see *Single claim identity (normative)* below for the normative rule). Any globally-unique `claim_id` an operational index keeps is assigned by the indexing process, not the pack author, and is never serialized into `claims.md` (see [STORAGE.md](STORAGE.md)). Rationale: `decisions/2026-06-22-claim-identity.md`.
+
 **Metadata block:** Curly braces with pipe-delimited positional fields:
 
 | Position | Required | Format | Values |
