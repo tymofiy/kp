@@ -73,6 +73,14 @@ jobs:
       # never show a stale version/date/DOI.
       - name: Check docs metadata in sync with CITATION.cff
         run: python3 scripts/build_docs.py --check
+      # Committed, no-secret leak guard: fail if the published page links to an
+      # external host not on the allowlist. A stray client/vendor/product domain
+      # reaching the published page is the leak shape this catches — without
+      # needing the private client-name list (Option A in the proposal, deferred).
+      - name: Check published page has no stray external domains
+        run: |
+          python3 scripts/check_external_domains.py --self-test
+          python3 scripts/check_external_domains.py
       - name: Run conformance suite
         run: python3 conformance/run.py
       - name: Run conformance suite (strict PEG)
