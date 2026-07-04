@@ -29,7 +29,47 @@ The current compiler is intentionally small. It can:
   over-broad vector files fail visibly;
 - retrieve a bounded one-hop claim neighborhood;
 - render a dossier for a selected claim;
-- emit OpenAI-compatible, Ollama-style, and MCP-style adapter artifacts.
+- emit OpenAI-compatible, Ollama-style, and MCP-style adapter artifacts;
+- derive the current-belief view (`logical/current-belief.jsonl` +
+  `logical/belief-contentions.jsonl`) — see below.
+
+## Current-belief view (Bernard profile)
+
+KP:1 records disagreement without resolving it (RATIONALE.md P4) and the
+compiler already separates `active` from `superseded` claims. Neither defines
+a single deterministic answer to "what replaced this claim?" when supersession
+fans in (two active claims superseding one predecessor), or "which arm
+currently leads?" on a live `⊗~` tension. Agents that must act need one
+answer; the current-belief view derives it — a profile extension contributed
+by Bernard, the first commercial implementer (GOVERNANCE.md). The pack record
+stays authoritative and untouched: the view is derived output, rebuildable at
+any time, and no previously shipped surface (statuses, relations, hashes,
+orderings) moves.
+
+Per superseded claim, `current-belief.jsonl` carries the frontier of current
+successors and one `pointer` chosen by a deterministic ladder — authority
+(`belief.authority` annotation) → recency (`since`) → evidence count → claim
+uid ascending — with contest-scoped rung applicability (a rung applies only
+when every contender carries its input; an absent value silences a rung
+rather than ranking below a present one). Fan-in picks are flagged `fan_in`;
+heads annotated with pairwise-distinct `belief.scope` values are a refinement
+`split` (pointer stays null — "refined into", never "changed to"); a
+tier-filtered bundle whose superseder was withheld yields
+`unresolved_in_bundle`. Live `⊗~` tensions get a lean in
+`belief-contentions.jsonl`; `⊗`/`⊗!` contradictions surface with no lean
+(an error demands an author's resolution, not a deterministic pick), and
+cross-pack edges never affect currency (one pack never rewrites another's
+belief). The normative semantics, in full, live in
+[`current_belief.py`](current_belief.py)'s module docstring; the behavioral
+test pins are `CurrentBeliefTests` in
+[`tests/test_graph_compiler.py`](tests/test_graph_compiler.py).
+
+Profile annotations ride the existing compiler-annotation channel:
+
+```markdown
+<!-- kp-compiler: belief.authority=explicit_user -->
+<!-- kp-compiler: belief.scope=work -->
+```
 
 Compiler-local boundary annotations can be attached with Markdown comments in
 claim detail text:
