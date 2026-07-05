@@ -2211,5 +2211,350 @@ extensions:
                 )
 
 
+class CurrentBeliefTests(unittest.TestCase):
+    """Behavioral pins for the current-belief view (compiler/current_belief.py).
+
+    Every case here is a semantics fixture: the fan-in topologies have no
+    precedent behavior anywhere else, so THESE assertions define truth for
+    any implementation reproducing the view (the module docstring is the
+    normative text; these are its executable form).
+    """
+
+    PACK_YAML = """name: {name}
+version: 2026.07.04
+domain: test/current-belief
+kind: claim
+author: KP Compiler Tests
+
+description: Current-belief view fixture.
+
+confidence:
+  scale: simple
+  normalize: true
+
+freshness: "2026-07-04"
+license: CC-BY-4.0
+sensitivity: public
+visibility: public
+tier: standalone
+
+provenance:
+  author: KP Compiler Tests
+  role: independent
+  reviewed_by: null
+  review_date: null
+  signed: false
+"""
+
+    EVIDENCE_MD = """# Evidence
+
+## E001 — First Note
+> **type:** synthetic_document | **captured:** 2026-07-04
+> **source:** fixture://first-note.txt
+
+Synthetic first note.
+
+## E002 — Second Note
+> **type:** synthetic_report | **captured:** 2026-07-04
+> **source:** fixture://second-note.txt
+
+Synthetic second note.
+
+## E003 — Third Note
+> **type:** synthetic_report | **captured:** 2026-07-04
+> **source:** fixture://third-note.txt
+
+Synthetic third note.
+"""
+
+    def write_belief_pack(self, root: Path, claims_body: str, *, name: str) -> Path:
+        pack = root / f"{name}.kpack"
+        pack.mkdir()
+        (pack / "PACK.yaml").write_text(self.PACK_YAML.format(name=name))
+        (pack / "claims.md").write_text(
+            f"""{ROSETTA}
+---
+pack: {name} | v: 2026.07.04 | domain: test/current-belief
+confidence: simple | normalized
+---
+
+# Current Belief Fixture
+
+## Claims
+
+{claims_body}
+"""
+        )
+        (pack / "evidence.md").write_text(self.EVIDENCE_MD)
+        return pack
+
+    def compile_view(
+        self, claims_body: str, *, export_tier: str = "internal"
+    ) -> tuple[dict[str, dict], dict[str, dict], dict]:
+        """Compile one fixture pack; return belief rows and contention rows
+        keyed by claim uid / relation uid, plus the bundle summary."""
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            pack = self.write_belief_pack(root, claims_body, name="belief-fixture")
+            out = root / "out"
+            summary = compile_bundle(pack, out, export_tier=export_tier)
+            belief = {
+                row["claim_uid"]: row
+                for row in map(
+                    json.loads,
+                    (out / "logical" / "current-belief.jsonl")
+                    .read_text()
+                    .splitlines(),
+                )
+            }
+            contentions = {
+                row["relation_uid"]: row
+                for row in map(
+                    json.loads,
+                    (out / "logical" / "belief-contentions.jsonl")
+                    .read_text()
+                    .splitlines(),
+                )
+            }
+            return belief, contentions, summary
+
+    def test_single_chain_pointer_passes_through_intermediates(self) -> None:
+        belief, _, summary = self.compile_view(
+            """- [C001] The first reading.
+  {0.70|o|E001|2026-06-01} Original belief.
+
+- [C002] The second reading.
+  {0.75|o|E001|2026-06-10} Replaces the first. ⊘C001
+
+- [C003] The third reading.
+  {0.80|o|E002|2026-06-20} Replaces the second. ⊘C002
+"""
+        )
+        self.assertTrue(belief["belief-fixture#C003"]["current"])
+        self.assertFalse(belief["belief-fixture#C001"]["current"])
+        # The line's one answer: C001's pointer runs THROUGH superseded C002.
+        self.assertEqual(
+            belief["belief-fixture#C001"]["pointer"], "belief-fixture#C003"
+        )
+        self.assertEqual(
+            belief["belief-fixture#C002"]["pointer"], "belief-fixture#C003"
+        )
+        self.assertFalse(belief["belief-fixture#C001"]["fan_in"])
+        self.assertEqual(summary["current_belief"]["pointers"], 2)
+        self.assertEqual(summary["current_belief"]["current"], 1)
+
+    def test_fan_in_total_tie_breaks_toward_smallest_uid(self) -> None:
+        belief, _, _ = self.compile_view(
+            """- [C001] The predecessor.
+  {0.70|o|E001|2026-06-01} Original belief.
+
+- [C002] One replacement.
+  {0.80|o|E001|2026-06-10} First head. ⊘C001
+
+- [C003] Another replacement.
+  {0.80|o|E002|2026-06-10} Second head. ⊘C001
+"""
+        )
+        row = belief["belief-fixture#C001"]
+        self.assertTrue(row["fan_in"])
+        self.assertFalse(row["split"])
+        # since ties, evidence count ties, no annotations: smallest uid wins —
+        # the ESTABLISHED claim; a new claim cannot steal a total tie by id.
+        self.assertEqual(row["pointer"], "belief-fixture#C002")
+        self.assertEqual(
+            row["frontier"], ["belief-fixture#C002", "belief-fixture#C003"]
+        )
+        # Both heads remain fully current — the pointer chose, nothing died.
+        self.assertTrue(belief["belief-fixture#C002"]["current"])
+        self.assertTrue(belief["belief-fixture#C003"]["current"])
+
+    def test_fan_in_recency_beats_uid(self) -> None:
+        belief, _, _ = self.compile_view(
+            """- [C001] The predecessor.
+  {0.70|o|E001|2026-06-01} Original belief.
+
+- [C002] Older replacement.
+  {0.80|o|E001|2026-06-10} First head. ⊘C001
+
+- [C003] Newer replacement.
+  {0.80|o|E001|2026-06-20} Second head. ⊘C001
+"""
+        )
+        self.assertEqual(
+            belief["belief-fixture#C001"]["pointer"], "belief-fixture#C003"
+        )
+
+    def test_fan_in_authority_beats_recency_when_all_carry_it(self) -> None:
+        belief, _, _ = self.compile_view(
+            """- [C001] The predecessor.
+  {0.70|o|E001|2026-06-01} Original belief.
+
+- [C002] Stated by the user, earlier.
+  {0.80|o|E001|2026-06-10} <!-- kp-compiler: belief.authority=explicit_user --> First head. ⊘C001
+
+- [C003] Inferred, later.
+  {0.80|o|E001|2026-06-20} <!-- kp-compiler: belief.authority=inference --> Second head. ⊘C001
+"""
+        )
+        # Authority outranks recency: the user's own statement wins.
+        self.assertEqual(
+            belief["belief-fixture#C001"]["pointer"], "belief-fixture#C002"
+        )
+
+    def test_fan_in_mixed_authority_presence_silences_the_rung(self) -> None:
+        belief, _, _ = self.compile_view(
+            """- [C001] The predecessor.
+  {0.70|o|E001|2026-06-01} Original belief.
+
+- [C002] Annotated, earlier.
+  {0.80|o|E001|2026-06-10} <!-- kp-compiler: belief.authority=explicit_user --> First head. ⊘C001
+
+- [C003] Unannotated, later.
+  {0.80|o|E001|2026-06-20} Second head. ⊘C001
+"""
+        )
+        # One contender lacks authority: the rung is silent for the whole
+        # contest (absence never ranks below presence) — recency decides.
+        self.assertEqual(
+            belief["belief-fixture#C001"]["pointer"], "belief-fixture#C003"
+        )
+
+    def test_fan_in_evidence_strength_breaks_recency_ties(self) -> None:
+        belief, _, _ = self.compile_view(
+            """- [C001] The predecessor.
+  {0.70|o|E001|2026-06-01} Original belief.
+
+- [C002] One source.
+  {0.80|o|E001|2026-06-10} First head. ⊘C001
+
+- [C003] Two sources.
+  {0.80|o|E002,E003|2026-06-10} Second head. ⊘C001
+"""
+        )
+        self.assertEqual(
+            belief["belief-fixture#C001"]["pointer"], "belief-fixture#C003"
+        )
+
+    def test_scope_disjoint_fan_in_is_a_split_not_a_choice(self) -> None:
+        belief, _, summary = self.compile_view(
+            """- [C001] The predecessor.
+  {0.70|o|E001|2026-06-01} Original belief.
+
+- [C002] The narrower work claim.
+  {0.80|o|E001|2026-06-10} <!-- kp-compiler: belief.scope=work --> First head. ⊘C001
+
+- [C003] The narrower home claim.
+  {0.80|o|E002|2026-06-10} <!-- kp-compiler: belief.scope=home --> Second head. ⊘C001
+"""
+        )
+        row = belief["belief-fixture#C001"]
+        self.assertTrue(row["split"])
+        self.assertIsNone(row["pointer"])
+        self.assertFalse(row["fan_in"])
+        self.assertEqual(summary["current_belief"]["split"], 1)
+
+    def test_tension_lean_live_and_dormant(self) -> None:
+        belief, contentions, _ = self.compile_view(
+            """- [C001] One arm of a live tension.
+  {0.80|o|E001|2026-06-10} Stands. ⊗~C002
+
+- [C002] The other arm, newer.
+  {0.80|o|E002|2026-06-20} Also stands.
+
+- [C003] A retired claim in tension with a live one.
+  {0.70|o|E001|2026-06-01} Retired. ⊗~C002
+
+- [C004] Replaces the retired claim.
+  {0.80|o|E003|2026-06-15} The successor. ⊘C003
+"""
+        )
+        lean_rows = [
+            row for row in contentions.values() if row["kind"] == "tension_lean"
+        ]
+        # C003's tension is dormant (an arm is superseded): exactly one live lean.
+        self.assertEqual(len(lean_rows), 1)
+        row = lean_rows[0]
+        self.assertEqual(
+            row["arms"], ["belief-fixture#C001", "belief-fixture#C002"]
+        )
+        # Recency leads the lean; both arms remain current (the record holds).
+        self.assertEqual(row["lean"], "belief-fixture#C002")
+        self.assertFalse(row["cross_pack"])
+        self.assertTrue(belief["belief-fixture#C001"]["current"])
+        self.assertTrue(belief["belief-fixture#C002"]["current"])
+
+    def test_error_contradictions_surface_without_a_lean(self) -> None:
+        _, contentions, _ = self.compile_view(
+            """- [C001] One side of an error contradiction.
+  {0.80|o|E001|2026-06-10} Stands. ⊗!C002
+
+- [C002] The other side, newer.
+  {0.85|o|E002|2026-06-20} Also stands.
+"""
+        )
+        rows = [
+            row
+            for row in contentions.values()
+            if row["kind"] == "unresolved_contradiction"
+        ]
+        self.assertEqual(len(rows), 1)
+        # An error contradiction demands an author's resolution; a
+        # deterministic pick would launder the error into an answer.
+        self.assertIsNone(rows[0]["lean"])
+        self.assertEqual(rows[0]["relation_type"], "contradicts:error")
+
+    def test_tier_filtered_superseder_yields_unresolved_in_bundle(self) -> None:
+        belief, _, _ = self.compile_view(
+            """- [C001] The predecessor.
+  {0.70|o|E001|2026-06-01} Original belief.
+
+- [C002] The successor, withheld from the client tier.
+  {0.80|o|E001|2026-06-10} <!-- kp-compiler: tier=server sensitivity=public visibility=public --> Replaces it. ⊘C001
+""",
+            export_tier="client",
+        )
+        row = belief["belief-fixture#C001"]
+        # Status was computed before filtering; the superseder is withheld —
+        # the view says so without disclosing anything status doesn't.
+        self.assertEqual(row["status"], "superseded")
+        self.assertIsNone(row["pointer"])
+        self.assertEqual(row["frontier"], [])
+        self.assertTrue(row["unresolved_in_bundle"])
+        self.assertNotIn("belief-fixture#C002", belief)
+
+    def test_cross_pack_supersession_never_affects_currency(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            pack_a = self.write_belief_pack(
+                root,
+                """- [C001] The sovereign claim of pack A.
+  {0.80|o|E001|2026-06-01} Stands on its own.
+""",
+                name="belief-pack-a",
+            )
+            pack_b = self.write_belief_pack(
+                root,
+                """- [C001] Pack B's attempted rewrite of pack A.
+  {0.85|o|E001|2026-06-10} Cross-pack supersede. ⊘belief-pack-a#C001
+""",
+                name="belief-pack-b",
+            )
+            out = root / "out"
+            compile_bundle([pack_a, pack_b], out, export_tier="internal")
+            belief = {
+                row["claim_uid"]: row
+                for row in map(
+                    json.loads,
+                    (out / "logical" / "current-belief.jsonl")
+                    .read_text()
+                    .splitlines(),
+                )
+            }
+        # One pack never rewrites another's belief: A#C001 stays current.
+        self.assertTrue(belief["belief-pack-a#C001"]["current"])
+        self.assertEqual(belief["belief-pack-a#C001"]["status"], "active")
+        self.assertTrue(belief["belief-pack-b#C001"]["current"])
+
+
 if __name__ == "__main__":
     unittest.main()

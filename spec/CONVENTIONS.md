@@ -57,7 +57,7 @@ Source of truth: this document.
 | 20 | **Negation** | Explicit assertion | `Platform does not store PII locally` | Never rely on absence of a claim to imply negation. State negative facts explicitly |
 | 21 | **Pronouns** | Minimize; repeat nouns | `The platform supports...` not `It supports...` | Especially across sentence boundaries. Improves LLM parsing and translation accuracy |
 | 22 | **Granularity** | One verifiable assertion per claim | One `[C###]` = one fact | Compound claims must be decomposed. "A and B" becomes two claims with `→supports` relation |
-| 23 | **Product names** | Official capitalization, always | `Qwen 3.5`, `OpenRouter`, `Fly.io` | First use: full name. No trademark symbols in claims (too noisy) |
+| 23 | **Product names** | Official capitalization, always | `Qwen 3.5`, `OpenRouter`, `Fireworks AI` | First use: full name. No trademark symbols in claims (too noisy) |
 | 24 | **Measurement units** | SI / metric preferred, with context | `3B active params`, `85K lines` | Use K/M/B suffixes for informal magnitude in claims; precise numbers in evidence |
 | 25 | **Currency** | ISO 4217 code or `$` for USD | `$2 million`, `EUR 500K` | Dollar sign for USD (dominant context). ISO code for all others |
 | 26 | **Phone numbers** | E.164 with spaces | `+1 555 012 3456` | Canonical storage format. Views may add parentheses |

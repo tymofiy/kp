@@ -23,6 +23,11 @@ from typing import Any
 
 import yaml
 
+try:
+    from .current_belief import current_belief_rows
+except ImportError:  # direct script invocation (python compiler/graph_compiler.py)
+    from current_belief import current_belief_rows
+
 
 SCHEMA_VERSION = 6
 # Mirrors the kp repo release version (the spec tag) — the compiler ships with
@@ -263,6 +268,12 @@ class ParsedPack:
     relations: list[Relation]
     history_claims: list[HistoryClaim]
     history_relations: list[HistoryRelation]
+    # `belief.*` compiler-annotation fields per claim uid (the current-belief
+    # view's profile inputs). Carried beside the claims rather than on them so
+    # every previously shipped surface stays byte-identical.
+    profile_annotations: dict[str, dict[str, str]] = dataclasses.field(
+        default_factory=dict
+    )
 
 
 @dataclasses.dataclass(frozen=True)
@@ -495,9 +506,10 @@ def parse_claims(
     default_sensitivity: str,
     default_visibility: str,
     default_boundary_explicit: bool,
-) -> tuple[list[Claim], list[Relation]]:
+) -> tuple[list[Claim], list[Relation], dict[str, dict[str, str]]]:
     raw_claims: list[dict[str, Any]] = []
     raw_relations: list[tuple[str, str, str, str]] = []
+    belief_annotations: dict[str, dict[str, str]] = {}
 
     for block in parse_claim_blocks(claims_text):
         local_id = block["id"]
@@ -581,6 +593,13 @@ def parse_claims(
         detail, annotations = remove_compiler_annotations(
             " ".join(part for part in detail_parts if part).strip()
         )
+        profile_fields = {
+            key: value
+            for key, value in annotations.items()
+            if key.startswith("belief.")
+        }
+        if profile_fields:
+            belief_annotations[claim_uid(pack_id, local_id)] = profile_fields
         tier, sensitivity, visibility = normalized_boundary_metadata(
             annotations,
             default_tier=default_tier,
@@ -661,7 +680,7 @@ def parse_claims(
             )
         )
 
-    return claims, relations
+    return claims, relations, belief_annotations
 
 
 def parse_evidence(
@@ -857,7 +876,7 @@ def parse_pack(pack_dir: Path) -> ParsedPack:
     default_visibility = str(pack.get("visibility", "public")).lower()
     default_tier = default_boundary_tier(default_sensitivity)
     default_boundary_explicit = pack_boundary_defaults_explicit(pack)
-    claims, relations = parse_claims(
+    claims, relations, profile_annotations = parse_claims(
         pack_id,
         (pack_dir / "claims.md").read_text(),
         default_tier=default_tier,
@@ -893,6 +912,7 @@ def parse_pack(pack_dir: Path) -> ParsedPack:
         relations=relations,
         history_claims=history_claims,
         history_relations=history_relations,
+        profile_annotations=profile_annotations,
     )
 
 
@@ -1358,6 +1378,11 @@ def project_for_export_tier(
                 relations=relations,
                 history_claims=history_claims,
                 history_relations=history_relations,
+                profile_annotations={
+                    uid: fields
+                    for uid, fields in parsed.profile_annotations.items()
+                    if uid in allowed_claim_uids
+                },
             )
         )
 
@@ -4257,6 +4282,14 @@ def compile_bundle(
         output_dir / "logical" / "history-relations.jsonl",
         [relation for parsed_pack in parsed_packs for relation in parsed_pack.history_relations],
     )
+    # Current-belief view (Bernard profile; see compiler/current_belief.py).
+    # Computed over the PROJECTED packs so the view is consistent with the
+    # bundle it ships in; a derived surface — no shipped artifact above moves.
+    belief_rows, contention_rows = current_belief_rows(parsed_packs)
+    write_jsonl(output_dir / "logical" / "current-belief.jsonl", belief_rows)
+    write_jsonl(
+        output_dir / "logical" / "belief-contentions.jsonl", contention_rows
+    )
 
     query_claims = query_claims or []
     query_texts = query_texts or []
@@ -4403,6 +4436,19 @@ def compile_bundle(
         "relations": sum(len(parsed_pack.relations) for parsed_pack in parsed_packs),
         "history_claims": sum(len(parsed_pack.history_claims) for parsed_pack in parsed_packs),
         "history_relations": sum(len(parsed_pack.history_relations) for parsed_pack in parsed_packs),
+        "current_belief": {
+            "rows": len(belief_rows),
+            "current": sum(1 for row in belief_rows if row.current),
+            "pointers": sum(1 for row in belief_rows if row.pointer is not None),
+            "fan_in": sum(1 for row in belief_rows if row.fan_in),
+            "split": sum(1 for row in belief_rows if row.split),
+            "unresolved_in_bundle": sum(
+                1 for row in belief_rows if row.unresolved_in_bundle
+            ),
+            "contentions": len(contention_rows),
+            "rows_sha256": jsonl_rows_sha256(belief_rows),
+            "contentions_sha256": jsonl_rows_sha256(contention_rows),
+        },
         "relation_profile": relation_profile_report,
         "unresolved_relations": sum(
             1
