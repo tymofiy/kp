@@ -5,6 +5,28 @@
 
 ---
 
+## Unreleased — Editor's Draft
+
+**Record-safe evidence bodies and unique evidence identity.**
+
+- **CORE §10 / AR-19** registers `markdown-backslash-v1`, a reversible encoding for evidence
+  excerpts containing record-shaped Markdown. The exact `kp-content-encoding` marker, indentation
+  behavior, escape set, decode order, and unknown-value fallback are normative.
+- **SC-13** requires evidence IDs to be unique within `evidence.md`; the conformance runner no longer
+  collapses duplicate serialized identities into a set.
+- **Three conformance fixtures** cover the boundary:
+  `encoded-evidence.kpack` MUST pass with nested source headings and evidence-shaped bullets, while
+  `duplicate-evidence-ids.kpack` MUST fail for SC-13 and `malformed-evidence-heading.kpack` MUST fail
+  when a heading merely starts with an evidence ID. The suite grows from 23/23 to 26/26.
+- **Grammar and prose alignment** adds the registered evidence field to the completeness grammar and
+  records the previously specified AR-18 single-claim-identity rule in the grammar notes.
+
+Compatibility: ordinary evidence bodies are unchanged. Consumers that do not recognize an encoding
+preserve its raw body and do not promote escaped lines into structural records. Packs containing
+duplicate evidence IDs were ambiguous; the editor's draft now rejects them explicitly.
+
+---
+
 ## v0.8.4-preview — 2026-06-13
 
 **Independence made explicit: a capture-resistance companion, the offline-validation invariant exercised, and capture-resistance non-goals.**

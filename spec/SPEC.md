@@ -850,6 +850,20 @@ by Fraunhofer ISE CalLab. Commercial module target: 2028.
 | `type` | Yes | Source type string | `document`, `web`, `expert`, `observed`, `research`, `multi_source_synthesis`, `interview`, `measurement`, etc. |
 | `captured` | Yes | ISO date | When the evidence was obtained |
 | `source` | Yes | Free text | URI, file path, or description of the source |
+| `kp-content-encoding` | No | `markdown-backslash-v1` | Reversible protection for record-shaped Markdown inside the evidence body (CORE §10 / AR-19) |
+
+### Record-Safe Evidence Bodies
+
+Source excerpts can contain their own `## E001` headings or `- [E001]` bullets. Producers MUST NOT
+emit those lines verbatim where a consumer could promote them into sibling KP evidence records.
+KP:1 registers the exact blockquote marker
+`> **kp-content-encoding:** markdown-backslash-v1` and the reversible line-escape algorithm in
+[CORE.md §10 “Record-Safe Encoded Bodies”](CORE.md#record-safe-encoded-bodies). That CORE section is
+the implementer contract: record segmentation happens before decoding, existing leading backslashes
+are escaped for reversibility, and unknown encoding values are preserved rather than guessed.
+
+Evidence IDs are unique serialized identities. A pack containing two unescaped top-level records
+with the same evidence ID is invalid (SC-13), even if the record bodies are identical.
 
 ### Design Principles
 

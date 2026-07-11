@@ -461,11 +461,49 @@ Optional fields:
 
 - `reliability` — NATO Admiralty source reliability tier. Single uppercase letter `A`–`F`. `A` = completely reliable, `F` = reliability cannot be judged.
 - `credibility` — NATO Admiralty information credibility for this specific fact. Single digit `1`–`6`. `1` = confirmed by other independent sources, `6` = credibility cannot be judged. Orthogonal to `reliability`: an `A`-tier source can carry a `6`-credibility statement when uncorroborated.
+- `kp-content-encoding` — registered reversible encoding for record-shaped Markdown in an evidence body. The only KP:1 value is `markdown-backslash-v1`; see “Record-safe encoded bodies” below.
 - `SHA-256` / `sha-256`, `Notes` / `notes`, `Prepared` / `prepared`.
 
-Field names are case-insensitive in validation (AR-07). The combined `reliability` + `credibility` pair (e.g. `A1`, `B2`, `F6`) is the standard intelligence-tradecraft Admiralty grade and renderers MAY surface it as such.
+Field names are case-insensitive in validation (AR-07), including `kp-content-encoding`; its encoding value is case-sensitive. The combined `reliability` + `credibility` pair (e.g. `A1`, `B2`, `F6`) is the standard intelligence-tradecraft Admiralty grade and renderers MAY surface it as such.
 
 Evidence IDs use the pattern `E` + one or more digits (AR-02). IDs are stable — once assigned, an ID always refers to the same source material.
+
+### Record-Safe Encoded Bodies
+
+An evidence excerpt can contain Markdown that looks like KP structure — for example, a source-local
+`## E001` heading or `- [E001]` bullet. Emitting those lines verbatim makes record boundaries
+ambiguous. A producer MAY make the body reversible and record-safe by placing this exact blockquote
+metadata line after the ordinary evidence fields and immediately before the body:
+
+```markdown
+> **kp-content-encoding:** markdown-backslash-v1
+```
+
+Producers MUST use the canonical lowercase field spelling shown above. Consumers match the field
+name case-insensitively per AR-07, but MUST compare `markdown-backslash-v1` case-sensitively.
+
+For `markdown-backslash-v1`, the producer MUST preserve leading spaces and tabs, then prefix one
+backslash after that indentation when the remaining logical body line:
+
+1. begins with a backslash;
+2. equals the encoding marker line above;
+3. is exactly `##`, or begins with `##` followed by whitespace; or
+4. begins with `-`, then one or more whitespace characters, then `[E` + one or more digits + `]`,
+   followed by whitespace or end of line.
+
+All other body lines remain byte-for-byte unchanged. Escaping an existing leading backslash makes
+the transform reversible rather than treating source-authored escapes as encoder output.
+
+Consumers MUST segment evidence records on the encoded text before decoding. Any unescaped,
+top-level H2 terminates the current evidence record; only a conforming `## E` + digits heading begins
+another evidence record. Escaped headings and evidence-shaped bullets remain body content. A
+consumer that exposes the logical body MUST remove exactly one post-indentation backslash when the
+remainder matches one of the four encoder cases above, and MUST leave every other leading backslash
+intact. The marker is metadata, not user-facing body content.
+
+An implementation that does not recognize the declared value MUST preserve the encoded body as-is,
+MUST NOT reinterpret escaped lines as structural records, and SHOULD warn that logical-body decoding
+was skipped. Producers SHOULD NOT emit unregistered `kp-content-encoding` values (AR-19).
 
 ---
 
@@ -514,6 +552,7 @@ These constraints MUST be validated after parsing succeeds. They are not express
 | SC-10 | Frontmatter scale name MUST match PACK.yaml `confidence.scale` |
 | SC-11 | Verbose type names MUST map to their single-letter equivalents: observed=o, reported=r, computed=c, inferred=i |
 | SC-12 | When `nature` is `prediction`, confidence MUST be ≤ 0.95. Predictions about future states have irreducible uncertainty; the 0.99+ band is reserved for trivially-falsifiable claims per [AUTHORING.md §5](AUTHORING.md). |
+| SC-13 | All evidence IDs MUST be unique within evidence.md. Duplicate serialized identities are ambiguous even when their bodies are identical. |
 
 ### Formal Grammar
 
@@ -530,7 +569,7 @@ All three checks MUST pass:
 | Check | Scope | Criteria |
 |-------|-------|----------|
 | Syntactic | claims.md | Document matches PEG grammar |
-| Semantic | claims.md + evidence.md | All constraints SC-01 through SC-12 pass |
+| Semantic | claims.md + evidence.md | All constraints SC-01 through SC-13 pass |
 | Schema | PACK.yaml | Validates against JSON Schema |
 
 ### Permissive Level
@@ -538,7 +577,7 @@ All three checks MUST pass:
 | Check | Scope | Criteria |
 |-------|-------|----------|
 | Syntactic | claims.md | Document matches PEG grammar (MUST pass) |
-| Semantic (errors) | claims.md | SC-01 through SC-06 MUST pass |
+| Semantic (errors) | claims.md + evidence.md | SC-01 through SC-06 and SC-13 MUST pass |
 | Semantic (warnings) | cross-file | SC-07 through SC-12 produce warnings, not errors |
 | Schema | PACK.yaml | Required fields validate; optional field types produce warnings |
 
@@ -628,6 +667,7 @@ The following normative decisions resolve ambiguities identified during grammar 
 | AR-16 | Cross-pack references: `pack_name#section_ref`. `#` is the separator. |
 | AR-17 | Blank lines are permitted between structural elements (frontmatter, headings, descriptions, sections, claims). A section MAY open with a blockquote description, mirroring the document heading. Whitespace-only lines are not blank lines. |
 | AR-18 | The bracket id is a claim's sole serialized identity; relations, history, and cross-pack references (AR-16) resolve to it. A claim's metadata block (dense §6.1 or verbose §6.2) carries exactly its defined fields — producers MUST NOT add fields beyond them, and readers MUST reject a non-empty undefined/trailing token rather than silently dropping it. Opaque or storage-layer identifiers are non-wire (storage is non-normative; see STORAGE.md). |
+| AR-19 | Evidence bodies that contain record-shaped Markdown use the exact `kp-content-encoding: markdown-backslash-v1` marker and reversible escape algorithm in §10. Record segmentation precedes decoding; an unescaped top-level H2 ends the current record; unknown encodings are preserved, never guessed. |
 
 ---
 

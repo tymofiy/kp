@@ -13,7 +13,7 @@ parsed through the PEG grammar itself (via parsimonious), so syntax the
 regex layer tolerates but the grammar rejects is reported. Composition
 packs are exempt from the PEG parse: their claims.md is narrative by
 design (SPEC.md §2, COMPOSITION.md). JSON Schema validation and semantic
-constraints SC-01 through SC-12 are enforced in both modes. See
+constraints SC-01 through SC-13 are enforced in both modes. See
 conformance/README.md for the grammar-vs-runner contract.
 
 Dependencies: pyyaml, jsonschema; --strict also needs parsimonious
@@ -64,6 +64,7 @@ VALID_ORDER = [
     "verbose-claims.kpack",
     "mixed-syntax.kpack",
     "maximal.kpack",
+    "encoded-evidence.kpack",
     "composition.kpack",
 ]
 INVALID_ORDER = [
@@ -71,6 +72,8 @@ INVALID_ORDER = [
     "orphan-evidence-ref.kpack",
     "confidence-overflow.kpack",
     "duplicate-ids.kpack",
+    "duplicate-evidence-ids.kpack",
+    "malformed-evidence-heading.kpack",
     "missing-evidence-field.kpack",
     "cyclic-supersession.kpack",
     "dangling-relation-target.kpack",
@@ -88,6 +91,8 @@ INVALID_EXPECTED = {
     "orphan-evidence-ref.kpack": "SC-03",
     "confidence-overflow.kpack": "SC-01",
     "duplicate-ids.kpack": "SC-02",
+    "duplicate-evidence-ids.kpack": "SC-13",
+    "malformed-evidence-heading.kpack": "SC-03",
     "missing-evidence-field.kpack": "parse",
     "cyclic-supersession.kpack": "SC-04",
     "dangling-relation-target.kpack": "SC-05",
@@ -185,6 +190,9 @@ _REL_VERBOSE = re.compile(
     r"|requires|refines|supersedes|see_also)\s+([\w#-]+)"
 )
 _VERBOSE_REL_LINE = re.compile(r"`relations:\s*(.+?)`")
+_EVIDENCE_RECORD_HEADING = re.compile(
+    r"^## (E\d+)(?:(?: ?— ?| ?-- ?)[^\r\n]+)?[ \t]*\r?$", re.MULTILINE
+)
 
 
 # ── Strict layer: PEG-driven validation (--strict) ─────────────────
@@ -407,10 +415,20 @@ def validate_pack(pack_dir: Path, strict: bool = False) -> list[Err]:
     if isinstance(pc, dict) and "scale" in pc and pc["scale"] != fm_scale:
         errs.append(Err("SC-10", f"scale '{fm_scale}' != PACK.yaml '{pc['scale']}'"))
 
-    # ── evidence.md: extract defined evidence IDs (empty set if absent) ──
+    # ── evidence.md: extract and validate record identities ──
     ev_ids: set[str] = set()
     if evidence_path.exists():
-        ev_ids = set(re.findall(r"^## (E\d+)", evidence_path.read_text(), re.MULTILINE))
+        # Only unescaped top-level H2 records define evidence identities.
+        # markdown-backslash-v1 body headings begin with `\##` and therefore
+        # remain content. Keep the ordered list long enough to reject duplicate
+        # serialized identities before converting it to a lookup set.
+        evidence_id_list = _EVIDENCE_RECORD_HEADING.findall(evidence_path.read_text())
+        seen_evidence_ids: set[str] = set()
+        for evidence_id in evidence_id_list:
+            if evidence_id in seen_evidence_ids:
+                errs.append(Err("SC-13", f"duplicate evidence ID {evidence_id}"))
+            seen_evidence_ids.add(evidence_id)
+        ev_ids = seen_evidence_ids
 
     # ── claims.md: parse claim blocks ──
     # A claim block starts with `- [C###]` or `- **[C###]**` and includes

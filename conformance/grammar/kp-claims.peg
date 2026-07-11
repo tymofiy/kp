@@ -292,6 +292,7 @@ EvidenceFieldName  <- 'type' / 'Type' / 'source' / 'Source'
                     / 'SHA-256' / 'sha-256' / 'Notes' / 'notes'
                     / 'reliability' / 'Reliability'
                     / 'credibility' / 'Credibility'
+                    / 'kp-content-encoding' / 'KP-Content-Encoding'
 
 EvidenceFieldValue <- (!('|' / NL) .)+
 
@@ -336,3 +337,4 @@ IDENT_CHAR      <- [a-z0-9-]
 //        observed=o, reported=r, computed=c, inferred=i
 // SC-12: When Nature is 'prediction', Confidence MUST be ≤ 0.95
 //        (predictions have irreducible uncertainty; see CORE §12)
+// SC-13: All evidence IDs MUST be unique within evidence.md

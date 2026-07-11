@@ -116,7 +116,7 @@ or scaffold the same starter with fresh dates in one step:
 | Directory | Purpose |
 |-----------|---------|
 | `spec/` | Normative specification -- [CORE.md](spec/CORE.md), [SPEC.md](spec/SPEC.md), and companion documents |
-| `conformance/` | PEG grammar, JSON Schema, and 18 test fixtures |
+| `conformance/` | PEG grammar, JSON Schema, and 21 test fixtures |
 | `examples/` | Five `.kpack` reference examples (validated by the conformance suite), including the `hello-world` starter |
 | `positioning/` | Public-facing positioning and design rationale |
 | `research/` | Benchmark design and prior art analysis |
@@ -178,25 +178,25 @@ The [conformance suite](conformance/) provides formal validation tools:
   definition of claims.md syntax
 - **JSON Schema** (`conformance/grammar/kp-pack.schema.json`) -- validation
   schema for PACK.yaml manifests
-- **18 test fixtures** -- 6 valid packs that must be accepted, 12 invalid packs
+- **21 test fixtures** -- 7 valid packs that must be accepted, 14 invalid packs
   that must be rejected with specific errors
 - **5 complete example packs** -- the kpacks in `examples/` are validated by
   the runner as part of the suite, so the live examples are themselves
   conformance tests
 
-The runner (`conformance/run.py`) reports **23/23 passed** on a conformant
-implementation: 18 fixture tests + 5 example validations. A conformant
+The runner (`conformance/run.py`) reports **26/26 passed** on a conformant
+implementation: 21 fixture tests + 5 example validations. A conformant
 implementation parses all valid fixtures, rejects all invalid ones, validates
 PACK.yaml against the schema (including its `format` assertions), validates
 `signatures.yaml` and `composition.yaml` against their schemas when present,
-and enforces semantic constraints SC-01 through SC-12.
+and enforces semantic constraints SC-01 through SC-13.
 
 Run from a fresh checkout:
 
 ```bash
 python3 -m venv .venv && source .venv/bin/activate  # if your Python is externally managed (PEP 668)
 pip install -r requirements.txt
-python3 conformance/run.py                       # full suite (23/23 expected)
+python3 conformance/run.py                       # full suite (26/26 expected)
 python3 conformance/run.py --strict              # also parse claims.md through the PEG grammar
 python3 conformance/run.py --pack path/to/x.kpack  # validate a single pack
 ```
@@ -218,7 +218,7 @@ format's genuinely novel contributions.
 
 ## Status
 
-KP:1 is published as `KP:1 Public Draft — 2026-06` (current git tag `v0.8.4-preview`, with the v0.7.x preview series and the iterative v0.8.x preview line documented in [`spec/CHANGELOG.md`](spec/CHANGELOG.md)). It has a formal grammar, a JSON Schema, a conformance suite with 18 test fixtures plus 5 reference examples (23/23 validated).
+KP:1 is published as `KP:1 Public Draft — 2026-06` (current git tag `v0.8.4-preview`, with the v0.7.x preview series and the iterative v0.8.x preview line documented in [`spec/CHANGELOG.md`](spec/CHANGELOG.md)). The current editor's draft has a formal grammar, a JSON Schema, and a conformance suite with 21 test fixtures plus 5 reference examples (26/26 validated).
 
 This is an **editor's draft** maintained by a single editor in a public repository. The specification is **not final** and may change in any way at any time, including breaking changes. It is **not yet ratified** by any standards body. Compatibility commitments will arrive only with a non-draft version. See [`GOVERNANCE.md`](GOVERNANCE.md) for the full governance picture, including how decisions are made during the preview phase and what changes when the Knowledge Pack Foundation is incorporated.
 

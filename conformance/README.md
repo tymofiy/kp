@@ -20,18 +20,21 @@ conformance/
     kp-signatures.schema.json  JSON Schema for signatures.yaml
   fixtures/
     README.md                  Fixture catalog & coverage matrix
-    valid/                     6 packs that MUST be accepted
+    valid/                     7 packs that MUST be accepted
       minimal.kpack/
       typical.kpack/
       verbose-claims.kpack/
       mixed-syntax.kpack/
       maximal.kpack/
+      encoded-evidence.kpack/
       composition.kpack/
-    invalid/                   12 packs that MUST be rejected
+    invalid/                   14 packs that MUST be rejected
       no-rosetta.kpack/
       orphan-evidence-ref.kpack/
       confidence-overflow.kpack/
       duplicate-ids.kpack/
+      duplicate-evidence-ids.kpack/
+      malformed-evidence-heading.kpack/
       missing-evidence-field.kpack/
       cyclic-supersession.kpack/
       dangling-relation-target.kpack/
@@ -52,7 +55,7 @@ A KP:1 implementation is **conformant** if it:
    assertions (date, date-time, uri)
 4. Validates `signatures.yaml` and `composition.yaml` against their
    schemas when those files are present
-5. Enforces semantic constraints SC-01 through SC-12
+5. Enforces semantic constraints SC-01 through SC-13
 
 ## Running the Suite
 
@@ -65,7 +68,7 @@ python3 conformance/run.py
 python3 conformance/run.py --strict   # also parse claims.md through the PEG grammar
 ```
 
-Expected result: `23/23 passed`. The runner's Python dependencies are declared in `requirements.txt` — note that `jsonschema` is installed with its `format-nongpl` extra, which provides the validators that make JSON Schema `format` assertions (date-time, uri) actually enforce; with bare `jsonschema`, unrecognized formats are silently skipped.
+Expected result: `26/26 passed`. The runner's Python dependencies are declared in `requirements.txt` — note that `jsonschema` is installed with its `format-nongpl` extra, which provides the validators that make JSON Schema `format` assertions (date-time, uri) actually enforce; with bare `jsonschema`, unrecognized formats are silently skipped.
 
 ## Grammar vs Runner
 
@@ -75,15 +78,15 @@ The `run.py` runner validates fixtures against **equivalent regular-expression p
 
 With **`--strict`**, the runner additionally parses each pack's `claims.md` through the PEG grammar itself, loaded at runtime via a mechanical Ford-PEG → parsimonious translation (documented in `run.py`). The normative grammar is machine-executed, not mirrored by hand. Two scope notes: composition packs are exempt from the PEG parse (their `claims.md` is narrative by design, per SPEC.md §2 and COMPOSITION.md), and strict errors are appended after the regex/semantic layer's errors. Making `--strict` the default is a release decision deferred to a later version.
 
-A pack accepted by the default runner but rejected by the PEG is malformed; implement to the PEG, and run `--strict` to check. The fixture suite is the contract: the suite passes 23/23 in both modes, and any runner that does the same is acceptable.
+A pack accepted by the default runner but rejected by the PEG is malformed; implement to the PEG, and run `--strict` to check. The fixture suite is the contract: the suite passes 26/26 in both modes, and any runner that does the same is acceptable.
 
 ## Phase Status
 
 | Phase | Description | Status |
 |-------|-------------|--------|
-| C1 | Formal grammar (PEG), JSON Schema, 18 fixtures | **Done** |
+| C1 | Formal grammar (PEG), JSON Schema, 21 fixtures | **Done** |
 | C2 | YAML schemas for signatures.yaml, composition.yaml | **Done** |
-| C3 | Automated test runner (`run.py`, 23/23 pass) | **Done** |
+| C3 | Automated test runner (`run.py`, 26/26 pass) | **Done** |
 | C4 | Round-trip consistency tests | Not started |
 
 ## Key Design Decisions
@@ -92,11 +95,11 @@ A pack accepted by the default runner but rejected by the PEG is malformed; impl
   the dense/verbose syntax distinction and the prose/relation boundary problem.
 - **Two-layer validation**: Syntactic (PEG parseable) then semantic (post-parse
   constraints). PEG cannot express cross-references, value ranges, or acyclicity.
-- **17 ambiguity resolutions**: See `grammar/README.md` for the full list. Each
+- **19 ambiguity resolutions**: See `grammar/README.md` for the full list. Each
   is a normative decision that was not fully specified in the prose spec.
 - **All five example packs validated**: `hello-world.kpack`,
   `solar-energy-market.kpack`, `kp-external-assessment.kpack`,
   `art-acquisition-decision.kpack`, and
   `auction-house-consignment-review.kpack` all pass the grammar and the
   semantic constraints. The runner validates them on every run alongside
-  the 18 fixture cases (23/23 total).
+  the 21 fixture cases (26/26 total).

@@ -1,7 +1,7 @@
 # KP:1 Conformance Fixtures
 
-> **Status:** Complete — Phase C3 (automated runner passes 23/23: 18 fixtures + 5 example packs)
-> **Spec version:** KP:1 v0.8.4-preview
+> **Status:** Complete — Phase C3 (automated runner passes 26/26: 21 fixtures + 5 example packs)
+> **Spec version:** KP:1 current editor's draft (post-v0.8.4-preview)
 
 Test fixtures for KP:1 conformance validation. Each fixture is a complete
 `.kpack` directory. Standard packs include `PACK.yaml`, `claims.md`, and
@@ -19,6 +19,7 @@ Implementations MUST accept all valid fixtures without errors.
 | `verbose-claims.kpack` | All claims use verbose named-field syntax | 3 | Verbose only |
 | `mixed-syntax.kpack` | Dense and verbose claims coexist in one document | 5 | Both |
 | `maximal.kpack` | Every optional field, all relation types, versioned IDs, cross-pack refs; also includes a populated `signatures.yaml` exercising the v0.7.5 integrity schema | 14 | Both |
+| `encoded-evidence.kpack` | Canonical `markdown-backslash-v1` example; escaped record-shaped lines do not mint sibling evidence IDs (decode round-trip remains C4) | 1 | Dense (4-pos) |
 | `composition.kpack` | Structural fixture for composition packs: `composition.yaml` present, `evidence.md` omitted, prose-only `claims.md` (per SPEC.md §2) | 0 | N/A (structural) |
 
 ### Feature Coverage Matrix
@@ -52,7 +53,11 @@ The matrix covers claim-syntax features; `composition.kpack` is a structural
 fixture (it has no claim bullets) and exercises the composition-pack
 file-requirement rules from SPEC.md §2 instead. `maximal.kpack`'s
 `signatures.yaml` exercises the v0.7.5 integrity schema
-(`kp-signatures.schema.json`).
+(`kp-signatures.schema.json`). `encoded-evidence.kpack` is the canonical CORE
+§10 / AR-19 acceptance example, including source-authored leading backslashes,
+bare and indented headings, and marker-shaped content. Phase C3 proves those
+escaped lines do not define sibling evidence IDs; logical-body decode
+round-trip remains explicitly open in C4.
 
 ## Invalid Fixtures
 
@@ -64,6 +69,8 @@ Implementations MUST reject each fixture, flagging the specific violation.
 | `orphan-evidence-ref.kpack` | Claim references E999 not in evidence.md | SC-03 | MUST reject |
 | `confidence-overflow.kpack` | Confidence value 1.50 exceeds [0.0, 1.0] | SC-01 | MUST reject |
 | `duplicate-ids.kpack` | Two claims share ID [C001] | SC-02 | MUST reject |
+| `duplicate-evidence-ids.kpack` | Two top-level evidence records share ID E001 | SC-13 | MUST reject |
+| `malformed-evidence-heading.kpack` | `## E001 appendix` lacks a normative title separator and does not define E001 | SC-03 | MUST reject |
 | `missing-evidence-field.kpack` | Empty evidence ref position in metadata | Syntactic (PEG) | MUST reject |
 | `cyclic-supersession.kpack` | C001 ⊘ C002 and C002 ⊘ C001 (supersession cycle) | SC-04 | MUST reject |
 | `dangling-relation-target.kpack` | Claim references C999 via → but C999 does not exist | SC-05 | MUST reject |
@@ -89,6 +96,18 @@ catches typos and ensures the evidence chain is complete.
 
 **duplicate-ids:** Semantic constraint SC-02 requires all claim IDs to be
 unique within a document. Duplicates create ambiguous relation targets.
+
+**duplicate-evidence-ids:** Semantic constraint SC-13 requires all top-level
+evidence record IDs to be unique within `evidence.md`. Duplicate serialized
+identities are ambiguous to parsers and renderers even when their bodies happen
+to be identical. Record-shaped source content must use the AR-19 encoding rather
+than an unescaped top-level evidence heading.
+
+**malformed-evidence-heading:** Evidence headings are full-line records, not ID
+prefix searches. `## E001 appendix` lacks the normative em dash or double-hyphen
+title separator, so it does not define E001 and the claim's reference fails
+SC-03. This guards parsers that would otherwise accept a malformed heading by
+matching only its prefix.
 
 **missing-evidence-field:** The PEG grammar requires `EvidenceRefList` to
 contain at least one `EvidenceRef`. An empty position 3 (`{0.75|i||2026}`)
@@ -150,9 +169,9 @@ This validates each `claims.md` against an equivalent regex implementation of
 `../README.md` "Grammar vs Runner"), validates each `PACK.yaml` against
 `grammar/kp-pack.schema.json`, validates each `signatures.yaml` against
 `grammar/kp-signatures.schema.json` when present, runs semantic constraint
-checks (SC-01 through SC-12), and verifies that all valid fixtures pass and
+checks (SC-01 through SC-13), and verifies that all valid fixtures pass and
 all invalid fixtures fail with expected errors.
-Current result: **23/23 tests pass** (18 fixtures + 5 reference example packs).
+Current result: **26/26 tests pass** (21 fixtures + 5 reference example packs).
 
 To validate a single pack outside the bundled set:
 

@@ -71,13 +71,13 @@ else:
     print("PASS")
 ```
 
-To run the full conformance suite (23 fixture + example tests):
+To run the full conformance suite (26 fixture-and-example tests):
 
 ```bash
 python3 conformance/run.py
 ```
 
-If validation fails, the runner names the **semantic constraint** (`SC-01` … `SC-12`) or **ambiguity resolution** (`AR-01` … `AR-17`) you violated. Look those up in [`spec/CORE.md`](spec/CORE.md) §12 and Appendix B.
+If validation fails, the runner names the **semantic constraint** (`SC-01` … `SC-13`) or **ambiguity resolution** (`AR-01` … `AR-19`) you violated. Look those up in [`spec/CORE.md`](spec/CORE.md) §12 and Appendix B.
 
 ---
 
