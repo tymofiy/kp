@@ -306,11 +306,11 @@ The v0.8.0 preview consolidates a deliberate architectural pass on the spec's no
 
 ### Semantic Constraints
 
-- **SC-12 (NEW): When `nature` is `prediction`, confidence MUST be ≤ 0.95.** Predictions about future states have irreducible uncertainty; the 0.99+ band is reserved for trivially-falsifiable claims per AUTHORING.md §5. The constraint catches the "future-date confidence inflation" pattern (a prediction at 0.99 on a 100-year horizon) that prior reviewer rounds flagged as a hostile-reading attack.
+- **SC-12 (NEW): When `nature` is `prediction`, confidence MUST be ≤ 0.95.** Predictions about future states have irreducible uncertainty; the 0.99+ band is reserved for trivially-falsifiable claims per AUTHORING.md §5. The constraint catches the "future-date confidence inflation" pattern (a prediction at 0.99 on a 100-year horizon) as a hostile-reading failure.
 
-### Editorial polish (final pre-tag review pass)
+### Editorial polish (final pre-tag)
 
-After four independent external review rounds plus internal audit, the following polish items landed:
+The following polish items landed:
 
 - **Runner-vs-CORE relation-on-metadata-line divergence:** runner accepts relations after `}` on the metadata line; CORE §6.1 had previously said "relation symbols on that line are treated as prose, not parsed as relations." Resolution: relax CORE §6.1 + AR-04 to *allow* relations after `}` on the metadata line (matching what the runner already does and what AUTHORING / LIFECYCLE examples already show). The "greedy prose" framing was over-stated; relations are matched first, remaining trailing text is prose.
 - **Cross-pack `↔` parsing in the runner:** see Tooling above.
@@ -457,7 +457,8 @@ companion file in favour of the typed `extensions.entities` block.
   (typed entity records with stable canonical entity IDs and external-ID vocabulary)
   and `extensions.relations` (typed edges with optional temporal and
   attribute data per DEFINITIONS.md §3). A one-shot migration script
-  (`scripts/migrate-entities-md-to-extensions.mjs`, shipped with kp-forge)
+  (`scripts/migrate-entities-md-to-extensions.mjs`, shipped with the reference
+  producer implementation)
   rewrites legacy packs into the new shape.
 
 ### Compatibility
@@ -504,7 +505,7 @@ No breaking changes. Packs produced before this entry remain valid. Packs that a
 - **`conformance/run.py`** — `validate_pack()` detects composition packs (those with `composition.yaml`) and skips the `evidence.md` presence check for them. Evidence-ID extraction now tolerates a missing `evidence.md` (empty set rather than exception). `signatures.yaml` is validated against the new schema when present, with `FormatChecker` enabled so `format: date-time` on `sealed_at` is actually enforced.
 
 ### Fixed
-- **Schema-vs-impl drift** — The prior `kp-signatures.schema.json` required fields (`signed_at`, `signing_key`, `signature` as a flat string) that neither the sealer (kp-forge) nor the relay (kp-packs) have produced or consumed since v0.7.3. Any current sealed archive would have failed schema validation. Aligned.
+- **Schema-vs-impl drift** — The prior `kp-signatures.schema.json` required fields (`signed_at`, `signing_key`, `signature` as a flat string) that neither the reference sealer nor the reference relay has produced or consumed since v0.7.3. Any current sealed archive would have failed schema validation. Aligned.
 - **Composition-pack validation hole** — Packs with `composition.yaml` and no `evidence.md` (valid per `COMPOSITION.md` design) were being rejected by the conformance runner for the missing-file reason. No longer.
 
 ---

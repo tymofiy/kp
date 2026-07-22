@@ -41,7 +41,7 @@ Each extension below specifies:
 
 ### 2.1 `extensions.ai_brief` — analyst-facing verdict line
 
-**Owner:** kp-forge enrichment pipeline.
+**Owner:** reference producer-side enrichment implementation.
 **Status:** active.
 
 The illustrative extension shipped with v0.7.4 ([SPEC.md §3.2](SPEC.md)). A
@@ -51,12 +51,12 @@ canonical example.
 
 ### 2.2 `extensions.entities` — typed entity graph
 
-**Owner:** kp-forge entity-extraction pipeline.
+**Owner:** reference entity-extraction implementation.
 **Status:** experimental (introduced 2026-04-28).
 
 Promotes the in-memory entity graph to first-class manifest metadata.
 Consumed by Decision Workspace materialization and the cross-pack
-`entity_index` in the kp-packs relay.
+`entity_index` in the reference relay.
 
 ```yaml
 extensions:
@@ -95,7 +95,7 @@ to the H1 entity annotation in `claims.md`
 
 ### 2.3 `extensions.relations` — typed edges
 
-**Owner:** kp-forge entity-extraction pipeline.
+**Owner:** reference entity-extraction implementation.
 **Status:** experimental (introduced 2026-04-28).
 
 Typed edges between entities declared in `extensions.entities`. Vocabulary
@@ -124,7 +124,7 @@ defined elsewhere.
 
 ### 2.4 `extensions.intent` — decision frame
 
-**Owner:** kp-forge intent inference module.
+**Owner:** reference producer-side intent inference implementation.
 **Status:** experimental (introduced 2026-04-28).
 
 The decision-frame tag selected for the pack. Used by the reference
@@ -152,8 +152,8 @@ both; defaults derive `intent` from `case_type` when absent.
 
 ### 2.5 `extensions.playbook` — runtime trace
 
-**Owner:** kp-forge enrichment loop, in concert with the reference
-intelligence pipeline.
+**Owner:** reference producer-side enrichment loop, in concert with the
+reference intelligence pipeline.
 **Status:** experimental (introduced 2026-04-28).
 
 The structured trace of a playbook execution. Written incrementally as
@@ -191,7 +191,7 @@ in-flight rather than malformed.
 
 ### 2.6 `extensions.workspace` — Decision Workspace metadata
 
-**Owner:** kp-forge workspace materialization module.
+**Owner:** reference workspace materialization implementation.
 **Status:** experimental (introduced 2026-04-28).
 
 Per-pack workspace bookkeeping. The wedge ships with single-pack
@@ -213,7 +213,7 @@ through the existing pipeline.
 
 ### 2.7 `extensions.research` — research metadata
 
-**Owner:** kp-forge research-metadata module.
+**Owner:** reference research-metadata implementation.
 **Status:** active (precedent for the producer-defined pattern; emitted by
 ~16 packs in the reference implementation as of v0.7.7).
 
@@ -225,8 +225,8 @@ valid for legacy and lightweight cases.
 ### 2.8 `extensions.translations` — evidentiary multilingual transcripts
 
 **Owner:** the reference handwritten-inventory intake pipeline + the
-kp-packs relay's intake module. Consumed by kp-viewer and downstream
-relays.
+reference relay's intake module. Consumed by the reference macOS viewer and
+downstream relays.
 **Status:** active (introduced 2026-05-09 with the inaugural
 field-collected corpus).
 
@@ -278,7 +278,8 @@ surface.
 
 ### 2.9 `extensions.collection` — pack-bundle membership
 
-**Owner:** kp-forge intake pipeline + kp-viewer library organization.
+**Owner:** reference intake implementation + reference macOS viewer library
+organization.
 **Status:** active (introduced 2026-05-24).
 
 Declares that a pack belongs to a user-facing **collection** — a bundle of
@@ -368,7 +369,7 @@ override or canonicalize category derivation.
 **Compatibility.** Consumers that do not understand the block MUST ignore
 it. Producers MAY omit the block entirely; packs without it appear in the
 viewer's "Uncollected" section (or the category section, depending on
-grouping mode). The kp-viewer reference consumer treats `name` as
+grouping mode). The reference macOS viewer treats `name` as
 authoritative for grouping today; if/when `collection:` is promoted to a
 top-level spec field with `id` semantics, this catalogue entry will be
 updated and an alias-and-migrate path documented.
@@ -382,8 +383,8 @@ member` (or `role: hub` for the spine pack if one exists).
 
 ### 2.10 `extensions.audience` — producer-side named recipients
 
-**Owner:** authored manifests + the kp-viewer library (`PackManifest.audience`,
-`PackLibrary` audience badges and the surprise-pack gate's audience check).
+**Owner:** authored manifests + the reference macOS viewer's audience badges
+and recipient gates.
 **Status:** active (canonical location as of 2026-06-14; migrated from the legacy
 top-level `audience:` key).
 
@@ -421,8 +422,8 @@ New packs SHOULD write `extensions.audience`; the top-level `audience:` key is
 
 ### 2.11 `extensions.sharing` — gift-gating / do-not-share metadata
 
-**Owner:** kp-viewer `SurprisePackGate` + library filtering
-(`PackManifest.lifecycle.surprise`, `.doNotShare`).
+**Owner:** the reference macOS viewer's surprise-pack gate and library
+filtering.
 **Status:** active, gate-dormant (canonical location as of 2026-06-14; migrated from
 the legacy `lifecycle.surprise` / `lifecycle.do_not_share` keys).
 

@@ -882,7 +882,8 @@ with the same evidence ID is invalid (SC-13), even if the record bodies are iden
 > for typed edges. The successor surfaces carry stable canonical entity IDs, an external-ID
 > vocabulary suitable for cross-pack resolution, per-claim `entity_refs`, and
 > the `relation_types` schema from [DEFINITIONS.md §3](DEFINITIONS.md). A
-> one-shot migration script in kp-forge rewrites legacy packs into the new
+> one-shot migration script in the reference producer implementation rewrites
+> legacy packs into the new
 > shape. Legacy `entities.md` packs continue to validate; the change is
 > producer-side guidance, not a validation removal.
 
