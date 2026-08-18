@@ -185,6 +185,9 @@ pack_id: "0b3c1f9a-4d7e-4a1c-9f2b-3e4a5b6c7d8e"
 pack_name: "solar-energy-market"
 pack_version: "2026.03.18"
 
+# Signing-payload version (§4.2) — omit for v1
+seal_version: "2"
+
 # Pack hash — computed per §3
 pack_hash: "a1b2c3d4e5f6..."
 
@@ -219,6 +222,7 @@ signature:
 | `pack_id` | string | Stable identity of the pack across versions. A UUID is RECOMMENDED. Two sealed archives MUST share the same `pack_id` if and only if they represent versions of the same logical pack. |
 | `pack_name` | string | Self-describing copy of `PACK.yaml.name`. Enables receipts and indexing without loading the manifest. |
 | `pack_version` | string | Self-describing copy of `PACK.yaml.version`. Same rationale as `pack_name`. |
+| `seal_version` | string | OPTIONAL. Signing-payload version (§4.2). Absent means v1, whose payload does not cover `pack_id`. Present values: `"2"`. Itself a signed field, so it cannot be stripped to select a weaker payload. |
 | `pack_hash` | string | Lowercase hex-encoded SHA-256 digest (64 characters). |
 | `files` | map\<string, string\> | Keys: NFC-normalized relative paths with `/` separator. Values: lowercase hex SHA-256 digests. MUST NOT include `signatures.yaml`. |
 | `sealed_at` | string | ISO 8601 UTC timestamp (e.g., `2026-04-12T14:30:00Z`). |
@@ -274,15 +278,29 @@ Signing provides **tamper evidence** for the sealing metadata — proof that `pa
 
 **Signing payload.** The signature is computed over a canonical byte string that binds the metadata, not just the pack hash. This prevents an attacker from rewriting sealing metadata while preserving a valid signature.
 
-The signing payload is the UTF-8 encoding of the following concatenation:
+There are two payload versions. A seal declares which one it uses with the OPTIONAL top-level `seal_version` field in `signatures.yaml`; **its absence means v1.**
+
+**Payload v1** (`seal_version` absent) — the original form:
 
 ```text
 {algorithm}\n{pack_hash}\n{sealed_at}\n{sealed_by}\n{parent.version or empty}\n{parent.pack_hash or empty}\n
 ```
 
-Where `parent.version` and `parent.pack_hash` use their exact string values from `signatures.yaml` if present, or the empty string for a v1 pack (no parent). All fields use their literal `signatures.yaml` values — no normalization or transformation.
+**Payload v2** (`seal_version: 2`) — adds `pack_id`, and adds the version declaration itself:
 
-> **Scope note.** The v1 signing payload binds the single primary parent only; `parent.merge_parents` entries (§4 field table) are covered by **neither** the signature **nor** the pack content hash (`signatures.yaml` is excluded from hashing, §3). Merge-parent entries are therefore **unauthenticated lineage hints**: an attacker can add, remove, or alter them in a signed archive without invalidating anything. Verifiers MUST NOT treat merge-parent assertions as tamper-evident; only the referenced archives' own contents can be verified, never the assertion that they are parents of this pack. A future payload revision may extend coverage.
+```text
+{seal_version}\n{algorithm}\n{pack_hash}\n{pack_id or empty}\n{sealed_at}\n{sealed_by}\n{parent.version or empty}\n{parent.pack_hash or empty}\n
+```
+
+In both, absent fields are the empty string, and all fields use their literal `signatures.yaml` values — no normalization or transformation.
+
+**The version declaration is itself a signed field, and MUST be.** A verifier selects the payload from `seal_version`, so a marker held outside the signature would be a downgrade rather than a protection: an attacker strips it from a v2 seal, the verifier falls back to v1, the v1 payload does not cover `pack_id`, and the seal verifies — while carrying a claim of being fixed. Because the declaration is signed, stripping it yields a v1 payload that cannot match a v2 signature, and adding it to a v1 seal yields a v2 payload that cannot match a v1 signature. Neither direction forges; both fail closed. Verifiers MUST refuse a seal declaring a `seal_version` they do not implement, and MUST NOT fall back to a payload version the seal did not declare.
+
+Producers SHOULD emit v2. Verifiers MUST accept both.
+
+> **Scope note — what a v1 seal does and does not attest.** `signatures.yaml` is excluded from the pack content hash (§3), so any field inside it that the payload does not name is covered by **neither** the signature **nor** the hash. Under v1 that includes **`pack_id`**: an attacker can add, change, or remove a pack's identity inside a signed archive without invalidating anything, undetectably. Since identity is what groups a pack's revisions into a family, a v1 pack can be made to claim another pack's identity and enter its lineage — so **verification of a v1 seal is not verification of the identity it carries**, and consumers MUST treat a v1 `pack_id` as transport metadata rather than as a signed assertion. v2 closes this for seals minted under it; **v1 seals remain identity-rewritable by construction, permanently**, because they were signed over a payload that never covered the field. Existing packs are repaired only by being re-sealed at v2.
+>
+> `parent.merge_parents` entries (§4 field table) are outside **both** payload versions for the same reason and remain **unauthenticated lineage hints** under v1 and v2 alike: an attacker can add, remove, or alter them in a signed archive without invalidating anything. Verifiers MUST NOT treat merge-parent assertions as tamper-evident; only the referenced archives' own contents can be verified, never the assertion that they are parents of this pack. A future payload revision may extend coverage.
 
 **Signing procedure:**
 
@@ -493,7 +511,7 @@ The integrity chain (hash verification) is valuable without signing. Signing add
 
 ### Why does the signature bind metadata, not just the pack hash?
 
-`signatures.yaml` is excluded from the content hash to avoid circular dependency. But without binding, the metadata fields (`sealed_at`, `sealed_by`, the primary `parent` fields) could be rewritten without breaking verification — defeating the purpose of the integrity chain. The signing payload (§4.2) binds these fields so that any modification invalidates the signature (`parent.merge_parents` excepted — see the §4.2 scope note).
+`signatures.yaml` is excluded from the content hash to avoid circular dependency. But without binding, the metadata fields (`sealed_at`, `sealed_by`, the primary `parent` fields) could be rewritten without breaking verification — defeating the purpose of the integrity chain. The signing payload (§4.2) binds these fields so that any modification invalidates the signature. Exactly which fields are bound depends on the payload version: v2 additionally binds `pack_id`, which v1 left rewritable; `parent.merge_parents` is bound by neither. See the §4.2 scope note for what a v1 seal does and does not attest.
 
 ---
 
