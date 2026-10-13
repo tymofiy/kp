@@ -345,7 +345,9 @@
         "properties": {
           "reference": {
             "type": "string",
-            "description": "Pack name of a member item. The member remains held by its collection; a selection asserts no membership."
+            "description": "Pack name of a member item. The member remains held by its collection; a selection asserts no membership.",
+            "minLength": 1,
+            "pattern": "\\S"
           },
           "focus_claims": {
             "type": "array",

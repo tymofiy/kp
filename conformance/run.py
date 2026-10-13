@@ -11,8 +11,8 @@ regular-expression patterns, which are deliberately more permissive at
 the line level. With --strict, each pack's claims.md is additionally
 parsed through the PEG grammar itself (via parsimonious), so syntax the
 regex layer tolerates but the grammar rejects is reported. Composition
-packs are exempt from the PEG parse: their claims.md is narrative by
-design (SPEC.md §2, COMPOSITION.md). Manifest/composition/signature schema
+narrative is exempt from whole-document parsing, but embedded claims
+use the Claim subrule (CORE §3, COMPOSITION.md). Manifest/composition/signature schema
 validation and implemented semantic
 constraints are enforced in both modes. Definition/policy document schemas
 and cross-pack target resolution are outside this runner. See
@@ -37,9 +37,9 @@ import yaml
 import jsonschema
 
 try:
-    from .evidence import parse_evidence
+    from .evidence import EVIDENCE_FIELDS, parse_evidence
 except ImportError:  # direct script invocation
-    from evidence import parse_evidence
+    from evidence import EVIDENCE_FIELDS, parse_evidence
 
 
 # ── Formatting ─────────────────────────────────────────────────────
@@ -440,6 +440,8 @@ def validate_pack(pack_dir: Path, strict: bool = False, warnings: list[str] | No
                     errs.append(Err("evidence", f"{record.id} missing {field}"))
             for field in record.duplicates:
                 errs.append(Err("evidence", f"{record.id} duplicate field {field}"))
+            for field in sorted(record.fields.keys() - EVIDENCE_FIELDS):
+                errs.append(Err("evidence", f"{record.id} unregistered field {field}"))
             captured = record.fields.get("captured")
             if captured and not FORMAT_CHECKER.conforms(captured, "date"):
                 errs.append(Err("evidence", f"{record.id} invalid captured date {captured!r}"))
@@ -651,21 +653,21 @@ def validate_pack(pack_dir: Path, strict: bool = False, warnings: list[str] | No
     # ── Strict: claims.md must match the normative PEG grammar ──
     # Appended last so the regex/semantic layer's first error (which the
     # invalid-fixture expectations key on) is unaffected. Composition
-    # packs are exempt: their claims.md is narrative by design.
+    # narrative is exempt; its embedded claims use the Claim subrule below.
     if strict and claims_path.is_file() and not is_composition:
         serr = strict_check(text)
         if serr:
             errs.append(serr)
 
-    if strict and history_path.is_file():
+    if strict and (history_path.is_file() or is_composition):
         from parsimonious.exceptions import ParseError
         for blk in blocks:
-            if blk["document"] != "history.md":
+            if blk["document"] != "history.md" and not is_composition:
                 continue
             try:
                 strict_grammar()["Claim"].parse(blk["raw"])
             except ParseError:
-                errs.append(Err("strict", f"history.md claim {blk['raw_id']} does not match Claim grammar"))
+                errs.append(Err("strict", f"{blk['document']} claim {blk['raw_id']} does not match Claim grammar"))
 
     return errs
 

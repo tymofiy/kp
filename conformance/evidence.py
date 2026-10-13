@@ -15,6 +15,11 @@ HEADING = re.compile(r"^## (E[0-9]+)(?:(?: ?— ?| ?-- ?)([^\r\n]+))?[ \t]*$")
 H2 = re.compile(r"^##(?:[ \t]|$)")
 QUOTE_FIELD = re.compile(r"^\*\*([^:*]+):\*\*\s*(.*)$")
 LIST_FIELD = re.compile(r"^- ([A-Za-z][A-Za-z0-9-]*):\s*(.*)$")
+# CORE §10 / EvidenceFieldName in the normative PEG, normalized per AR-07.
+EVIDENCE_FIELDS = frozenset({
+    "type", "source", "captured", "prepared", "sha-256", "notes",
+    "reliability", "credibility", "kp-content-encoding",
+})
 
 
 def needs_escape(line: str) -> bool:
@@ -97,8 +102,9 @@ def parse_evidence(text: str) -> list[EvidenceRecord]:
             continue
         fields = []
         if metadata:
-            if line.startswith("> "):
-                matches = [QUOTE_FIELD.fullmatch(part.strip()) for part in line[2:].split("|")]
+            if line.startswith(">"):
+                quoted = line[1:].removeprefix(" ")
+                matches = [QUOTE_FIELD.fullmatch(part.strip()) for part in quoted.split("|")]
                 if matches and all(matches):
                     fields = [(m[1], m[2]) for m in matches]
             else:

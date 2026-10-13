@@ -117,6 +117,36 @@ class ContractTests(unittest.TestCase):
         # A stray escape not emitted by this encoding remains unchanged.
         self.assertEqual(transform_body('\\ordinary\n', decode=True), '\\ordinary\n')
 
+    def test_evidence_blockquote_optional_space(self):
+        path = self.pack / 'evidence.md'
+        original = path.read_text()
+        for prefix in ('>', '> '):
+            with self.subTest(prefix=prefix):
+                text = original.replace('> ', prefix)
+                path.write_text(text)
+                self.assertEqual(self.categories(strict=False), [])
+                self.assertEqual(self.categories(), [])
+                compiled = compiler_evidence('draft', text, default_tier='client',
+                                             default_sensitivity='public', default_visibility='public',
+                                             default_boundary_explicit=False)
+                self.assertEqual(compiled[0].source_uri, parse_evidence(original)[0].fields['source'])
+
+    def test_unregistered_evidence_metadata_and_quoted_body(self):
+        path = self.pack / 'evidence.md'
+        for unknown in ('> **reliabilty:** A', '- Reliabilty: A'):
+            with self.subTest(unknown=unknown):
+                metadata = ('## E001\n- Type: note\n- Captured: 2026-04-04\n'
+                            '- Source: Original note\n')
+                path.write_text(metadata + unknown + '\n\nQuoted text.\n')
+                for strict in (False, True):
+                    errors = run.validate_pack(self.pack, strict=strict)
+                    self.assertTrue(any(e.cat == 'evidence' and 'unregistered field reliabilty' in e.msg
+                                        for e in errors), errors)
+                # Field-shaped quotations after the separator are retained source text.
+                path.write_text(metadata + '\n' + unknown + '\n')
+                self.assertEqual(self.categories(), [])
+                self.assertEqual(parse_evidence(path.read_text())[0].logical_body, unknown + '\n')
+
     def test_segmentation_then_decode_and_source_quote(self):
         logical = '## E099\n- [E099] source bullet\n> **source:** part of excerpt\n' + MARKER + '\n'
         encoded = transform_body(logical)
@@ -170,6 +200,26 @@ class ContractTests(unittest.TestCase):
         evidence = (self.pack / 'evidence.md').read_text()
         (self.pack / 'evidence.md').write_text(evidence + '\n' + evidence[evidence.index('## E001'):].replace('E001', 'E002'))
         self.assertEqual(self.categories(), [])
+
+    def test_composition_embedded_claim_syntax(self):
+        minimal = self.pack / 'claims.md'
+        text = minimal.read_text()
+        claim = text[text.index('- [C001]'):]
+        evidence = (self.pack / 'evidence.md').read_text()
+        shutil.rmtree(self.pack)
+        shutil.copytree(ROOT / 'conformance/fixtures/valid/composition.kpack', self.pack)
+        self.assertEqual(self.categories(), [])
+        path = self.pack / 'claims.md'
+        narrative = path.read_text()
+        (self.pack / 'evidence.md').write_text(evidence)
+        path.write_text(narrative + '\n' + claim + '\nFurther composition narrative.\n')
+        self.assertEqual(self.categories(), [])
+        path.write_text(path.read_text().replace('} Single', '}Single'))
+        self.assertEqual(self.categories(strict=False), [])
+        self.assertIn('strict', self.categories())
+        # The narrative exemption also leaves semantic obligations in place.
+        path.write_text(narrative + '\n' + claim.replace('E001|', 'E099|'))
+        self.assertIn('SC-03', self.categories())
 
     def test_literal_site_claim_excerpt(self):
         from html.parser import HTMLParser
@@ -241,6 +291,17 @@ class ContractTests(unittest.TestCase):
                 jsonschema.validate(altered, schema)
         # An explicitly scoped empty selection is a useful no-matches result.
         jsonschema.validate({**selection, 'members': []}, schema)
+
+    def test_selection_member_reference_is_nonempty(self):
+        import json
+        import jsonschema
+        import yaml
+        selection = run._stringify_dates(yaml.safe_load((ROOT / 'conformance/fixtures/valid/selection.kpack/composition.yaml').read_text()))
+        schema = json.loads((ROOT / 'conformance/grammar/kp-composition.schema.json').read_text())
+        for reference in ('', '   ', '\t\n'):
+            with self.subTest(reference=reference), self.assertRaises(jsonschema.ValidationError):
+                jsonschema.validate({**selection, 'members': [{'reference': reference}]}, schema)
+        jsonschema.validate({**selection, 'members': [{'reference': 'member-pack'}]}, schema)
 
     def test_missing_declared_fixture_fails_suite(self):
         with patch.object(run, 'VALID_ORDER', ['absent.kpack']), patch.object(run, 'INVALID_ORDER', []), \

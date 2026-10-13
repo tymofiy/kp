@@ -256,4 +256,4 @@ during drafting, switching to strict for publishing.
 
 ## Reference coverage
 
-The reference CLI modes differ by PEG execution, not by the normative warning policy described above. See [COMPATIBILITY.md](../../spec/COMPATIBILITY.md) for exact supported surfaces and limits. Historical bullets use the Claim subrule; verbose metadata cardinality is a semantic check (required fields exactly once, optional fields at most once).
+The reference CLI modes differ by PEG execution, not by the normative warning policy described above. See [COMPATIBILITY.md](../../spec/COMPATIBILITY.md) for exact supported surfaces and limits. Historical bullets and claim bullets embedded in composition narrative use the Claim subrule; verbose metadata cardinality is a semantic check (required fields exactly once, optional fields at most once).
