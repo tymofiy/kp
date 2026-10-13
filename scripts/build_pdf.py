@@ -80,12 +80,13 @@ def main() -> None:
     work.mkdir(parents=True, exist_ok=True)
     output = args.output or ROOT / 'docs' / f'kp-{version}.pdf'
     output.parent.mkdir(parents=True, exist_ok=True)
+    hard_break = '  '
     front = f'''# {title}
 
-**{author}**  
-ORCID: {cff['authors'][0]['orcid']}  
-**{version} · Released Editor's Draft · {released}**  
-Version DOI: https://doi.org/{doi}  
+**{author}**{hard_break}
+ORCID: {cff['authors'][0]['orcid']}{hard_break}
+**{version} · Released Editor's Draft · {released}**{hard_break}
+Version DOI: https://doi.org/{doi}{hard_break}
 Concept DOI: https://doi.org/10.5281/zenodo.19445262
 
 ## Abstract

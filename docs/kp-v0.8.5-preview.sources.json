@@ -33,7 +33,7 @@
     "conformance/grammar/kp-composition.schema.json": "51a1273a2023f914f188b599f4130005d0ee9143cb2c307a2f409b9a8da55e1f",
     "conformance/grammar/kp-signatures.schema.json": "c28048033a84ce6ae91a63c65ed33bc76c0ded478f2db7dbf5651e81dc5433c6",
     "CITATION.cff": "97c746c9e8c0610e3c8c31da60780d48053ff1936c4059dbcab21f4956cec602",
-    "scripts/build_pdf.py": "2e4f1e6b23d93b6c4259ba11823ea576ea05908412b41dd60b00abc6f4157d12",
+    "scripts/build_pdf.py": "d23c89de085f613f17ce4d82769c95bedccc19e080201d5ab8f71d1e7d8fb06f",
     "scripts/pdf/layout.typ": "5d082e66b8eafbfa3ec0c7ef1c7e759fd207a9160539561b584af7b171103f2f"
   },
   "tools": {
