@@ -38,7 +38,7 @@ fi
 COMMIT_MSG="$(cat "$COMMIT_MSG_FILE")"
 
 # Skip merge commits and fixup/squash commits
-if echo "$COMMIT_MSG" | grep -qE "^(Merge|fixup!|squash!|amend!)"; then
+if grep -qE "^(Merge|fixup!|squash!|amend!)" <<< "$COMMIT_MSG"; then
     exit 0
 fi
 
@@ -50,9 +50,9 @@ fi
 # Pattern: type(scope): subject OR type: subject
 PATTERN="^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert|config|scripts|security)(\([a-z0-9_-]+\))?!?: .{1,100}$"
 
-FIRST_LINE="$(echo "$COMMIT_MSG" | head -n 1)"
+FIRST_LINE="${COMMIT_MSG%%$'\n'*}"
 
-if ! echo "$FIRST_LINE" | grep -qE "$PATTERN"; then
+if ! grep -qE "$PATTERN" <<< "$FIRST_LINE"; then
     echo ""
     echo -e "${BOLD}${RED}Invalid Commit Message${NC}"
     echo ""

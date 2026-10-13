@@ -38,13 +38,13 @@ confidence: simple | normalized
 ## The Attribution Dispute
 
 - [C006] Vendor V's attribution treats the work as a lifetime cast by Sculptor Y, on the strength of the 1971 catalog entry and the family provenance chain.
-  {0.91|r|E001,E002|2026-04-22|investigated} Restating the consignor's position; not the house's read.
+  {0.91|r|E001,E002|2026-04-22|investigated} Restating the consignor's position; not the house's adopted assessment. This source account remains part of the record even though the house reaches a different cast-period conclusion at C007.
 
 - [C007] The house's specialist concludes that the work is a posthumous cast, executed by Foundry F between 1925 and approximately 1940, after a Sculptor Y model.
-  {0.84|i|E004,E005,E006|2026-05-03|investigated|judgment} The foundry-mark evidence is dispositive on the cast-period question; the 1925-1940 narrowing is the specialist's judgment based on E006's mark-variant catalog. ⊗!C006
+  {0.84|i|E004,E005,E006|2026-05-03|investigated|judgment} The house adopts this assessment from the foundry-mark evidence; the 1925-1940 narrowing is the specialist's judgment based on E006's mark-variant catalog. It disagrees with the underlying lifetime-cast attribution, not with the fact that Vendor V holds the position reported in C006. ↔C006
 
-- [C008] The 1971 auction catalog described the work as "by Sculptor Y" without distinguishing lifetime from posthumous casts; this attribution conflates two materially different categories under contemporary art-market conventions.
-  {0.83|i|E002|2026-05-09|investigated|judgment} The 1971 catalog is genuine and accurate to its time; conventions for distinguishing lifetime from posthumous casts strengthened in the 1980s. The pre-convention catalog is not wrong but does not establish what Vendor V claims it establishes. →C007
+- [C008] The 1971 auction catalog described the work as "by Sculptor Y" without distinguishing lifetime from posthumous casts; its wording does not establish the cast period.
+  {0.83|i|E002|2026-05-09|investigated|judgment} The house's assessment of the catalog's scope. The genuine catalog remains evidence of its historical attribution; the cast-period assessment requires the examination and foundry-mark evidence. ↔C006, ↔C007
 
 ## Market Context
 
@@ -63,13 +63,13 @@ confidence: simple | normalized
 ## Reputational and Operational Risk
 
 - [C013] Listing the work as "by Sculptor Y" without distinguishing the cast period would expose the house to reputational and potential legal risk if a buyer subsequently discovered the foundry-mark evidence.
-  {0.88|i|E005,E006,E007|2026-05-09|investigated|judgment} The risk is not theoretical: comparable mis-cataloguing has been the subject of post-sale rescission claims and downward revaluations in the field. Confidence is high but not 0.95 because the specific magnitude of legal exposure depends on jurisdiction and contract terms not fully analyzed in this pack.
+  {0.88|i|E005,E006,E007|2026-05-09|investigated|judgment} An assessment in this illustrative scenario, grounded in the attribution discrepancy and the market-category difference. The nature and extent of potential legal exposure depend on jurisdiction and contract terms not fully analyzed in this pack.
 
-- [C014] Listing the work as "after Sculptor Y, posthumous cast" would resolve the risk but would conflict with the consignor's attribution and likely lead to consignment withdrawal.
-  {0.83|i|E001|2026-05-09|investigated|judgment} A reading of the consignor's likely response based on the reserve calibration (C012).
+- [C014] Listing the work as "after Sculptor Y, posthumous cast" would address the attribution discrepancy but would conflict with the consignor's position and likely lead to consignment withdrawal.
+  {0.83|i|E001|2026-05-09|investigated|judgment} A reading of the consignor's likely response based on the reserve calibration (C012); revised attribution does not establish that every risk in C013 has been resolved.
 
-- [C015] Reattributing the work in catalog text without consignor agreement would breach the consignment agreement.
-  {0.95|r|E008|2026-05-09|investigated} The standard consignment agreement reserves attribution-text rights to the house but requires consignor sign-off on attribution-language changes.
+- [C015] The house's standard consignment agreement requires consignor sign-off on attribution-language changes.
+  {0.95|r|E008|2026-05-09|investigated} Restating the recorded clause, which reserves attribution-text rights to the house while requiring sign-off. This is a source account, not an independent legal conclusion about breach or remedies.
 
 ## Decision
 

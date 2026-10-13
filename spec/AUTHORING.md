@@ -159,23 +159,27 @@ When two claims are in conflict, which kind of conflict is this?
 
 Two sources disagree about a market size: $2B vs $3B.
 
-**Case 1 — `⊗!`** Source A is from 2020 using definition X. Source B is from 2025 using the same definition X. The market grew. A is now wrong (out of date).
+**Case 1 — `⊗!`** Both assertions concern the same 2025 market and definition. Source A used an incorrect unit conversion; E002 documents the inputs and correction, and the pack recomputes the result using the corrected conversion. The old world assertion is wrong, even though the claim “Source A printed $2B” would remain true.
 
 ```text
-[C001] Global widget market is approximately $2B (2020 figure) {0.85|r|E001|2020-12-31|investigated}
-[C002] Global widget market is approximately $3B {0.85|r|E002|2025-12-31|investigated} ⊗!C001
+- [C001] The 2025 global widget market is approximately $2B.
+  {0.85|r|E001|2025-12-31|investigated}
+- [C002] The 2025 global widget market is approximately $3B.
+  {0.93|c|E002|2026-01-15|investigated} Corrected conversion. ⊗!C001
 ```
 
-C001 is now wrong relative to C002. The `⊗!` preserves the audit trail without erasing the prior belief.
+Once the correction is adopted, C002 supersedes C001 and C001 moves to history with its original record. By contrast, “the market was $2B in 2020” and “it was $3B in 2025” do not contradict; both dated facts may stand. Neither a changed date nor a newer source alone proves an error.
 
-**Case 2 — `⊗~`** Source A measures B2B only ($2B). Source B measures B2B+B2C ($3B). Both are correct under their respective definitions; the methodological difference is itself knowledge.
+**Case 2 — `⊗~`** Two defensible models estimate the same 2025 market differently. Their assumptions remain unresolved and both estimates inform the decision.
 
 ```text
-[C001] B2B widget market is approximately $2B {0.85|r|E001|2025-12-31|investigated}
-[C002] B2B+B2C widget market is approximately $3B {0.85|r|E002|2025-12-31|investigated} ⊗~C001
+- [C001] The 2025 global widget market is approximately $2B under the adoption-led model.
+  {0.75|i|E001|2025-12-31|investigated|judgment}
+- [C002] The 2025 global widget market is approximately $3B under the demand-led model.
+  {0.75|i|E002|2025-12-31|investigated|judgment} Competing estimate. ⊗~C001
 ```
 
-The `⊗~` records the productive tension. Both claims stay; a downstream analyst reading the pack learns about the methodology gap, not just the numbers.
+This is assessed tension between estimates of one target, not a declaration that both incompatible exact values are verified facts. B2B and B2B+B2C figures concern different populations and can coexist without a contradiction relation; preserve their definitions and use a cross-reference when helpful.
 
 **Case 3 — `⊗`** Two equally credible 2025 sources, same definition, no obvious methodology difference, both well-researched.
 
@@ -187,7 +191,7 @@ The `⊗~` records the productive tension. Both claims stay; a downstream analys
 Bare `⊗` says "they conflict and I haven't resolved it yet." This should be a *transitional* state. Either:
 
 - Investigate further and upgrade to `⊗!` (with one claim moved to history.md) or `⊗~` (with both kept).
-- If after exhaustive investigation you still cannot resolve, that itself is `⊗~` — the persistence of disagreement under investigation is informative.
+- If after exhaustive investigation you still cannot resolve, keep the uncertainty explicit. Use `⊗~` only if you have assessed both sides as informative; unresolved disagreement alone does not prove productive tension.
 
 ### Anti-pattern: defaulting to `⊗~` for everything
 
@@ -195,7 +199,7 @@ LLMs trained with RLHF tend to default to `⊗~` for any contradiction because i
 
 This **degrades the format**. The `⊗!` qualifier exists precisely to record that one belief was wrong. If you've investigated and one side is wrong, mark it `⊗!` even though it requires asserting the wrongness. Preserving false-then-corrected beliefs is the audit trail; that is the format's value proposition.
 
-A useful self-check: in a sealed pack with N contradictions, what fraction are `⊗!`? If the answer is zero, you are probably defaulting to `⊗~` to avoid commitment.
+A useful self-check: in a sealed pack with N contradictions, what fraction are `⊗!`? The count is a review prompt, not a target ratio: zero established errors can be the honest result. Inspect the propositions and evidence before changing qualifiers.
 
 ### Anti-pattern: hostile-reading "Agreeable Pack"
 
@@ -212,11 +216,11 @@ CORE.md §8 declares two scales:
 - **Sherman Kent**: Certain (0.99+), Almost certain (0.93), Highly likely (0.87), Likely (0.75), Probable (0.63), Even (0.37), Probably not (0.25), Unlikely (0.13), Highly unlikely (0.07), Almost certainly not (0.01), Impossible (<0.01).
 - **Simple**: Verified (0.90+), High (0.70), Moderate (0.50), Low (0.30), Unverified (<0.30).
 
-The bands give you *which range* a claim falls in. They do not tell you which value within the range to pick. This section does.
+The bands give a vocabulary for expressing confidence. The rubrics below guide a producer's assessment from its evidential basis; they are heuristics, not a demonstrated calibration procedure. Empirical calibration requires comparing assessed confidence with outcomes across relevant cases. A display label such as "Verified" does not certify that a verification procedure occurred.
 
 ### Within-band calibration
 
-Inside a Sherman Kent band, calibrate by **evidence depth and diversity**:
+Inside a Sherman Kent band, assess confidence using **evidence depth and diversity**, with the method and its limits explained:
 
 | Evidence profile | Position within band |
 |---|---|
@@ -225,17 +229,17 @@ Inside a Sherman Kent band, calibrate by **evidence depth and diversity**:
 | Three+ corroborating sources OR direct observation OR cross-method validation | High end |
 | Source quality concerns (anonymous, advocacy-shaped, undated) | Notch one band lower |
 
-Example: "Highly likely" band centers on 0.87.
+Example: the "Highly likely" band is 0.87–0.93; 0.87 is its lower boundary, not its center. Source independence and shared upstream material matter as much as citation count.
 
 ```text
-[C001] Acme Corp acquired Widget Inc in March 2025 {0.83|r|E001|2025-03-22}
-  Single Reuters article. Highly likely band; low end (0.83).
+[C001] Acme Corp acquired Widget Inc in March 2025 {0.87|r|E001|2025-03-22}
+  One credible report. Highly likely band; low end (0.87).
 
-[C002] Acme Corp acquired Widget Inc in March 2025 {0.87|r|E001,E002|2025-03-22}
-  Reuters + WSJ. Mid band (0.87).
+[C002] Acme Corp acquired Widget Inc in March 2025 {0.90|r|E001,E002|2025-03-22}
+  Two independently sourced reports. Mid band (0.90).
 
 [C003] Acme Corp acquired Widget Inc in March 2025 {0.91|r|E001,E002,E003|2025-03-22}
-  Reuters + WSJ + Acme's own press release. High end (0.91).
+  Independent reports plus the original transaction record. High band (0.91); three links alone would not justify an increase.
 ```
 
 ### When to use 0.99+
@@ -255,8 +259,8 @@ Reserve confidence ≥0.99 for **trivially-falsifiable claims** — assertions a
 
 ### Anti-patterns
 
-- **The `0.95` ceiling.** Many LLM-authored packs cluster every claim between 0.85 and 0.95 because those numbers "feel high." The actual distribution should reflect actual evidence — a meaningful pack will have claims at 0.40, 0.60, 0.80, 0.90, 0.99, with the value tied to the evidence profile.
-- **Round-number snap.** Confidence values like 0.85 / 0.90 / 0.95 dominate when authors snap to band centers. Aim for two-decimal precision (0.83, 0.87, 0.91) — it forces actual calibration.
+- **The `0.95` ceiling.** Assigning every claim a high value because it "feels high" hides differences in the evidence. Each value needs its own reasons; a broad spread of scores is not a goal in itself.
+- **Unsupported precision.** Choose a value on stated evidential grounds. Two decimal places can express distinctions an assessment method supports, but neither extra digits nor avoiding round numbers establishes calibration.
 - **The Confidence Hallucination.** Emitting 1.0 for every claim because it is "easy to write." Conformance passes; the calibration is meaningless. The schema accepts but the format is degraded.
 
 ---
@@ -300,7 +304,7 @@ Most packs in early drafts have many `assumed` claims. That is acceptable as lon
 
 ## 7. Supersede vs edit-in-place vs split
 
-When a claim needs to change after a pack version exists, you have three options. They are not interchangeable.
+When a claim needs to change after a pack version exists, distinguish a new assessment, a refinement, a split and a record revision. They are not interchangeable.
 
 ### Decision tree
 
@@ -308,6 +312,7 @@ When a claim needs to change after a pack version exists, you have three options
 2. **The new information REFINES the old (more specific, narrower scope, additional context, no truth-value change).** → keep both, link the new claim to the old with `~` (refines).
 3. **The old claim conflated two distinct assertions, and review now wants them separately addressable.** → split. The old claim is superseded (`⊘`) by two new claims, each with its own ID.
 4. **The old claim has a typographical or formatting error and the meaning is unchanged.** → edit in place — but **only if the pack has not been sealed**. Once a `signatures.yaml` has been issued for a version, edit-in-place is forbidden; use `⊘` even for typos so the trail is preserved.
+5. **An issued claim's context or outgoing relations need a semantic revision.** → preferably record the changed interpretation as a separately identified assessment referencing the original. If the claim record itself must be replaced, issue a successor with `⊘` and retain the complete predecessor, including its original relations, in `history.md`. Explain what changed. Replacing a support assessment does not mean that the underlying historical observation became false; do not add `⊗!` unless there is an actual error.
 
 ### Worked examples
 
@@ -338,8 +343,8 @@ C001 stays; C002 refines the date and price without contradicting the broader fa
 [C001-v1] Acme Q3 2025 revenue was $4.7B and operating margin was 18% {0.85|r|E001|2025-03-15}
 
 # New (in claims.md)
-[C001a] Acme Q3 2025 revenue was $4.7B {0.91|r|E007|2026-05-09|investigated} ⊘C001-v1
-[C001b] Acme Q3 2025 operating margin was 18% {0.91|r|E007|2026-05-09|investigated} ⊘C001-v1
+[C002] Acme Q3 2025 revenue was $4.7B {0.91|r|E007|2026-05-09|investigated} ⊘C001-v1
+[C003] Acme Q3 2025 operating margin was 18% {0.91|r|E007|2026-05-09|investigated} ⊘C001-v1
 ```
 
 Both new claims supersede C001-v1; each is independently falsifiable.
@@ -429,7 +434,9 @@ An agent that turns every sentence of a source document into an isolated `o` cla
    "Three claims (C001, C002, C003) together suggest the market is poised for consolidation, with Acme as a likely acquirer."
    ```
 
-3. **Process metadata belongs in evidence or out of the pack entirely.** Notes like *"During our Q1 review meeting we decided…"* are session prose, not knowledge. Either they support a claim (then they are evidence, attributed to that meeting as the source) or they have no place in the pack.
+3. **Keep process context when it affects meaning.** A decision made at a meeting, a participant's role or the method used for an observation can be part of the knowledge. State the attributed account or decision as a claim when it matters; retain the fuller narrative in evidence. Omit incidental workflow chatter only when doing so leaves the attribution, scope, interpretation and reasons for change intact. Views retain those necessary qualifications.
+
+4. **Scope absence findings to what was checked.** “No matching entry in the six databases searched on this date” is a search result. It does not establish that no claim exists anywhere. Distinguish no match found, sources not searched and questions still unknown in assertion/context prose and the supporting search record. No extra metadata vocabulary is required.
 
 ### Anti-pattern: view laundering
 
@@ -451,7 +458,7 @@ Before you seal a pack version (issue a `signatures.yaml`, distribute, or stop a
 
 ### Confidence distribution
 
-- Is your confidence histogram diverse, or does it cluster at 0.85–0.95? Cluster suggests model self-rating, not calibration.
+- Can you explain each confidence value from its evidence and assessment method? Neither a clustered nor a diverse histogram establishes calibration by itself.
 - Have you used confidence ≥0.99 only for trivially-falsifiable claims?
 - Have you used confidence ≤0.5 for any claim that is genuinely speculative?
 
@@ -483,7 +490,7 @@ These are the "look-fine but degraded" patterns to actively avoid:
 
 1. **The Agreeable Pack.** Many `⊗~`, zero `⊗!`, zero `⊘`. → You defaulted to non-commitment. Re-triage.
 2. **Atomic Dust.** Hundreds of tiny `o` claims with no relations and no `c` / `i` claims building on them. → No reasoning structure; the pack is data, not knowledge.
-3. **Confidence Hallucination.** Every claim at 0.95 or 1.0. → Self-rating, not calibration. Re-distribute against actual evidence depth.
+3. **Confidence Hallucination.** Every claim at 0.95 or 1.0 without supporting reasons. → Reassess each claim against its evidence and the method's limits; do not manufacture a diverse distribution.
 4. **View Laundering.** A polished `views/overview.md` that contains assertions absent from `claims.md`. → The view is making up knowledge. Move assertions to claims or remove from view.
 5. **Self-Referential Evidence.** A claim cites `E001`; the `E001` entry's `source` field is "see C001" (the same claim). → Circular justification with no external grounding. The evidence-claim chain must terminate at something outside the pack (a document, a measurement, an interview, a database snapshot). If the source field can only be filled by pointing back at a claim ID, the claim has no real evidence and should either be marked `nature: judgment` or removed. Note: as of v0.8.4-preview, this pattern is editorial-only — the runner does not detect circular evidence; AUTHORING.md flags it.
 6. **Future-Date Confidence Inflation.** A claim with `nature: prediction` and `since:` set to a future date carries confidence 0.99+ — the runner now rejects this via SC-12 (predictions MUST have confidence ≤ 0.95). The pattern existed in v0.7 and was caught only editorially; v0.8.0-preview makes it a normative semantic constraint. If you genuinely believe a future-state claim at 0.99+, you are either wrong about confidence or wrong about it being a prediction.
@@ -529,12 +536,12 @@ Note the result:
 
 - Five `r` claims, one `i` would have been wrong here (we are reporting, not reasoning).
 - Two `c` claims for arithmetic operations.
-- Confidence values span 0.55 to 0.91, calibrated to evidence quality and claim nature.
+- Confidence values span 0.55 to 0.91, assessed with reasons tied to evidence quality and claim nature.
 - One `prediction`, one `judgment`, six factual defaults.
 - C003 and C007 are computed and tied to their inputs by evidence ID.
 - No contradictions in this pack — both sources agree on the underlying numbers.
 
-A pack like this is what the rubrics aim to produce. It is testably grounded, calibrated, and routes information correctly between claims and evidence.
+A pack like this is what the rubrics aim to produce: an inspectable account with evidential reasons and appropriate routing between claims and evidence. Its confidence values remain assessments; the example does not demonstrate empirical calibration.
 
 ---
 

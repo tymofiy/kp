@@ -1,45 +1,29 @@
 <!-- SPDX-License-Identifier: CC-BY-4.0 -->
 <!-- SPDX-FileCopyrightText: 2026 Timothy Kompanchenko -->
 
-> *An AI knows only what we tell it.*  
-> *KP:1 is for telling it whole.*  
-> — KP:1
-
 # KP:1 -- Knowledge Pack Format
 
 [![CI](https://github.com/tymofiy/kp/actions/workflows/ci.yml/badge.svg)](https://github.com/tymofiy/kp/actions/workflows/ci.yml) [![Spec license: CC BY 4.0](https://img.shields.io/badge/spec-CC_BY_4.0-blue)](LICENSE) [![Code license: Apache 2.0](https://img.shields.io/badge/code-Apache_2.0-blue)](LICENSE-CODE) [![Latest tag](https://img.shields.io/github/v/tag/tymofiy/kp?label=tag)](https://github.com/tymofiy/kp/tags)
 
-> KP:1 is a format that doesn't flatten knowledge. Uncertainties stay uncertain,
-> contradictions stay in tension, and the trace of how beliefs evolved is kept
-> as structure. AI-first, human-accessible.
+> KP:1 is an AI-first, plain-text format for keeping knowledge with its context,
+> relationships, uncertainty and history. It gives people and AI a lasting record
+> they can reason with and continue using across tasks and tools.
 
 **Editor:** Timothy Kompanchenko
-**Status:** Editor's Draft — `KP:1 Public Draft — 2026-06` (`v0.8.4-preview`)
+**Status:** Editor's Draft — unreleased updates
+**Draft updated:** 2026-10-12
+**Latest citable release:** `KP:1 Public Draft — 2026-06` (`v0.8.4-preview`)
 **Cite:** [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.19445262.svg)](https://doi.org/10.5281/zenodo.19445262) (concept DOI — always resolves to latest version)
 **See also:** [`spec/CORE.md`](spec/CORE.md), [`spec/SPEC.md`](spec/SPEC.md), [`spec/AUTHORING.md`](spec/AUTHORING.md), [`AGENTS.md`](AGENTS.md) (AI-first routing), [`GOVERNANCE.md`](GOVERNANCE.md), [`CONTRIBUTING.md`](CONTRIBUTING.md)
 
 ## What is KP:1?
 
-> *Man sieht nur, was man weiß. / We see only what we know.*  
-> — Goethe
->
-> *You see that the sun rises and sets and therefore you think you know. You don't.*  
-> *You only know when you can answer the question: How or what for?*  
-> — Barenboim
+Knowledge includes more than settled facts. It includes explanations and connections, different perspectives, what sources say, what is disputed or missing, and why an assessment changed. An artwork's ownership history, for example, can include documented events, gaps and conflicting accounts. Removing those details changes what another person or AI can understand from the record.
 
-Think about what anyone actually knows about a real artwork: contradictory
-accounts of provenance, overlapping stories that reinforce each other, uncertain
-events, details that mattered ten years ago and matter less now. A lot of it
-is unfinished, probabilistic information. The value of the knowledge comes from
-that texture — the uncertainty, the tension, the trace of how beliefs evolved.
-Flatten it — average it out into a list of settled facts — and you've destroyed
-what made it knowledge.
+KP:1 is designed to keep that richness available for reasoning. A Knowledge Pack can carry an articulated understanding of a subject: assertions and explanations, their support and relationships, perspectives, uncertainty and changes. Another person or AI can examine the recorded reasons, challenge an assessment and continue the inquiry. The record is expressed in ordinary text files; companion formats can also carry definitions and policies. This continuity is the aim of the system, while authors and applications remain responsible for the quality of the account and its use.
 
-That's the difference between knowledge and data. Data answers yes or no.
-Knowledge has the shape of belief — its uncertainties, its tensions, its
-history. **KP:1 is a format that keeps the shape.**
+A short summary and a structured claim excerpt:
 
-The same knowledge, flattened and kept:
 
 ```text
 Prose: "Solar costs are probably still falling, though some analysts disagree."
@@ -49,46 +33,32 @@ KP:1:
   {0.85|i|E001,E002|2026-06-10|investigated|judgment} ⊗~C003
 ```
 
-The prose flattens confidence, evidence, recency, and a live disagreement
-into hedge-words. The claim keeps each one addressable: held at 0.85, on two
-cited pieces of evidence, dated, investigated but not exhaustively, a
-judgment — and in productive tension (`⊗~`) with a competing claim.
+The excerpt makes the confidence, evidence references, date, investigation depth, judgment and competing claim separately addressable. The supporting records supply their meaning; a confidence number alone does not prove the assertion. This is an excerpt, not a complete pack.
 
-**Built AI-first.** Every AI reading knowledge from prose today hits the
-same problem: amnesia. Between sessions, between context windows, between tools,
-the model loses the thread and has to reconstruct from prose what's being
-asserted, how certain each point is, where the contradictions are, which
-beliefs superseded which. That reconstruction is lossy, expensive in context
-window, and unreliable. KP:1 is designed to fix that. It's a structured
-format for AI to read, reason over, and carry forward between sessions —
-handing the model what's believed, how strongly, on what evidence, in tension
-with what, and how those beliefs evolved. No guessing. No re-derivation.
-No reconstruction from prose.
+**Built AI-first.** An AI system can read a pack, select relevant context for a task, examine the support and relationships, and add findings or corrections. Software must provide those operations; the format supplies a common record for them. Retaining the richer record can reduce repeated explanation and avoid asking a model to guess details that a summary removed. A focused view can help with a limited context window while keeping a route back to the full record.
 
-**Human-accessible.** A knowledge pack is a directory of Markdown and YAML
-files. Humans read it, print it, edit it, and work with it using ordinary text
-tools. But the primary consumer is AI — the structure exists to let AI reason
-without reconstructing from scratch. This is the same wave as
-`llms.txt` and `AGENTS.md` — formats built for AI to read directly —
-applied to knowledge itself.
+**Lasting knowledge.** Work can continue across conversations, people and tools when its relevant context and changes remain available. A pack is designed to provide that continuity. It is not a model's internal memory, and it does not require one particular AI provider or a central registry.
 
-### When to reach for it — and when not
+**Human-accessible.** A pack is a directory of Markdown and YAML files. People can read and edit those files with ordinary text tools. Readable views can present selected material for a particular audience while the canonical files retain the underlying record.
 
-**Use KP:1 when** beliefs need to survive transport: an AI or a human team
-carrying claims forward — with their uncertainty, contradictions, evidence
-trail, and supersession history intact — across sessions, tools, and time.
+### When to reach for it
 
-**Don't use KP:1 when** you need search or live retrieval over a large corpus
-(that is a RAG pipeline's job), a queryable graph database, or a free-form
-notes app. KP:1 is the packaging for authored, curated knowledge; it
-complements those systems rather than replacing them.
+**Use KP:1 when** people and AI need to carry knowledge across tasks, tools
+and time, keeping its context, uncertainty, different accounts, supporting
+sources and history available for reasoning.
+
+**Retrieval and applications work with that record.** Search systems, graph
+databases and retrieval-augmented generation can help select relevant
+material from packs. They should retain the route to the underlying record.
+The format defines what is kept and how it is represented; application
+software supplies retrieval, reasoning and workflow operations.
 
 ## Quick Start
 
 Read **[spec/CORE.md](spec/CORE.md)** -- the implementable Core specification.
 It covers pack structure, manifest schema, claim syntax, evidence, confidence,
-relations, and validation rules. Everything you need to build a conformant
-parser.
+relations, and validation rules. Start here for the generic claim-bearing directory surface; read the relevant
+companions for additional kinds, composition, locales and archives.
 
 A claim in KP:1 looks like this:
 
@@ -116,7 +86,7 @@ or scaffold the same starter with fresh dates in one step:
 | Directory | Purpose |
 |-----------|---------|
 | `spec/` | Normative specification -- [CORE.md](spec/CORE.md), [SPEC.md](spec/SPEC.md), and companion documents |
-| `conformance/` | PEG grammar, JSON Schema, and 18 test fixtures |
+| `conformance/` | PEG grammar, JSON Schema, and 24 test fixtures |
 | `examples/` | Five `.kpack` reference examples (validated by the conformance suite), including the `hello-world` starter |
 | `positioning/` | Public-facing positioning and design rationale |
 | `research/` | Benchmark design and prior art analysis |
@@ -153,11 +123,10 @@ Five Knowledge Packs demonstrate the format:
 
 - **[Art Acquisition Decision](examples/art-acquisition-decision.kpack/)** --
   A buyer-side decision-support pack for an anonymized mid-twentieth-century
-  European painting. Demonstrates the full repertoire of contradiction
-  qualifiers (`⊗`, `⊗!`, `⊗~`), supersession (`⊘`), all four claim types,
-  multiple confidence calibrations, judgment / prediction / meta natures,
+  European painting. Demonstrates an identified error (`⊗!`), supersession (`⊘`), all four claim types,
+  multiple confidence assessments, judgment / prediction / meta natures,
   and audience-specific views (buyer, counsel, voice briefing). The pack
-  walks the rubrics from [`spec/AUTHORING.md`](spec/AUTHORING.md) end-to-end
+  illustrates the rubrics from [`spec/AUTHORING.md`](spec/AUTHORING.md)
   on a realistic decision-support scenario.
 
 - **[Auction House Consignment Review](examples/auction-house-consignment-review.kpack/)**
@@ -178,25 +147,20 @@ The [conformance suite](conformance/) provides formal validation tools:
   definition of claims.md syntax
 - **JSON Schema** (`conformance/grammar/kp-pack.schema.json`) -- validation
   schema for PACK.yaml manifests
-- **18 test fixtures** -- 6 valid packs that must be accepted, 12 invalid packs
+- **24 test fixtures** -- 10 valid packs that must be accepted, 14 invalid packs
   that must be rejected with specific errors
 - **5 complete example packs** -- the kpacks in `examples/` are validated by
   the runner as part of the suite, so the live examples are themselves
   conformance tests
 
-The runner (`conformance/run.py`) reports **23/23 passed** on a conformant
-implementation: 18 fixture tests + 5 example validations. A conformant
-implementation parses all valid fixtures, rejects all invalid ones, validates
-PACK.yaml against the schema (including its `format` assertions), validates
-`signatures.yaml` and `composition.yaml` against their schemas when present,
-and enforces semantic constraints SC-01 through SC-12.
+The reference suite has **29 fixture/example cases**: 24 fixture checks and 5 example validations. A pass demonstrates those cases; it is not certification of an implementation's complete conformance. Additional contract tests exercise evidence round-trip, historical references, authoring diagnostics and selection constraints. See the [capability and compatibility guide](spec/COMPATIBILITY.md) for implemented surfaces and known limits.
 
 Run from a fresh checkout:
 
 ```bash
 python3 -m venv .venv && source .venv/bin/activate  # if your Python is externally managed (PEP 668)
 pip install -r requirements.txt
-python3 conformance/run.py                       # full suite (23/23 expected)
+python3 conformance/run.py                       # full suite (29/29 expected)
 python3 conformance/run.py --strict              # also parse claims.md through the PEG grammar
 python3 conformance/run.py --pack path/to/x.kpack  # validate a single pack
 ```
@@ -218,7 +182,7 @@ format's genuinely novel contributions.
 
 ## Status
 
-KP:1 is published as `KP:1 Public Draft — 2026-06` (current git tag `v0.8.4-preview`, with the v0.7.x preview series and the iterative v0.8.x preview line documented in [`spec/CHANGELOG.md`](spec/CHANGELOG.md)). It has a formal grammar, a JSON Schema, a conformance suite with 18 test fixtures plus 5 reference examples (23/23 validated).
+KP:1 is published as `KP:1 Public Draft — 2026-06` (current git tag `v0.8.4-preview`, with the v0.7.x preview series and the iterative v0.8.x preview line documented in [`spec/CHANGELOG.md`](spec/CHANGELOG.md)). The unreleased editor's draft adds the changes listed in [the changelog](spec/CHANGELOG.md). Its grammar, schemas and reference checks remain preview work; the released snapshot and the moving draft are distinct. See [compatibility](spec/COMPATIBILITY.md).
 
 This is an **editor's draft** maintained by a single editor in a public repository. The specification is **not final** and may change in any way at any time, including breaking changes. It is **not yet ratified** by any standards body. Compatibility commitments will arrive only with a non-draft version. See [`GOVERNANCE.md`](GOVERNANCE.md) for the full governance picture, including how decisions are made during the preview phase and what changes when the Knowledge Pack Foundation is incorporated.
 

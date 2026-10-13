@@ -14,7 +14,7 @@ help:
 	@echo "KP:1 conformance targets"
 	@echo ""
 	@echo "  make install        Install Python dependencies"
-	@echo "  make conformance    Run the full conformance suite (expects 23/23)"
+	@echo "  make conformance    Run the full conformance suite (expects 29/29)"
 	@echo "  make compiler-test  Run the experimental graph compiler unit tests"
 	@echo "  make pack PACK=path Validate a single pack at PATH"
 	@echo "  make lint           Same as conformance (alias)"

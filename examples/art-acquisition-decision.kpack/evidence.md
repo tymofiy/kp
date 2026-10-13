@@ -39,7 +39,7 @@ consistent with Artist X's documented method for the 1960-1965 period.
 > **source:** Compiled provenance documentation (Gallery K + buyer's diligence)
 
 Compiled documentation of the ownership chain. Records continuous
-ownership 1962 to present (post-gap chain). The 1953-1962 period is
+ownership 1970 to present (post-gap chain). The 1962-1970 period is
 unrecorded in any source consulted.
 
 ## E006
@@ -57,8 +57,8 @@ raisonné dating of the work under review).
 
 Single-appraiser valuation of the work at 1,400,000 euro, prepared
 under the (since-withdrawn) 1957 dating. Methodology and comparable
-set are documented in the appraisal report. This appraisal has been
-superseded by E008.
+set are documented in the appraisal report. The current review prefers
+the newer appraisal at E008 without erasing this dated report.
 
 ## E008
 > **type:** appraisal | **captured:** 2025-12-15
@@ -66,8 +66,8 @@ superseded by E008.
 
 Single-appraiser valuation of the work at 950,000 euro, prepared under
 the catalog-raisonné 1962 dating, using a refreshed comparable set
-that excludes lots dated 1955-1959. The 2025 appraisal supersedes the
-2023 appraisal of record.
+that excludes lots dated 1955-1959. Both appraisal reports remain in
+the record; C025 explains the current review's preference.
 
 ## E009
 > **type:** correspondence | **captured:** 2025-11-20

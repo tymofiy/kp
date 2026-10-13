@@ -6,8 +6,8 @@ description: >
   Demonstration pack — a buyer-side decision-support pack for the acquisition
   of a mid-twentieth-century European painting. Fully anonymized: gallery,
   artist, work, prices, and parties are illustrative. Demonstrates the four
-  claim types (o/r/c/i), all three contradiction qualifiers (⊗, ⊗!, ⊗~),
-  supersession via ⊘, multiple confidence calibrations, judgment and
+  claim types (o/r/c/i), the identified-error qualifier (⊗!),
+  supersession via ⊘, multiple confidence assessments, judgment and
   prediction natures, and the role of audience-specific views (buyer,
   counsel, voice briefing).
 

@@ -7,7 +7,7 @@
 
 ## Recommendation
 
-**Conditional acquisition.** The supporting evidence (technical examination, comparable sales, current appraisal) is strong; one material risk (a 1953–1962 provenance gap) bounds the recommendation. Acquisition should proceed only after supplementary provenance research targeting that period, with a contractual right to withdraw if a prior good-faith holder is identified.
+**Conditional acquisition.** The supporting evidence (technical examination, comparable sales, current appraisal) is strong; one material risk (a 1962–1970 provenance gap) bounds the recommendation. Acquisition should proceed only after supplementary provenance research targeting that period, with a contractual right to withdraw if a prior good-faith holder is identified.
 
 ## What is established
 
@@ -16,15 +16,15 @@
 - The work is dated 1962 by the catalog raisonné. An earlier specialist's 1957 dating has been formally withdrawn.
 - The work is not listed in any consulted loss registry or claim database as of 2026-05-09.
 
-## What is in tension
+## What remains qualified
 
-- The post-1962 provenance is well-documented; the 1953–1962 period has no record. The gap is itself a documented finding (the absence has been searched exhaustively), not an oversight.
-- The 2023 appraisal of €1,400,000 is superseded by the 2025 appraisal of €950,000. The earlier appraisal used the now-withdrawn 1957 dating and a comparable set partly invalidated by subsequent reattributions in the field.
+- The post-1970 provenance is well-documented; the 1962–1970 period has no record. The gap is itself a documented finding (the absence has been searched exhaustively), not an oversight.
+- The current review prefers the 2025 appraisal of €950,000 while retaining the 2023 appraisal of €1,400,000 as a dated report. The earlier appraisal used the now-withdrawn 1957 dating and a comparable set partly invalidated by subsequent reattributions in the field.
 
 ## What follows from the recommendation
 
-- **Before close of escrow:** complete supplementary provenance research for the 1953–1962 period (targeted archival searches, named-holder hypotheses, and re-screening against any registries not consulted in the initial diligence).
+- **Before close of escrow:** complete supplementary provenance research for the 1962–1970 period (targeted archival searches, named-holder hypotheses, and re-screening against any registries not consulted in the initial diligence).
 - **Contractual:** retain a right of withdrawal if a prior good-faith holder is identified.
-- **If the research concludes without finding a prior holder:** the residual risk falls within the buyer's stated tolerance (€950,000 is bounded by the comparable range; the post-1962 chain is clean; the loss-registry screen is current).
+- **If the research concludes without finding a prior holder:** the residual risk falls within the buyer's stated tolerance (€950,000 is bounded by the comparable range; the post-1970 chain is clean; the loss-registry screen is current).
 
-<!-- source: C001, C003, C005, C007, C008, C009, C012, C014, C015, C019, C020, C021 -->
+<!-- source: C024, C025, C001, C003, C005, C007, C008, C009, C012, C014, C015, C019, C020, C021 -->

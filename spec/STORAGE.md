@@ -74,6 +74,26 @@ interface KPackJSON {
 - **Properties:** Machine-queryable, structured, parseable without markdown parsing. Loses some human readability but gains structured access.
 - **Conversion:** Deterministic bidirectional conversion between file and JSON forms. Round-trip fidelity is required — `file → JSON → file` must produce semantically identical output.
 
+> **Note — semantic fidelity and sealed packs.** Semantic round-trip fidelity is the right
+> requirement for operational storage, but it is weaker than what a seal requires. The content hash
+> in [ARCHIVE.md §3](ARCHIVE.md) is computed over each file's **raw bytes**, so a `file → JSON →
+> file` round trip that is semantically identical while differing in any byte — key order, numeric
+> formatting, quoting style, whitespace, or line endings — produces a different pack hash and
+> invalidates an existing `signatures.yaml`.
+>
+> The two requirements do not conflict; they apply to different situations. For packs that are not
+> sealed, semantic fidelity is sufficient. **For any pack whose files are covered by a content
+> hash, a round trip that is intended to preserve the seal must be byte-stable, not merely
+> semantically equivalent.** Implementations have two ways to satisfy this:
+>
+> 1. **Preserve the original bytes** of hash-covered files across the round trip, treating the JSON
+>    form as a derived index rather than a source of truth for those files, in keeping with the
+>    pack-as-master principle of §2.
+> 2. **Re-seal after conversion**, accepting that the pack hash changes and that any prior signature
+>    no longer applies.
+>
+> Integers in declared units can reduce numeric precision ambiguity, but equal numeric values do not imply equal serialized bytes: quoting, key order, whitespace and line endings still matter. JSON consumers may also impose integer range/precision limits; [RFC 8259 §6](https://www.rfc-editor.org/rfc/rfc8259#section-6) identifies the interoperable binary64 integer range. Declare units and supported precision in the relevant profile, preserve original bytes for existing seals, and test conversions rather than inferring byte stability from an integer representation.
+
 ### 3.3 Compact Serialization (Ephemeral)
 
 A minimal representation for space-constrained contexts (Redis capsules, context window injection, transfer).

@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: Apache-2.0
 # SPDX-FileCopyrightText: 2026 Timothy Kompanchenko
-"""Current-belief view — a deterministic action view over supersession.
+"""Current-belief view — deterministic presentation over supersession.
 
 Profile extension contributed by Bernard, the first commercial implementer
 (see GOVERNANCE.md; the spec's own stance on commercial actors applies —
@@ -11,13 +11,14 @@ P4: resolution is context-dependent), and the compiler's status column
 already separates active from superseded claims. What neither defines is a
 single deterministic answer to "what replaced this claim?" when
 supersession fans in — two active claims both superseding one predecessor —
-or "which arm currently leads?" on a live ``⊗~`` tension. Agents that must
-act need one answer; this module derives it. The pack record — both arms,
+or "which arm is displayed first?" on a live ``⊗~`` tension. This module
+derives a stable presentation preference, not an adopted assessment or
+authority to act. The pack record — both arms,
 full history, every tension — remains authoritative and untouched: the view
 is derived output, rebuildable from the record at any time, and no
 previously shipped surface (statuses, relations, hashes, orderings) moves.
 
-Normative semantics, for any implementation reproducing this view:
+Compiler-local semantics for implementations reproducing this derived view:
 
 * **The current set** is exactly the claims whose status is in the
   implementation's current-status set (kp_core: ``{"active"}``). The view
@@ -54,8 +55,10 @@ Normative semantics, for any implementation reproducing this view:
     status column does not already disclose.
 
 * **The contention rows**: a ``contradicts:tension`` edge between two
-  current claims in the same pack yields a lean — the ladder's pick — so a
-  render layer can say "both stand; currently leaning …". A tension with an
+  current claims in the same pack yields a lean — the ladder's display pick.
+  It does not record an adopted belief or resolve the tension. Consumers
+  retain the alternatives and apply an explicit application policy when a
+  task requires a decision. A tension with an
   inactive arm is dormant: no row. Cross-pack tensions are surfaced WITHOUT
   a lean (surface, never merge). ``contradicts`` and ``contradicts:error``
   between current claims are surfaced as unresolved contradictions with no
@@ -73,11 +76,11 @@ Normative semantics, for any implementation reproducing this view:
      ``explicit_user > observed > inference > third_party``;
   2. recency — ``since``, newer wins (ISO-8601 strings compare
      chronologically; a missing ``since`` orders oldest);
-  3. evidence strength — count of evidence references, more wins;
-  4. claim uid, ascending — smallest wins. Final ties break toward the
-     ESTABLISHED claim (local ids are authorship-ordered by convention):
-     a new claim can never steal a total tie by id assignment; it must win
-     on a real rung.
+  3. evidence-reference count — more references ranks first for presentation;
+     this does not establish independent sources or evidentiary strength;
+  4. claim uid, ascending — deterministic final presentation tie-break.
+     KP IDs are not an authorship chronology and this choice establishes
+     neither truth nor the oldest belief. The full contender set survives.
 
   Scope deliberately does not rank mid-ladder: "more specific wins in its
   scope" binds at read time, where a query context exists to match. What a
@@ -171,7 +174,7 @@ def _ladder_pick(
         dates = [claims_by_uid[uid].since or "" for uid in standing]
         best = max(dates)
         standing = [uid for uid, date in zip(standing, dates) if date == best]
-    # Rung 3 — evidence strength (reference count; weights do not exist in
+    # Rung 3 — evidence-reference count (weights do not exist in
     # kp_core, and SC-03 makes references resolvable on conformant packs).
     if len(standing) > 1:
         counts = [len(claims_by_uid[uid].evidence_ids) for uid in standing]

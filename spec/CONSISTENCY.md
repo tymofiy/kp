@@ -31,7 +31,7 @@ As the number of knowledge packs grows, the same entities appear across multiple
 | **Orphan pack** | Pack not referenced by any other pack or KNOWLEDGE.yaml | Disconnected pack with no inbound links | Low |
 | **Duplicate claims** | Same fact in two packs with different confidence | Both market pack and deployment pack claim team size | Medium |
 | **Evidence link rot** | Evidence references a URL or document that no longer exists | Source URL returns 404 | Medium |
-| **Provenance contamination** | Process language in claims or views — tool names, meeting names, person requests as justification | Claims.md says "crystallized during the March 24 session" | Medium |
+| **Unexplained process references** | Incidental process narration or a request/tool name used as sufficient justification for a conclusion | A claim cites a meeting without explaining its relevant account or decision | Medium |
 | **Canonical duplication** | Same concept independently defined in multiple packs without cross-reference | Six-layer stack fully restated in pitch pack instead of referencing hub pack | High |
 
 ---
@@ -170,15 +170,15 @@ Suppressions expire. Knowledge changes; a suppression valid today may mask a rea
 
 Run before committing any pack. Six checks, in order:
 
-1. **Knowledge-process separation** ([RATIONALE.md §1, Principle 24](RATIONALE.md)). Remove all names of people, meetings, tools, sessions, and dates from every claim's context prose. If the epistemic content is intact, the claim is clean. If removing a name destroys the meaning, the claim is about process, not knowledge.
+1. **Preserve meaningful context** ([RATIONALE.md §1, Principle 24](RATIONALE.md)). Keep names, roles, dates, methods and decision context when they affect a claim's attribution, scope, interpretation or reasons for change. Remove incidental process narration only when those distinctions remain intact. Fuller source narratives belong in evidence; their necessary qualifications also belong with the claim.
 
-2. **No process language in views** ([RATIONALE.md §1, Principle 24](RATIONALE.md)). Views describe what something IS. Grep for: "redesign", "pivot", "shifted from", "session", tool names. Zero hits required.
+2. **Preserve qualifications in views** ([RATIONALE.md §1, Principle 24](RATIONALE.md)). A view may explain who said something, under which conditions, or why an assessment changed. Check that these details are supported by the record. Process-language matches are prompts for editorial review, not reasons for automatic deletion or conformance failure.
 
 3. **Canonical ownership** ([RATIONALE.md §1, Principle 18](RATIONALE.md)). Every concept is defined in exactly one pack. If a claim restates content from another pack, it must carry an explicit derivation marker ("Pitch rendering. Canonical: pack#claim") and a `see_also` link to the canonical home.
 
 4. **Meeting/pitch composition.** Meeting and pitch pack claims contain only meeting- or pitch-specific context. Standing knowledge (product architecture, competitive positioning, technical details) is cross-referenced to standing packs, not independently defined.
 
-5. **Display block stranger test** ([RATIONALE.md §3 "The Stranger Test"](RATIONALE.md)). Can someone who has never heard of this product understand the tagline and hook in one reading? No insider jargon, no acronyms requiring context, no process language, no version numbers.
+5. **Display block stranger test** ([RATIONALE.md §3 "The Stranger Test"](RATIONALE.md)). Can someone who has never heard of this product understand the tagline and hook in one reading? Explain necessary terms and keep the context needed to understand the subject. Omit incidental workflow details from short introductions without removing meaningful attribution or temporal scope.
 
 6. **Hub routing, not restating.** Hub pack overview claims summarize and route to detail packs via `see_also` links. If a hub claim contains >3 sentences of detail about a concept that lives in a detail sub-pack, move the detail down.
 
@@ -186,11 +186,11 @@ Run before committing any pack. Six checks, in order:
 
 ## 8. Pattern Definitions for Automated Checks
 
-Grep-able patterns for the `provenance-contamination` and `canonical-duplication` patrol checks.
+Review patterns for the planned `provenance-contamination` and `canonical-duplication` patrol checks. Matches identify material to inspect; they do not establish a defect or authorize removing context.
 
-### 8.1 Provenance Contamination
+### 8.1 Process Reference Review
 
-**Scope:** `claims.md` context prose (text inside curly braces after metadata, and any following prose) and `views/*.md` content. Evidence files (`evidence.md`) are **exempt** — process provenance belongs there. Meeting pack claims about the meeting itself (who said what, what was decided) are **exempt**.
+**Scope:** `claims.md` context prose after the metadata block and `views/*.md` content. A name, date, method, event or tool can be material knowledge in any pack. Review whether the reference explains attribution, scope, a method, a decision or a change; preserve it when it does. Fuller process narratives may remain in `evidence.md` with a reference from the claim. No blanket exemption or prohibition is needed for meeting claims.
 
 #### In claims.md context prose
 

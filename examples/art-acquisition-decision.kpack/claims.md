@@ -42,33 +42,30 @@ confidence: simple | normalized
   {0.93|r|E003|2020-04-30|exhaustive} The catalog raisonné is
   field-authoritative; its dating reflects multi-year scholarly consensus.
   Confidence is at the high end of the corroborated-multi-source band.
-  As written, this claim is *reported source content* (what the catalog
-  says) — not a judgment. The downstream judgment that the catalog's
-  dating should be preferred over E002's 1957 dating is captured by the
-  ⊗! relation (C005 is correct, C004 is the prior wrong dating).
-  ⊗!C004
+  This records what the catalog says. C004 and C005 can both be true source reports; the separate adopted dating is C024.
+  ↔C004
 
 - [C006] The auction-house specialist accepts the catalog dating as authoritative and withdrew the 1957 attribution in November 2025.
   {0.95|r|E009|2025-11-20|investigated} Email correspondence from the
   specialist to the prior owner; archived as part of the transaction file.
-  →C005
+  →C024
 
 ## Provenance
 
-- [C007] Provenance is documented continuously from 1962 to the present consignor (Gallery K's vendor).
-  {0.87|r|E005|2026-05-09|investigated} The 1962-onwards chain is recorded
+- [C007] Provenance is documented continuously from 1970 to the present consignor (Gallery K's vendor).
+  {0.87|r|E005|2026-05-09|investigated} The 1970-onwards chain is recorded
   in the catalog raisonné and corroborated by the gallery's own ownership
   records.
 
-- [C008] There is a gap in the documented provenance from 1953 to 1962, with no party identified as having owned or held the work during that period.
+- [C008] There is a gap in the documented provenance from 1962 to 1970, with no party identified as having owned or held the work during that period.
   {0.91|r|E005|2026-05-09|exhaustive} Exhaustive search of the catalog
   raisonné, two relevant national art-loss registries, and one specialized
   archive returned no record. The gap is itself a documented finding.
-  ⊗~C007
+  ↔C007
 
-- [C009] The work has not been the subject of any restitution claim or recovery filing as of 2026-05-09.
-  {0.91|r|E010|2026-05-09|investigated} Confirmed against the major loss
-  registries and the publicly searchable claim databases.
+- [C009] The 2026-05-09 search found no matching entry for the work in the six consulted loss registries and claim databases.
+  {0.91|r|E010|2026-05-09|investigated} This is the recorded search result,
+  not a conclusion about unsearched sources or unrecorded claims.
 
 ## Comparables and Pricing
 
@@ -87,20 +84,20 @@ confidence: simple | normalized
 
 - [C013] An independent appraisal commissioned by the prior owner in 2023 valued the work at 1,400,000 euro.
   {0.85|r|E007|2023-09-12|investigated} The 2023 appraisal predates the
-  dating revision (C005) and used a comparable set that has since been
+  adopted dating revision (C024) and used a comparable set that has since been
   partly invalidated by subsequent reattributions in the field.
 
 - [C014] An updated appraisal commissioned by Gallery K in 2025 valued the work at 950,000 euro, matching the current asking price.
   {0.91|r|E008|2025-12-15|investigated} The 2025 appraisal incorporates the
   dating revision and a refreshed comparable set.
-  ⊘C013
+  Both dated appraisal reports remain accurate historical statements. ↔C013
 
 ## Technical Examination
 
 - [C015] X-ray fluorescence of the surface layer is consistent with Artist X's documented palette for the 1960-1965 period.
   {0.87|o|E004|2025-12-04|investigated} Direct laboratory observation;
   consistency assessed by reference to four documented works of the period.
-  →C005
+  →C024
 
 - [C016] Underdrawing visible in infrared imaging is consistent with the artist's known compositional method.
   {0.83|o|E004|2025-12-04|investigated} Single examination; conclusions
@@ -109,10 +106,10 @@ confidence: simple | normalized
 
 ## Risk Analysis
 
-- [C017] The 1953-1962 provenance gap creates a material risk that an earlier good-faith holder may emerge with a claim against the present ownership chain.
+- [C017] The 1962-1970 provenance gap creates a material risk that an earlier good-faith holder may emerge with a claim against the present ownership chain.
   {0.45|i|E005,E010|2026-05-09|investigated|judgment} A judgment, not a
   measurement; another reasonable analyst could place this risk lower
-  given the absence of any current claim. Confidence reflects genuine
+  given the no-match result in the six sources searched (C009). Confidence reflects genuine
   uncertainty.
 
 - [C018] Comparable mid-century works with documented 5-10 year provenance gaps have not historically been the subject of successful restitution claims when the post-gap chain is well-documented.
@@ -126,9 +123,9 @@ confidence: simple | normalized
   {0.78|i|E001,E004,E005,E006,E008,E010|2026-05-09|investigated|judgment}
   Synthesis of the supporting and risk claims. The recommendation is a
   judgment, not a fact; another buyer with different risk tolerance might
-  decline. ⊗~C017
+  decline. ←C017
 
-- [C020] Recommended condition: completion of supplementary provenance research targeting the 1953-1962 period before close of escrow, with a contractual right to withdraw if a prior good-faith holder is identified.
+- [C020] Recommended condition: completion of supplementary provenance research targeting the 1962-1970 period before close of escrow, with a contractual right to withdraw if a prior good-faith holder is identified.
   {0.91|i|E005|2026-05-09|investigated|meta} A condition on C019. Frames
   what "conditional" requires operationally. ~C019
 
@@ -138,8 +135,16 @@ confidence: simple | normalized
 
 ## Open Tensions
 
-- [C022] The dating revision (C005) reduces the comparable set's relevance for valuation by approximately one third, since lots dated 1955-1959 in Artist X's market are now distinct from lots dated 1960-1965.
-  {0.65|i|E006|2026-05-09|investigated|judgment} Judgment about market
+- [C022] Comparables dated 1955-1959 are a weaker basis for the present valuation than those dated 1960-1965 after the adopted dating revision (C024).
+  {0.65|i|E006,E007,E008|2026-05-09|investigated|judgment} Judgment about market
   segmentation. The 2025 appraisal (C014) accounts for this; the prior
-  appraisal (C013) does not, which is part of why C014 supersedes C013.
-  →C014, →C012
+  appraisal (C013) does not, which informs the current assessment at C025 without erasing either appraisal report.
+  →C025
+
+## Adopted Assessments
+
+- [C024] The work was made in 1962.
+  {0.93|i|E003,E009|2025-11-20|investigated|judgment} Adopted dating after the specialist withdrew the prior assessment. ⊘C023, ⊗!C023
+
+- [C025] The 2025 appraisal is a stronger basis for the present review than the 2023 appraisal.
+  {0.85|i|E007,E008|2026-05-09|investigated|judgment} The newer appraisal incorporates the dating revision and refreshed comparables; recency alone would not establish superiority.

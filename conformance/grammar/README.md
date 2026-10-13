@@ -20,7 +20,7 @@ This directory contains the normative grammar and schema for KP:1.
 The grammar is split into two layers:
 
 1. **Syntactic** (PEG) — can the document be parsed?
-2. **Semantic** (post-parse constraints SC-01 through SC-12) — is the parsed document valid?
+2. **Semantic** (post-parse constraints SC-01 through SC-13) — is the parsed document valid?
 
 This split is intentional. PEG grammars cannot express cross-reference checks,
 range constraints on parsed values, or acyclicity. Those are listed as semantic
@@ -148,7 +148,7 @@ This matches standard Markdown list continuation. Implementations MUST accept
 **Resolution:** **Gaps are permitted.** IDs need not be sequential. Section-
 aligned numbering (C001-C009 for section 1, C010-C019 for section 2) is a
 recommended convention but not enforced. The only hard constraint is uniqueness
-within the document (SC-02).
+across active and historical claims within the pack (SC-02).
 
 ### AR-13: Mixed syntax within a single claim
 
@@ -211,17 +211,49 @@ its claims, mirroring the document-level description. Neither tolerance
 changes claim-level syntax: continuation lines still bind to their claim
 with 2+ space indentation (AR-11), and a blank line still ends a claim block.
 
+### AR-18: Single claim identity and closed metadata
+
+**Ambiguity:** Operational stores can carry opaque claim identifiers, and some
+producers previously attempted to serialize them as extra dense or verbose
+metadata fields.
+
+**Resolution:** The bracket ID is the claim's sole serialized identity. Dense
+and verbose metadata carry exactly the fields defined in CORE §6; readers reject
+non-empty undefined fields instead of silently dropping them. Storage-layer IDs
+remain outside the KP wire format.
+
+### AR-19: Record-shaped Markdown inside evidence bodies
+
+**Ambiguity:** An evidence excerpt may itself contain `## E001`, `## Claims`, or
+`- [E001]` source scaffolding. Without a declared boundary encoding, consumers
+can promote body content into sibling records and duplicate evidence identities.
+
+**Resolution:** KP:1 registers the exact blockquote marker
+`> **kp-content-encoding:** markdown-backslash-v1` and the reversible line
+escaping algorithm in CORE §10. Producers preserve indentation and prefix one
+backslash to record-shaped lines (including a bare `##`), marker-shaped lines,
+and existing leading backslashes. Consumers segment records before decoding.
+Any unescaped top-level H2 terminates the current record; only a conforming
+evidence-ID H2 begins another record. Unknown encoding values are preserved as
+raw body text and never guessed. The field name follows AR-07's case-insensitive
+reader rule; producers emit its canonical lowercase spelling, and the encoding
+value is case-sensitive.
+
 ## Conformance Levels
 
 **Strict** (MUST pass all):
 - Syntactic: document matches PEG grammar
-- Semantic: all SC-01 through SC-12 constraints pass
+- Semantic: all SC-01 through SC-13 constraints pass
 - Schema: PACK.yaml validates against JSON Schema
 
 **Permissive** (MUST pass syntactic, MAY warn on semantic):
 - Syntactic: document matches PEG grammar
-- Semantic: SC-01 through SC-06 are errors; SC-07 through SC-12 are warnings
+- Semantic: SC-01 through SC-06 and SC-13 are errors; SC-07 through SC-12 are warnings
 - Schema: PACK.yaml required fields validate; optional field types warn
 
 The distinction matters for tooling: an editor can operate in permissive mode
 during drafting, switching to strict for publishing.
+
+## Reference coverage
+
+The reference CLI modes differ by PEG execution, not by the normative warning policy described above. See [COMPATIBILITY.md](../../spec/COMPATIBILITY.md) for exact supported surfaces and limits. Historical bullets and claim bullets embedded in composition narrative use the Claim subrule; verbose metadata cardinality is a semantic check (required fields exactly once, optional fields at most once).

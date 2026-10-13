@@ -4,17 +4,30 @@
   "title": "KP:1 composition.yaml Schema",
   "description": "JSON Schema for the composition.yaml file in a KP:1 composite knowledge pack. Defines how composite packs reference standing packs rather than duplicating knowledge.",
   "type": "object",
-  "required": ["type", "pre_load"],
+  "required": [
+    "type",
+    "pre_load"
+  ],
   "additionalProperties": false,
   "properties": {
     "type": {
       "type": "string",
-      "enum": ["meeting-prep", "briefing", "research", "presentation"],
+      "enum": [
+        "meeting-prep",
+        "briefing",
+        "research",
+        "presentation",
+        "selection"
+      ],
       "description": "Composition type. Determines which type-specific fields are required."
     },
     "meeting": {
       "type": "object",
-      "required": ["date", "duration", "participants"],
+      "required": [
+        "date",
+        "duration",
+        "participants"
+      ],
       "additionalProperties": false,
       "properties": {
         "date": {
@@ -29,7 +42,9 @@
         },
         "participants": {
           "type": "array",
-          "items": { "type": "string" },
+          "items": {
+            "type": "string"
+          },
           "minItems": 1,
           "description": "People in the meeting."
         },
@@ -48,7 +63,9 @@
       "type": "array",
       "items": {
         "type": "object",
-        "required": ["topic"],
+        "required": [
+          "topic"
+        ],
         "additionalProperties": false,
         "properties": {
           "topic": {
@@ -69,7 +86,9 @@
           },
           "talking_points": {
             "type": "array",
-            "items": { "type": "string" },
+            "items": {
+              "type": "string"
+            },
             "description": "Key points to cover under this topic."
           }
         }
@@ -78,7 +97,11 @@
     },
     "briefing": {
       "type": "object",
-      "required": ["recipient", "purpose", "date"],
+      "required": [
+        "recipient",
+        "purpose",
+        "date"
+      ],
       "additionalProperties": false,
       "properties": {
         "recipient": {
@@ -96,7 +119,11 @@
         },
         "format": {
           "type": "string",
-          "enum": ["voice", "document", "presentation"],
+          "enum": [
+            "voice",
+            "document",
+            "presentation"
+          ],
           "description": "Intended delivery surface."
         },
         "duration": {
@@ -111,7 +138,9 @@
       "type": "array",
       "items": {
         "type": "object",
-        "required": ["heading"],
+        "required": [
+          "heading"
+        ],
         "additionalProperties": false,
         "properties": {
           "heading": {
@@ -140,7 +169,10 @@
     },
     "research": {
       "type": "object",
-      "required": ["question", "date"],
+      "required": [
+        "question",
+        "date"
+      ],
       "additionalProperties": false,
       "properties": {
         "question": {
@@ -158,7 +190,11 @@
         },
         "depth": {
           "type": "string",
-          "enum": ["quick", "thorough", "exhaustive"],
+          "enum": [
+            "quick",
+            "thorough",
+            "exhaustive"
+          ],
           "description": "Level of analysis expected."
         }
       },
@@ -168,7 +204,9 @@
       "type": "array",
       "items": {
         "type": "object",
-        "required": ["pack"],
+        "required": [
+          "pack"
+        ],
         "additionalProperties": false,
         "properties": {
           "pack": {
@@ -193,7 +231,10 @@
     },
     "presentation": {
       "type": "object",
-      "required": ["title", "date"],
+      "required": [
+        "title",
+        "date"
+      ],
       "additionalProperties": false,
       "properties": {
         "title": {
@@ -225,7 +266,9 @@
       "type": "array",
       "items": {
         "type": "object",
-        "required": ["title"],
+        "required": [
+          "title"
+        ],
         "additionalProperties": false,
         "properties": {
           "title": {
@@ -252,6 +295,76 @@
       },
       "description": "Ordered slide definitions. Required when type is presentation."
     },
+    "selection": {
+      "type": "object",
+      "required": [
+        "purpose",
+        "collection",
+        "scope"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "purpose": {
+          "type": "string",
+          "description": "Why this selection exists. Examples: exhibition, loan, insurance schedule, valuation.",
+          "minLength": 1,
+          "pattern": "\\S"
+        },
+        "collection": {
+          "type": "string",
+          "description": "Name of the single collection the members are drawn from.",
+          "minLength": 1,
+          "pattern": "\\S"
+        },
+        "scope": {
+          "type": "string",
+          "description": "What the selection covers, and by implication what it excludes.",
+          "minLength": 1,
+          "pattern": "\\S"
+        },
+        "prepared_for": {
+          "type": "string",
+          "description": "Party the selection was prepared for, when there is one."
+        },
+        "date": {
+          "type": "string",
+          "format": "date",
+          "description": "Date the selection was prepared. ISO 8601 date."
+        }
+      },
+      "description": "Selection metadata. Required when type is selection."
+    },
+    "members": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "reference"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "reference": {
+            "type": "string",
+            "description": "Pack name of a member item. The member remains held by its collection; a selection asserts no membership.",
+            "minLength": 1,
+            "pattern": "\\S"
+          },
+          "focus_claims": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^C[0-9]+(-v[0-9]+)?$"
+            },
+            "description": "Specific claim IDs relevant to this selection."
+          },
+          "note": {
+            "type": "string",
+            "description": "Why this member is in the selection, when that is not obvious."
+          }
+        }
+      },
+      "description": "Members of the selection. Required when type is selection."
+    },
     "pre_load": {
       "type": "array",
       "items": {
@@ -270,38 +383,92 @@
   "allOf": [
     {
       "if": {
-        "required": ["type"],
-        "properties": { "type": { "const": "meeting-prep" } }
+        "required": [
+          "type"
+        ],
+        "properties": {
+          "type": {
+            "const": "meeting-prep"
+          }
+        }
       },
       "then": {
-        "required": ["meeting", "agenda"]
+        "required": [
+          "meeting",
+          "agenda"
+        ]
       }
     },
     {
       "if": {
-        "required": ["type"],
-        "properties": { "type": { "const": "briefing" } }
+        "required": [
+          "type"
+        ],
+        "properties": {
+          "type": {
+            "const": "briefing"
+          }
+        }
       },
       "then": {
-        "required": ["briefing", "sections"]
+        "required": [
+          "briefing",
+          "sections"
+        ]
       }
     },
     {
       "if": {
-        "required": ["type"],
-        "properties": { "type": { "const": "research" } }
+        "required": [
+          "type"
+        ],
+        "properties": {
+          "type": {
+            "const": "research"
+          }
+        }
       },
       "then": {
-        "required": ["research", "sources"]
+        "required": [
+          "research",
+          "sources"
+        ]
       }
     },
     {
       "if": {
-        "required": ["type"],
-        "properties": { "type": { "const": "presentation" } }
+        "required": [
+          "type"
+        ],
+        "properties": {
+          "type": {
+            "const": "presentation"
+          }
+        }
       },
       "then": {
-        "required": ["presentation", "slides"]
+        "required": [
+          "presentation",
+          "slides"
+        ]
+      }
+    },
+    {
+      "if": {
+        "required": [
+          "type"
+        ],
+        "properties": {
+          "type": {
+            "const": "selection"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "selection",
+          "members"
+        ]
       }
     }
   ]

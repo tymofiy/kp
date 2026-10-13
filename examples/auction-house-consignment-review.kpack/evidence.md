@@ -10,7 +10,7 @@ The cover letter, the draft consignment agreement, and a set of high-resolution 
 > **type:** auction_catalog | **captured:** 2026-04-22
 > **source:** 1971 estate-sale auction catalog (photocopy provided by Vendor V; corroborated against the auction house's archive)
 
-The 1971 catalog page that lists the work and attributes it "by Sculptor Y." The catalog itself is genuine; its attribution reflects 1971 conventions and does not distinguish lifetime from posthumous casts.
+The genuine 1971 catalog page lists the work and attributes it "by Sculptor Y." Its text does not distinguish lifetime from posthumous casts. The house's assessment of that wording's limits is recorded at C008; the catalog is retained as a historical source account.
 
 ## E003
 > **type:** specialist_examination | **captured:** 2026-05-02

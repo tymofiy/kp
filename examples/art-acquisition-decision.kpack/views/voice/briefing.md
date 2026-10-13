@@ -3,7 +3,7 @@
 <!-- pace: measured -->
 <!-- register: curatorial -->
 <!-- generated: 2026-05-09 | claims: v2026.05.09 -->
-<!-- source: C001, C005, C008, C012, C014, C019, C020 -->
+<!-- source: C001, C024, C005, C006, C007, C008, C009, C010, C011, C012, C014, C025, C019, C020 -->
 
 Here is a briefing on the acquisition under review.
 
@@ -19,7 +19,7 @@ The dating has been revised. The earlier specialist's nineteen fifty-seven datin
 
 (pause)
 
-One material risk bounds the recommendation. The post-nineteen sixty-two provenance is well-documented. The nineteen fifty-three to nineteen sixty-two period has no record, and the gap has been searched exhaustively. The work is not currently listed in any loss registry, but the gap creates the possibility that an earlier good-faith holder may emerge.
+One material risk bounds the recommendation. The post-nineteen seventy provenance is well-documented. The nineteen sixty-two to nineteen seventy period has no record, and the gap has been searched exhaustively. The May ninth search found no matching entry in the six consulted loss registries and claim databases. It does not establish what unsearched sources might contain. The gap creates the possibility that an earlier good-faith holder may emerge.
 
 (pause)
 

@@ -6,7 +6,7 @@
 > **Date:** 2026-03-22
 > **Status:** Draft
 
-> **`kpack` CLI invocations in this document describe planned reference tooling.** Only `python3 conformance/run.py` ships today. See [SPEC.md §13](SPEC.md) and the contract-pointer stub at [`reference/kpack`](../reference/kpack) for status.
+> **`kpack` CLI invocations in this document describe planned reference tooling.** `python3 conformance/run.py`, `./reference/kpack lint` and `./reference/kpack new` ship today. See [SPEC.md §13](SPEC.md) and the reference launcher at [`reference/kpack`](../reference/kpack) for status.
 
 ---
 
@@ -20,9 +20,9 @@ This companion spec defines how Knowledge Packs support multiple languages. It c
 
 ## 2. Core Principles
 
-**P1. Claims are always English.** The reasoning surface (`claims.md`) is written in American English. It is never bilingual, never translated. Translations exist only at the view layer. *Exception:* see [§12 "Evidentiary multilingual exception"](#12-evidentiary-multilingual-exception-normative) for the single sanctioned audit-trail carrier when underlying evidence is inherently multilingual (e.g., field-collected witness statements in Russian or Ukrainian, foreign-language press, recorded interviews). The exception does not relax P1; it places original-language transcripts in `extensions.translations` as evidence-shaped, not claim-shaped.
+**P1. Claims are always English.** The reasoning surface (`claims.md`) is written in American English. It is never bilingual, never translated. Translations exist only at the view layer. *Exception:* see [§12 "Evidentiary multilingual exception"](#12-evidentiary-multilingual-exception-normative) for an optional structured audit-trail annotation when underlying evidence is inherently multilingual (e.g., field-collected witness statements in Russian or Ukrainian, foreign-language press, recorded interviews). This does not relax P1. Original evidence and attachments keep their language; `extensions.translations` may add structured annotations without making them canonical claims.
 
-**P2. Translations are derived views, never authoritative.** If a translated view disagrees with `claims.md`, claims win. Translations carry no independent authority — they are rendered presentations of the canonical knowledge, not alternative sources of truth.
+**P2. Translations are derived views, never authoritative.** If a translated view disagrees with the canonical primary files for the pack's kind, those files govern. Claim-bearing packs use `claims.md`; definition/policy packs use their companion documents. Translations carry no independent authority — they are rendered presentations of the canonical knowledge, not alternative sources of truth.
 
 **P3. Locale first, then surface.** Multilingual views are organized by locale, then by surface type. This makes locale the higher-order grouping, which is cleaner for discovery, grep, and deletion.
 
@@ -129,7 +129,7 @@ Translated views live in locale subdirectories under `views/`. The locale direct
 
 ### Layout Rules
 
-1. **Locale directory name** uses the short language code: `uk`, `de`, `fr`, `ja`, `ar` — not the full BCP 47 tag.
+1. **Locale directory name** SHOULD use the short language code when it uniquely identifies a declared locale. If two locales share that language (for example `pt-BR` and `pt-PT`), use their full BCP 47 tags. A reader resolves an exact declared-tag directory first, then a short-language directory only when the mapping is unambiguous; it must report ambiguity rather than silently choosing a sibling. The same mapping applies to declared view and voice paths.
 
 2. **Locale before surface type.** Ukrainian voice briefing is `views/uk/voice/briefing.md`, not `views/voice/uk/briefing.md`. Rationale: locale is the higher-order grouping. You can `rm -rf views/uk/` to remove all Ukrainian content. You can `ls views/uk/` to see everything available in Ukrainian.
 
@@ -137,7 +137,7 @@ Translated views live in locale subdirectories under `views/`. The locale direct
 
 4. **Selective translation.** Not every view needs to be translated. The `views` list in the `locales` section declares which views exist for each locale. Unlisted views are not available in that language.
 
-5. **No translated claims or evidence.** Only files under `views/` are translated. `claims.md`, `evidence.md`, `entities.md`, and `history.md` remain English-only.
+5. **Canonical assertions stay English.** Translated presentation lives under `views/`; active and historical claim assertions remain English. Original evidence excerpts and source artifacts retain their original language. See §12 for transcripts and audit fidelity.
 
 ---
 
@@ -190,7 +190,7 @@ Example: `claims@2026.03.22` means the translation was generated from the `2026.
 1. **Stale translation** = `derived_from` version does not match the current pack `version` in PACK.yaml.
 2. **Stale translations are warnings, not errors.** A translation may intentionally lag during active editing of claims.
 3. **Stale translations reset status to `draft`.** A previously `verified` translation becomes `draft` when claims change, because the content it was verified against no longer matches.
-4. **`kpack lint` reports stale translations.** It compares each locale's `derived_from` against the current pack version and emits a warning for mismatches.
+4. **Planned lint integration reports stale translations.** It would compare each locale’s `derived_from` against the current pack version and emit a warning for mismatches. The current reference `kpack lint` does not perform this check; translation freshness requires editorial checking (see [capability boundaries](COMPATIBILITY.md#capability-boundaries)).
 
 ---
 
@@ -257,7 +257,7 @@ my-project.kpack/
 
 ## 8. Lint Integration
 
-`kpack lint` includes the following multilingual checks:
+The following multilingual checks are planned for `kpack lint`. They are not implemented by the current reference validator; check these obligations manually when authoring or reviewing translations (see [capability boundaries](COMPATIBILITY.md#capability-boundaries)).
 
 | Check | Severity | Description |
 |-------|----------|-------------|
@@ -367,15 +367,17 @@ These are not specified in this version but inform the design:
 
 ## 12. Evidentiary multilingual exception (normative)
 
-Principle [P1](#2-core-principles) — *claims are always English* — is the default rule for KP:1 packs. There is one normative exception, codified here so it cannot be misread as a relaxation of P1.
+Principle [P1](#2-core-principles) — *claims are always English* — is the default rule for KP:1 packs. Original evidence may retain its language. The optional annotation below does not create translated canonical claims or relax P1.
 
 When a pack's underlying evidence is **inherently multilingual and evidentiary** — handwritten witness statements in Russian or Ukrainian, foreign-language press reports, recorded interviews, court records, or any source whose canonicalization to English would lose evidentiary fidelity — the pack MAY carry the original-language transcripts as audit trail. The English claim remains the single normative assertion.
 
-**Sanctioned location.** Original-language transcripts MUST live in [`extensions.translations`](EXTENSIONS.md#28-extensionstranslations--evidentiary-multilingual-transcripts) (per `EXTENSIONS.md §2.8`). They MUST NOT be promoted to `claims.md`, MUST NOT appear as parallel claim text, and MUST NOT trigger a "co-canonical" reading. The translations block is evidence-shaped, not claim-shaped:
+**Optional structured location.** Original source artifacts may remain in evidence records or attachments. Structured original-language transcript annotations MAY live in [`extensions.translations`](EXTENSIONS.md#28-extensionstranslations--evidentiary-multilingual-transcripts) (per `EXTENSIONS.md §2.8`). They MUST NOT be promoted to `claims.md`, MUST NOT appear as parallel claim text, and MUST NOT trigger a "co-canonical" reading. The translations block is evidence-shaped, not claim-shaped:
 
 - The English claim in `claims.md` is the assertion.
 - The original-language transcript in `extensions.translations` is the audit trail backing it.
-- Disagreement between them is resolved in favor of `claims.md` per [P2](#2-core-principles); the translation may be flagged as needing review, but the claim is what the pack asserts.
+- The claim is what the pack currently asserts; disagreement with an original source is a finding requiring review, not permission to replace or discard the source. Preserve the original and flag translation drift.
+
+**Cardinality and custody.** The current translations map holds only one transcript per locale. It cannot represent several independent statements in that language; retain distinct original evidence records/attachments and their IDs instead of overwriting or merging transcripts. A structured multi-transcript profile requires its own versioned mapping.
 
 **Producer responsibility.** When a producer chooses this path, the pack SHOULD also include an explicit narrative-prose acknowledgment in `evidence.md` that the underlying source material is non-English, naming the language(s). This makes the pack's evidentiary character legible to readers without requiring them to inspect the manifest.
 
@@ -394,8 +396,8 @@ When a pack's underlying evidence is **inherently multilingual and evidentiary**
 | # | Decision | Alternatives Considered | Rationale |
 |---|----------|------------------------|-----------|
 | D1 | Canonical language is American English; claims are never bilingual | Bilingual claims, per-claim language tags | Complexity explosion. Claims are the reasoning surface — one language keeps them unambiguous. Translations belong at the view layer. |
-| D1a | Evidentiary multilingual exception: original-language transcripts MAY ship in `extensions.translations` for evidentiary domains where canonicalization to English loses fidelity (witness statements collected in the field, foreign-language court records, recorded interviews) | Co-canonical claims (rejected per D1), per-claim language tags (rejected per D1), prose-only acknowledgment in evidence.md without structured carrier | The sanctioned `extensions.translations` block (EXTENSIONS.md §2.8) keeps transcripts machine-readable for audit while preserving D1's "claims are English" rule. The English claim remains the assertion; the transcript is evidence-shaped. See §12. |
+| D1a | Evidentiary multilingual exception: original-language transcripts MAY ship in `extensions.translations` for evidentiary domains where canonicalization to English loses fidelity (witness statements collected in the field, foreign-language court records, recorded interviews) | Co-canonical claims (rejected per D1), per-claim language tags (rejected per D1), requiring every source to fit a single transcript map | Optional `extensions.translations` annotations (EXTENSIONS.md §2.8) add machine-readable context while preserving original evidence/attachments and D1's "claims are English" rule. The English claim remains the assertion; the transcript is evidence-shaped. See §12. |
 | D2 | Translation storage uses locale subdirectories (`views/{locale}/`) | Filename suffixes (`overview.uk.md`), flat directories | Subdirectories are cleaner for discovery (`ls views/uk/`), removal (`rm -rf views/uk/`), and grep. Filename suffixes create visual clutter and complicate glob patterns. |
 | D2a | Locale before surface type (`views/uk/voice/`) | Surface before locale (`views/voice/uk/`) | Locale is the higher-order grouping. A locale is a complete translation; a surface type is a rendering format. You add/remove entire locales, rarely individual surface types within a locale. |
-| D2b | Short language code for directory names (`uk`, `de`) | Full BCP 47 tag (`uk-UA`, `de-DE`) | Directories are for humans too. Short codes are sufficient for disambiguation in practice. Full tags remain in PACK.yaml metadata. |
-| D2c | Translations are derived views, never authoritative | Co-equal translations, authoritative translations | Knowledge lives in claims.md. Views — including translations — are presentations. If translation disagrees with claims, it is the translation that is wrong. |
+| D2b | Short language codes when unambiguous; full BCP 47 tags for same-language siblings | Always-short directories | Preserve readable defaults without collapsing regional/script variants. Full tags remain in PACK.yaml metadata; exact tag paths take precedence. |
+| D2c | Translations are derived views, never authoritative | Co-equal translations, authoritative translations | Canonical primary files remain authoritative. Translated views are presentations; disagreement requires review of the view while preserving the original evidence. |

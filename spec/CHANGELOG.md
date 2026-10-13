@@ -5,6 +5,26 @@
 
 ---
 
+## Unreleased — Editor's Draft
+
+**Coherent directory contract, preservation boundaries and reference coverage.**
+
+- **Evidence / identity:** CORE §10 and AR-19 register `markdown-backslash-v1`; SC-13 rejects duplicate evidence IDs. Shared reference parsing segments before decoding, handles blockquote/list metadata and validates required fields/dates. Unknown encodings preserve their body with a warning. Contract tests cover indentation, line endings, source-authored escapes and record-shaped source excerpts.
+- **History and claims:** active/history IDs share one pack-local namespace for SC-02 through SC-05. Historical bullets preserve metadata and relations. Verbose field order is unrestricted, with required/optional cardinality checked after parsing. Fixtures exercise two generations, retraction and an empty current state after the last withdrawal. Strict history parsing keeps literal record boundaries rather than repairing blank lines or missing final newlines. The compiler accepts all required verbose-field orders. Empty manifests return diagnostics; missing declared fixtures fail.
+- **Kinds and carriers:** the CORE file matrix agrees with DEFINITIONS for definition/policy/mixed packs. Canonical generic filenames remain required; alternate mappings require a profile. Definition/policy document-schema validation and full compiler history remain outside reference coverage.
+- **Composition:** `selection` joins the published composition schema. Purpose remains free text; purpose, collection and scope are nonempty and required. The selection fixture exercises live member references. An optional manifest declaration names only the canonical composition file, which must exist. Preparation date is not a historical snapshot; collection membership and pinned-revision resolution belong to supporting profiles.
+- **Seals and archives:** payload v2 binds identity and its quoted `seal_version: "2"` selector; legacy v1 remains explicitly described. Hash exclusions use exact components at any depth plus AppleDouble prefixes. Fixed hash vectors cover ordinary dotfiles, root-only receipt exclusion, NFC filenames and raw bytes. Hash-policy changes can affect historical receipts and are distinct from signing-payload version.
+- **Storage and sharing:** semantic JSON fidelity is distinct from sealed-byte fidelity. Integer representation alone does not preserve bytes. Reading/clipboard bundles are projections, not complete lossless archives.
+- **Profiles:** the entity/case/event catalog expands; operational per-claim associations have no generic file carrier. Case pins require unambiguous profile resolution; a newer sibling is not proven supersession. Original multilingual sources must survive the legacy transcript cardinality limit; locale paths must resolve unambiguously.
+- **Purpose:** README and positioning explain the AI-first, lasting knowledge-system intention in plain language: retain context, relationships, uncertainty and changes for reasoning and continuation. Application operations remain distinct from the file format.
+- **Context and change:** authoring/consistency/lifecycle guidance preserves material attribution, roles, dates, methods and decision context. Event placement is not a judgment that knowledge has no lasting value. Support revisions preserve complete issued records. The acquisition example distinguishes a bounded no-match search from unknown coverage; compiler pointers and leans are presentation preferences, not adopted assessments or permission to act.
+- **Examples and maturity:** authoring/examples distinguish source reports, dated facts and adopted assessments; preserve attribution; use valid split IDs and registered relations. [COMPATIBILITY.md](COMPATIBILITY.md) records authority, capabilities and support boundaries. The current-belief compiler's deterministic preference is not truth or evidence independence. Public citable metadata stays at the actual last release.
+- **Verification:** the fixture/example suite grows from the released 23 cases to 29 (10 valid, 14 invalid, 5 examples). Separate contract tests exercise the changes above; a suite pass is not whole-format or application certification.
+
+Compatibility is not claimed monotonic: selection scope, history uniqueness, evidence fields and archive hash rules can change validation or verification results. Preserve accepted historical bytes and receipts; target a pinned spec revision and declared profiles. This is an **unreleased editor's draft**, not stable V1 or a new release/DOI. The [proposed decision record](../decisions/2026-10-11-draft-coherence.md) remains subject to public discussion and editor acceptance.
+
+---
+
 ## v0.8.4-preview — 2026-06-13
 
 **Independence made explicit: a capture-resistance companion, the offline-validation invariant exercised, and capture-resistance non-goals.**
@@ -284,11 +304,11 @@ The v0.8.0 preview consolidates a deliberate architectural pass on the spec's no
 
 ### Semantic Constraints
 
-- **SC-12 (NEW): When `nature` is `prediction`, confidence MUST be ≤ 0.95.** Predictions about future states have irreducible uncertainty; the 0.99+ band is reserved for trivially-falsifiable claims per AUTHORING.md §5. The constraint catches the "future-date confidence inflation" pattern (a prediction at 0.99 on a 100-year horizon) that prior reviewer rounds flagged as a hostile-reading attack.
+- **SC-12 (NEW): When `nature` is `prediction`, confidence MUST be ≤ 0.95.** Predictions about future states have irreducible uncertainty; the 0.99+ band is reserved for trivially-falsifiable claims per AUTHORING.md §5. The constraint catches the "future-date confidence inflation" pattern (a prediction at 0.99 on a 100-year horizon) as a hostile-reading failure.
 
-### Editorial polish (final pre-tag review pass)
+### Editorial polish (final pre-tag)
 
-After four independent external review rounds plus internal audit, the following polish items landed:
+The following polish items landed:
 
 - **Runner-vs-CORE relation-on-metadata-line divergence:** runner accepts relations after `}` on the metadata line; CORE §6.1 had previously said "relation symbols on that line are treated as prose, not parsed as relations." Resolution: relax CORE §6.1 + AR-04 to *allow* relations after `}` on the metadata line (matching what the runner already does and what AUTHORING / LIFECYCLE examples already show). The "greedy prose" framing was over-stated; relations are matched first, remaining trailing text is prose.
 - **Cross-pack `↔` parsing in the runner:** see Tooling above.
@@ -339,7 +359,7 @@ A last consistency pass before tagging surfaced and resolved the following nits.
 
 ### Changed
 
-- **EXTENSIONS.md** — validation pass against producer evidence in `repos/packs/`. Status grid honest as-of v0.8.0: `ai_brief` (active, ~21 producers), `research` (active, ~16 producers), `entities` / `relations` / `intent` / `playbook` / `workspace` (experimental, 0–1 producers each). Added explicit producer counts on the `research` block. New `extensions.translations` block at §2.8 is tagged `active` despite single inaugural producer; the policy tension is documented inline. Subsequent editorial pass (post-cleanup commit) replaced internal monorepo paths and project codenames with public repo references plus generic "reference implementation" language so the public spec doesn't leak internal identifiers.
+- **EXTENSIONS.md** — clarified producer-profile maturity as of v0.8.0: `ai_brief` and `research` were active; `entities`, `relations`, `intent`, `playbook` and `workspace` were experimental. Documented the maturity-policy exception for the inaugural `extensions.translations` producer. Public examples and implementation references use generic labels.
 - **Companion-doc Parent: lines** — dropped stale `> **Parent:** SPEC.md v0.X` lines from MULTILINGUAL, CONVENTIONS, BUNDLE, ORGANIZATION, CONSISTENCY, NOTES, STORAGE in the master-plan release; the post-master-plan cleanup commit extended this to ARCHIVE / VOICE / LIFECYCLE (no anchor → drop entire line) and softened version pins on COMPOSITION / DEFINITIONS / EXTENSIONS while preserving section anchors. CORE.md `Derived from: SPEC.md v0.7` was also drift-stripped to `Derived from: SPEC.md`. Several `(v0.4)` / `(v0.6)` section header pins removed from SPEC.md.
 - **`spec/CORE.md`** — added cross-references to AUTHORING.md from §1 (scope) and to SPEC.md §10 from §2 (validation.yaml schema). AR-10 row gained worked positive/negative tokenization examples (`~C002` is the relation, `~refines` and `~the manuscript` are prose).
 - **`spec/EXTENSIONS.md`** — `extensions.intent` enum framing softened to clarify it is the reference implementation's vocabulary (producers MAY define alternative values), not a closed normative enum embedded in an explicitly informative document.
@@ -435,7 +455,8 @@ companion file in favour of the typed `extensions.entities` block.
   (typed entity records with stable canonical entity IDs and external-ID vocabulary)
   and `extensions.relations` (typed edges with optional temporal and
   attribute data per DEFINITIONS.md §3). A one-shot migration script
-  (`scripts/migrate-entities-md-to-extensions.mjs`, shipped with kp-forge)
+  (`scripts/migrate-entities-md-to-extensions.mjs`, shipped with the reference
+  producer implementation)
   rewrites legacy packs into the new shape.
 
 ### Compatibility
@@ -482,7 +503,7 @@ No breaking changes. Packs produced before this entry remain valid. Packs that a
 - **`conformance/run.py`** — `validate_pack()` detects composition packs (those with `composition.yaml`) and skips the `evidence.md` presence check for them. Evidence-ID extraction now tolerates a missing `evidence.md` (empty set rather than exception). `signatures.yaml` is validated against the new schema when present, with `FormatChecker` enabled so `format: date-time` on `sealed_at` is actually enforced.
 
 ### Fixed
-- **Schema-vs-impl drift** — The prior `kp-signatures.schema.json` required fields (`signed_at`, `signing_key`, `signature` as a flat string) that neither the sealer (kp-forge) nor the relay (kp-packs) have produced or consumed since v0.7.3. Any current sealed archive would have failed schema validation. Aligned.
+- **Schema-vs-impl drift** — The prior `kp-signatures.schema.json` required fields (`signed_at`, `signing_key`, `signature` as a flat string) that neither the reference sealer nor the reference relay has produced or consumed since v0.7.3. Any current sealed archive would have failed schema validation. Aligned.
 - **Composition-pack validation hole** — Packs with `composition.yaml` and no `evidence.md` (valid per `COMPOSITION.md` design) were being rejected by the conformance runner for the missing-file reason. No longer.
 
 ---

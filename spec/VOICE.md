@@ -7,7 +7,7 @@
 > **Status:** Draft
 > **Decisions:** D13 (voice view format), D22 (locale-before-surface ordering)
 
-> **`kpack` CLI invocations in this document describe planned reference tooling.** Only `python3 conformance/run.py` ships today. See [SPEC.md §13](SPEC.md) and the contract-pointer stub at [`reference/kpack`](../reference/kpack) for status.
+> **`kpack` CLI invocations in this document describe planned reference tooling.** `python3 conformance/run.py`, `./reference/kpack lint` and `./reference/kpack new` ship today. See [SPEC.md §13](SPEC.md) and the reference launcher at [`reference/kpack`](../reference/kpack) for status.
 
 ---
 
@@ -311,13 +311,13 @@ Voice view staleness uses the same mechanism as display views. The generation me
 <!-- generated: 2026-03-22 | claims: v2026.03.22 -->
 ```
 
-`kpack lint` compares the `claims:` version against the current claims.md version. If they differ, it emits a staleness warning:
+Planned lint integration would compare the `claims:` version against the current claims.md version and emit a staleness warning if they differ. The current reference `kpack lint` does not perform this comparison; voice-view freshness requires editorial checking (see [capability boundaries](COMPATIBILITY.md#capability-boundaries)). Proposed diagnostic:
 
 ```text
 WARN: views/voice/briefing.md is stale (claims: v2026.03.21, current: v2026.03.22)
 ```
 
-Staleness is a warning, not an error. Voice views may intentionally lag during active claims editing. The `--check` flag on `kpack render --voice` reports stale voice views without regenerating them.
+Staleness is a warning, not an error. Voice views may intentionally lag during active claims editing. The planned `--check` flag on `kpack render --voice` would report stale voice views without regenerating them; `render` remains a contract-pointer command.
 
 ### Staleness Priority
 

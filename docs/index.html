@@ -42,13 +42,10 @@
 <link rel="canonical" href="https://tymofiy.github.io/kp/">
 <link rel="icon" href="kp.svg" type="image/svg+xml">
 
-<link rel="preload" href="fonts/Canela-Regular.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="fonts/InterVariable.woff2" as="font" type="font/woff2" crossorigin>
 
 <style>
   /* ---- Type faces (self-hosted woff2) --------------------------------- */
-  @font-face { font-family:"Canela"; src:url("fonts/Canela-Regular.woff2") format("woff2");
-    font-weight:400; font-style:normal; font-display:swap; }
   @font-face { font-family:"Inter"; src:url("fonts/InterVariable.woff2") format("woff2");
     font-weight:300 700; font-style:normal; font-display:swap; }
   @font-face { font-family:"IBM Plex Mono"; src:url("fonts/IBMPlexMono-Regular.woff2") format("woff2");
@@ -56,7 +53,7 @@
 
   /* ---- Tokens ----------------------------------------------------------- */
   :root {
-    --font-display:"Canela","Iowan Old Style",Palatino,"Book Antiqua",Georgia,serif;
+    --font-display:"Iowan Old Style",Palatino,"Book Antiqua",Georgia,serif;
     --font-sans:"Inter",system-ui,-apple-system,"Segoe UI",sans-serif;
     --font-mono:"IBM Plex Mono","SFMono-Regular",Menlo,Monaco,Consolas,monospace;
 
@@ -261,7 +258,10 @@
   @media (max-width:720px) {
     .feature { grid-template-columns:1fr; gap:.5rem; }
     .feature-glyph { padding-top:0; }
-    .close-grid { grid-template-columns:1fr; }
+    .close-grid { grid-template-columns:minmax(0,1fr); }
+    .cite { overflow-wrap:anywhere; }
+    .specimen-note { flex-direction:column; align-items:flex-start; gap:.5rem; }
+    .specimen-note-label { white-space:normal; }
   }
 </style>
 </head>
@@ -272,7 +272,7 @@
   <!-- ============ HERO ============ -->
   <header class="hero">
     <div class="wrap">
-      <p class="status load-in"><span class="status-dot" aria-hidden="true"></span> Editor's Draft · Public Draft <span data-kp="ym">2026-06</span></p>
+      <p class="status load-in"><span class="status-dot" aria-hidden="true"></span> Unreleased Editor's Draft · Latest Citable Public Draft <span data-kp="ym">2026-06</span></p>
       <h1 class="mark load-in d1">KP:1</h1>
       <span class="hero-rule load-in d2" aria-hidden="true"></span>
       <p class="hero-lead load-in d2">An open, text-native format for packaging <strong>epistemic state</strong> — claims, confidence, evidence, contradictions, and the trace of how beliefs evolved, preserved as structure.</p>
@@ -281,7 +281,7 @@
         <a class="btn btn--secondary" href="https://github.com/tymofiy/kp">GitHub repository</a>
       </div>
       <p class="meta-line mono load-in d4">
-        <span data-kp="version">v0.8.4-preview</span><span aria-hidden="true">·</span>
+        Latest citable release: <span data-kp="version">v0.8.4-preview</span><span aria-hidden="true">·</span>
         <span data-kp="date">2026-06-13</span><span aria-hidden="true">·</span>
         <span data-kp="license">CC BY 4.0</span><span aria-hidden="true">·</span>
         <span>DOI <span data-kp="concept-doi">10.5281/zenodo.19445262</span></span>
@@ -303,7 +303,7 @@
   <section class="section" aria-labelledby="distinct-h">
     <div class="wrap">
       <h2 class="sec-h" id="distinct-h">What makes KP:1 distinct</h2>
-      <p class="lead">Most formats flatten knowledge into settled facts. KP:1 keeps its shape: the uncertainty, the tension, and the history stay as addressable structure. The clearest way to see that is the format itself.</p>
+      <p class="lead">KP:1 brings assertions, explanations and their grounds into one portable record. Uncertainty, disagreement and history remain addressable, so people and AI can examine the connections and continue the inquiry. The format shows how those distinctions are represented.</p>
 
       <!-- the format demonstrating itself: a real, compact fragment -->
       <figure class="specimen" aria-label="Annotated KP:1 example fragment">
@@ -311,7 +311,7 @@
           <span class="specimen-title mono">claims.md — acquisition review</span>
           <span class="specimen-tags">
             <span class="chip">3 claims</span>
-            <span class="chip chip--ok">self-describing</span>
+            <span class="chip chip--ok">format excerpt</span>
           </span>
         </div>
 <pre class="specimen-code" tabindex="0" role="region" aria-label="KP:1 example fragment"><code><span class="c-comment">&lt;!-- KP:1 — self-describing header: a reader bootstraps the format from the file
@@ -319,17 +319,17 @@
      type   o observed · r reported · c computed · i inferred
      rel    → supports · ⊗ contradicts · ⊗! error · ⊗~ tension · ⊘ supersedes --&gt;</span>
 
-- <span class="c-id">[C005]</span> Dating follows the catalogue raisonné: 1962, not 1957.
-  <span class="c-meta">{<span class="c-conf">0.93</span>|r|E003|2020-04-30|exhaustive}</span> <span class="c-rel">⊗!C004</span>
+- <span class="c-id">[C005]</span> The museum catalog raisonné dates the work 1962.
+  <span class="c-meta">{<span class="c-conf">0.93</span>|r|E003|2020-04-30|exhaustive}</span> <span class="c-rel">↔C004</span>
 
-- <span class="c-id">[C014]</span> The 2025 appraisal values the work at €950,000.
-  <span class="c-meta">{<span class="c-conf">0.91</span>|r|E008|2025-12-15|investigated}</span> <span class="c-rel">⊘C013</span>
+- <span class="c-id">[C024]</span> The work was made in 1962.
+  <span class="c-meta">{<span class="c-conf">0.93</span>|i|E003,E009|2025-11-20|investigated|judgment}</span> <span class="c-rel">⊘C023, ⊗!C023</span>
 
-- <span class="c-id">[C017]</span> The 1953–1962 provenance gap is a material risk.
-  <span class="c-meta">{<span class="c-conf">0.45</span>|i|E005,E010|2026-05-09|investigated|judgment}</span> <span class="c-rel">⊗~C019</span></code></pre>
+- <span class="c-id">[C019]</span> Recommended action: conditional acquisition.
+  <span class="c-meta">{<span class="c-conf">0.78</span>|i|E001,E004,E005,E006,E008,E010|2026-05-09|investigated|judgment}</span> <span class="c-rel">←C017</span></code></pre>
         <figcaption class="specimen-note railed">
-          <span class="specimen-note-label mono">C017 ⊗~ C019</span>
-          <span class="specimen-note-text">A judgment held at 0.45, on two cited sources, kept in productive tension with the recommendation, not rounded away. Every line stays addressable, and the header lets any reader read the notation without fetching a schema.</span>
+          <span class="specimen-note-label mono">Reports · assessments · decisions</span>
+          <span class="specimen-note-text">A source report stays separate from the adopted dating. C024 corrects C023, retained in history; the conditional recommendation considers C017's risk. This fictional pack excerpt omits the required frontmatter, document and section headings, and supporting records; the full example contains them.</span>
         </figcaption>
       </figure>
 
@@ -339,7 +339,7 @@
           <span class="feature-glyph" aria-hidden="true">⊗ ⊗! ⊗~</span>
           <div>
             <h3 class="feature-h">Typed contradiction qualifiers</h3>
-            <p>Disagreement is kept in tension: plain contradiction, known error, or productive tension. Nothing is flattened away.</p>
+            <p>Recorded conflicts distinguish plain contradiction, an assessed error, or informative tension. Readers can inspect the competing assertions and their grounds.</p>
           </div>
         </li>
         <li class="feature">

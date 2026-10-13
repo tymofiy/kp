@@ -182,15 +182,14 @@ properties.
 | KP:1 field | RDF | Grade |
 |---|---|---|
 | Evidence ID (`E001`) | URI for a `prov:Entity` | Clean |
-| Evidence type (`observed`/`reported`/`computed`/`inferred`) | See §4.1 | Lossy |
+| Evidence `type` (open source vocabulary, e.g. `document`, `interview`) | Profile-specific source classification | Lossy |
 | Source (free text) | `dct:source` or `prov:wasAttributedTo` | Clean |
 | Captured date | `prov:generatedAtTime` | Clean |
 | Evidence prose | `rdfs:comment` | Lossy — loses structured role |
 | Claim → Evidence link | `prov:wasDerivedFrom` or `prov:hadPrimarySource` | Clean |
 
 Evidence entries map well to PROV-O entities. The main loss is evidence
-*type* — KP:1's four-way classification (observed/reported/computed/inferred)
-doesn't map cleanly to PROV-O's derivation subtypes (see §4).
+*type* — the open evidence-source vocabulary needs a profile-specific mapping. The four-way observed/reported/computed/inferred classification belongs to claims, not evidence records.
 
 ### 3.7 Example: Solar C001 as JSON-LD
 

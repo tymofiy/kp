@@ -3,9 +3,10 @@
 
 # KP:1 Core Specification
 
-> **Status:** Editor's Draft — `KP:1 Public Draft — 2026-06` (`v0.8.4-preview`)
+> **Status:** Editor's Draft — unreleased updates
+> **Latest citable release:** `KP:1 Public Draft — 2026-06` (`v0.8.4-preview`)
 > **Editor:** Timothy Kompanchenko
-> **Date:** 2026-06-10
+> **Draft updated:** 2026-10-12
 > **Derived from:** SPEC.md, `conformance/grammar/kp-claims.peg`, `conformance/grammar/kp-pack.schema.json`
 > **Lane:** Implementer surface — see [README.md](README.md) for the three-lane structure (CORE = implementer, SPEC = full normative + rationale, companions = topic-authoritative for their domains).
 
@@ -62,9 +63,20 @@ A Knowledge Pack is a directory. The `.kpack/` suffix is RECOMMENDED but not req
     └── overview.md
 ```
 
-Implementations MUST require `PACK.yaml` and `claims.md`. All other files are OPTIONAL for conformance.
+File requirements depend on the manifest's `kind` (default `claim`):
 
-> **Composition-pack exception.** When a pack contains a `composition.yaml` file, the pack is a *composition pack* (meeting-prep, briefing, presentation, etc. — see [COMPOSITION.md](COMPOSITION.md)). Composition packs MAY omit `evidence.md` and MAY have narrative-only `claims.md` (claims about the composition context itself, not dense claim bullets), per [SPEC.md §2 "Composition-pack File Requirements"](SPEC.md). Conformance runners detect composition packs by the presence of `composition.yaml` and apply this relaxation; non-composition packs follow the standard rule.
+| Kind | Required files | Additional content |
+|------|----------------|--------------------|
+| `claim` | `PACK.yaml`, `claims.md` | Evidence for every cited evidence ID |
+| `definition` | `PACK.yaml`, at least one `definitions/*.yaml` | Optional claims, evidence and views |
+| `policy` | `PACK.yaml`, at least one `policies/*.yaml` | Optional claims, evidence and views |
+| `mixed` | `PACK.yaml`, `claims.md`, at least one definition or policy document | Evidence for every cited evidence ID |
+
+Definition and policy document formats are defined in [DEFINITIONS.md](DEFINITIONS.md). They do not require probabilistic claims merely to represent deterministic rules. Whenever `claims.md` is present, its ordinary header, frontmatter and claim rules apply. `evidence.md` is optional as a file, but SC-03 still requires every active or historical evidence reference to resolve.
+
+> **Composition-pack exception.** The presence of `composition.yaml` requires `claims.md` and validation of the composition schema. The claims document MAY be narrative-only, retaining the Rosetta header and compact frontmatter. A composition MAY omit `evidence.md` when it has no evidence references. See [COMPOSITION.md](COMPOSITION.md). This exception does not relax metadata or reference rules for any claim bullets it does contain.
+
+The default file names above are the interoperable directory surface. The schema's optional `files` object is reserved for application mappings; schema acceptance alone does not define override behavior. Producers targeting the generic reader MUST retain the canonical files. A profile that uses alternate carriers must define its mapping and declare the required reader capability.
 
 ---
 
@@ -102,8 +114,8 @@ PACK.yaml is a YAML file declaring pack identity and configuration. The normativ
 | `views` | array | View declarations with `name`, `file`, `purpose`, `display_as` (all required), `hint` (optional). Voice views add `voice` (boolean), `duration` (string, e.g. `~90 seconds`), `pace` (enum: `brisk`, `measured`, `deliberate`). When `voice` is `true`, `duration` and `pace` are REQUIRED. |
 | `tier` | enum | `hub`, `detail`, `standalone` |
 | `extensions` | object | Extension lane for experimental or implementation-specific manifest metadata. Consumers ignore unknown extension content. |
-| `composition` | string | Path to the composition file for composition packs (default `composition.yaml`). See [COMPOSITION.md](COMPOSITION.md). |
-| `files` | object | Non-standard file name overrides (free-form; rarely used). |
+| `composition` | string | Optional declaration of the canonical `composition.yaml` file; if declared, that file MUST exist. Alternate filenames are not generic CORE carriers. See [COMPOSITION.md](COMPOSITION.md). |
+| `files` | object | Application filename mappings; the generic reader retains canonical filenames (see §2). |
 
 The full set of optional fields and conditional constraints is defined in the JSON Schema. Key conditionals: when `tier` is `hub`, `sub_packs` is REQUIRED; when `sensitivity` is `confidential` or `restricted`, `channels` MUST NOT contain `public` or `org`; when `sensitivity` is `internal`, `channels` MUST NOT contain `public`; when a view declares `voice: true`, `duration` and `pace` are REQUIRED on that view entry.
 
@@ -222,7 +234,7 @@ Entity annotation format (AR-09): `[entity_type]` or `[entity_type|alias1,alias2
 
 ### Sections
 
-Claims are grouped under `##` headings. Section headings are freeform text. A section MAY open with a blockquote description before its claims, mirroring the document-level description (AR-17). One or more claims MUST follow — apart from that optional blockquote and blank lines, no freeform prose or subheadings are permitted between the section heading and its claims.
+Claims are grouped under `##` headings. Section headings are freeform text. A section MAY open with a blockquote description before its claims, mirroring the document-level description (AR-17). A claims document MUST retain at least one section, but a section MAY contain zero claims. This represents an empty current state, including withdrawal of the final active claim with its original record retained in history, without inventing a replacement assertion. Apart from the optional blockquote and blank lines, no freeform prose or subheadings are permitted between a section heading and its claims.
 
 ---
 
@@ -286,6 +298,8 @@ Metadata in a backtick-delimited line with named fields separated by `|`:
 | `since:` | Yes | `YYYY-MM-DD` |
 | `depth:` | No | `assumed`, `investigated`, `exhaustive` |
 | `nature:` | No | `judgment`, `prediction`, `meta` |
+
+Required fields MUST occur exactly once; optional fields MUST occur at most once. Field order is not significant. Unknown fields and duplicate fields MUST be rejected, rather than interpreted by first-value or last-value precedence.
 
 Relations in a separate backtick-delimited line using verbose names:
 
@@ -359,6 +373,10 @@ All confidence values are **normalized floats from 0.0 to 1.0** (SC-01). PACK.ya
 | <0.30 | Unverified |
 
 Custom scales use `confidence.scale: custom` with a `confidence.labels` mapping in PACK.yaml.
+
+The numeric confidence is authoritative. These label tables are illustrative display bands, not a deterministic interval-selection algorithm: shared endpoints and values between printed two-decimal bands have no universal label assignment. A profile requiring consistent labels MUST declare its thresholds and endpoint policy; labels never replace the stored number.
+
+Confidence records the producer's assessment. Decimal precision and labels such as "Verified" do not establish that a verification procedure occurred or that the values are empirically calibrated. Explaining the evidential basis and method helps consumers assess what the value represents; see [AUTHORING.md §5](AUTHORING.md#5-confidence-calibration). This clarification does not change the wire value or scale rules.
 
 ### Investigation Depth (Position 5)
 
@@ -461,11 +479,51 @@ Optional fields:
 
 - `reliability` — NATO Admiralty source reliability tier. Single uppercase letter `A`–`F`. `A` = completely reliable, `F` = reliability cannot be judged.
 - `credibility` — NATO Admiralty information credibility for this specific fact. Single digit `1`–`6`. `1` = confirmed by other independent sources, `6` = credibility cannot be judged. Orthogonal to `reliability`: an `A`-tier source can carry a `6`-credibility statement when uncorroborated.
+- `kp-content-encoding` — registered reversible encoding for record-shaped Markdown in an evidence body. The only KP:1 value is `markdown-backslash-v1`; see “Record-safe encoded bodies” below.
 - `SHA-256` / `sha-256`, `Notes` / `notes`, `Prepared` / `prepared`.
 
-Field names are case-insensitive in validation (AR-07). The combined `reliability` + `credibility` pair (e.g. `A1`, `B2`, `F6`) is the standard intelligence-tradecraft Admiralty grade and renderers MAY surface it as such.
+Required evidence fields MUST be nonempty and occur exactly once. Other metadata fields MUST NOT repeat. Each field value occupies one physical line; indented or folded metadata continuations are not defined. `captured` MUST be a valid calendar date in `YYYY-MM-DD` form. The initial metadata block is separated from body content by one blank line; additional blank lines belong to the body. Once body content begins, field-shaped source quotations are body text, not metadata.
+
+Field names are case-insensitive in validation (AR-07), including `kp-content-encoding`; its encoding value is case-sensitive. The combined `reliability` + `credibility` pair (e.g. `A1`, `B2`, `F6`) is the standard intelligence-tradecraft Admiralty grade and renderers MAY surface it as such.
 
 Evidence IDs use the pattern `E` + one or more digits (AR-02). IDs are stable — once assigned, an ID always refers to the same source material.
+
+### Record-Safe Encoded Bodies
+
+An evidence excerpt can contain Markdown that looks like KP structure — for example, a source-local
+`## E001` heading or `- [E001]` bullet. Emitting those lines verbatim makes record boundaries
+ambiguous. A producer MAY make the body reversible and record-safe by placing this exact blockquote
+metadata line after the ordinary evidence fields and immediately before the body:
+
+```markdown
+> **kp-content-encoding:** markdown-backslash-v1
+```
+
+Producers MUST use the canonical lowercase field spelling shown above. Consumers match the field
+name case-insensitively per AR-07, but MUST compare `markdown-backslash-v1` case-sensitively.
+
+For `markdown-backslash-v1`, the producer MUST preserve leading spaces and tabs, then prefix one
+backslash after that indentation when the remaining logical body line:
+
+1. begins with a backslash;
+2. equals the encoding marker line above;
+3. is exactly `##`, or begins with `##` followed by whitespace; or
+4. begins with `-`, then one or more whitespace characters, then `[E` + one or more digits + `]`,
+   followed by whitespace or end of line.
+
+All other body lines remain byte-for-byte unchanged. Escaping an existing leading backslash makes
+the transform reversible rather than treating source-authored escapes as encoder output.
+
+Consumers MUST segment evidence records on the encoded text before decoding. Any unescaped,
+top-level H2 terminates the current evidence record; only a conforming `## E` + digits heading begins
+another evidence record. Escaped headings and evidence-shaped bullets remain body content. A
+consumer that exposes the logical body MUST remove exactly one post-indentation backslash when the
+remainder matches one of the four encoder cases above, and MUST leave every other leading backslash
+intact. The marker is metadata, not user-facing body content.
+
+An implementation that does not recognize the declared value MUST preserve the encoded body as-is,
+MUST NOT reinterpret escaped lines as structural records, and SHOULD warn that logical-body decoding
+was skipped. Producers SHOULD NOT emit unregistered `kp-content-encoding` values (AR-19).
 
 ---
 
@@ -475,8 +533,8 @@ Views are pre-rendered GFM (GitHub-Flavored Markdown) documents for human consum
 
 ### Rules
 
-1. Views contain **no knowledge that is not in claims.md**. If a view states a fact, a corresponding claim SHOULD exist. (As of v0.8.4-preview, this is editorial discipline — the conformance runner does not detect "view-laundering" patterns where a view introduces unsupported assertions. Authors are responsible; see [AUTHORING.md §11](AUTHORING.md) anti-pattern #4.)
-2. Views are **derived** from claims. If a view disagrees with claims.md, claims.md is authoritative.
+1. Views introduce no knowledge absent from the canonical primary files for the pack's kind. In a claim-bearing pack, a corresponding claim SHOULD exist for each stated fact. Definition and policy views derive from their canonical definition/policy documents and any claims present. This is editorial discipline — the conformance runner does not detect unsupported view assertions. Authors are responsible; see [AUTHORING.md §11](AUTHORING.md) anti-pattern #4.
+2. Views are **derived**; the canonical primary files are authoritative when a view disagrees. A composition may navigate to member sources. Combined member-content rendering requires the source and revision contract described in [COMPOSITION.md](COMPOSITION.md); a local view alone does not supply it.
 3. Each view is independently displayable — no cross-view dependencies.
 4. Views SHOULD NOT contain claim notation (`{0.95|i|E001}` metadata). They contain readable prose.
 
@@ -503,10 +561,10 @@ These constraints MUST be validated after parsing succeeds. They are not express
 | ID | Constraint |
 |----|-----------|
 | SC-01 | Confidence MUST be in range [0.0, 1.0] |
-| SC-02 | All claim IDs MUST be unique within the document |
-| SC-03 | All evidence references in claims MUST have corresponding entries in evidence.md |
+| SC-02 | All claim IDs MUST be unique across claims.md and history.md within a pack |
+| SC-03 | All evidence references in active and historical claims MUST have corresponding entries in evidence.md |
 | SC-04 | Supersession chains (`⊘`) MUST be acyclic |
-| SC-05 | All claim ID targets in relations MUST exist (within pack or as valid cross-pack references) |
+| SC-05 | All claim ID targets in relations MUST exist (within active/history records or as valid cross-pack references) |
 | SC-06 | Spec version in Rosetta header MUST equal `1` for KP:1 conformance |
 | SC-07 | Frontmatter pack name MUST match PACK.yaml `name` field |
 | SC-08 | Frontmatter CalVer MUST match PACK.yaml `version` field |
@@ -514,6 +572,11 @@ These constraints MUST be validated after parsing succeeds. They are not express
 | SC-10 | Frontmatter scale name MUST match PACK.yaml `confidence.scale` |
 | SC-11 | Verbose type names MUST map to their single-letter equivalents: observed=o, reported=r, computed=c, inferred=i |
 | SC-12 | When `nature` is `prediction`, confidence MUST be ≤ 0.95. Predictions about future states have irreducible uncertainty; the 0.99+ band is reserved for trivially-falsifiable claims per [AUTHORING.md §5](AUTHORING.md). |
+| SC-13 | All evidence IDs MUST be unique within evidence.md. Duplicate serialized identities are ambiguous even when their bodies are identical. |
+
+### Historical claim records
+
+`history.md` retains each superseded or retracted claim's original bullet, metadata, prose and outgoing relations. Editorial headings identify the transition date, reason and successor (if any); they are not replacement claim identities. Historical claim bullets use the same dense or verbose syntax as active claims, without a second claims-document frontmatter. Local relation targets resolve across the union of active and historical claims. Supersession acyclicity is checked over that union, including multiple generations. Retraction does not imply a successor, and unresolved disputes remain active. See [SPEC.md §9](SPEC.md#9-claim-lifecycle) and the [lifecycle fixture](../conformance/fixtures/valid/lifecycle.kpack/history.md).
 
 ### Formal Grammar
 
@@ -530,7 +593,7 @@ All three checks MUST pass:
 | Check | Scope | Criteria |
 |-------|-------|----------|
 | Syntactic | claims.md | Document matches PEG grammar |
-| Semantic | claims.md + evidence.md | All constraints SC-01 through SC-12 pass |
+| Semantic | claims.md + evidence.md | All constraints SC-01 through SC-13 pass |
 | Schema | PACK.yaml | Validates against JSON Schema |
 
 ### Permissive Level
@@ -538,9 +601,11 @@ All three checks MUST pass:
 | Check | Scope | Criteria |
 |-------|-------|----------|
 | Syntactic | claims.md | Document matches PEG grammar (MUST pass) |
-| Semantic (errors) | claims.md | SC-01 through SC-06 MUST pass |
+| Semantic (errors) | claims.md + evidence.md | SC-01 through SC-06 and SC-13 MUST pass |
 | Semantic (warnings) | cross-file | SC-07 through SC-12 produce warnings, not errors |
 | Schema | PACK.yaml | Required fields validate; optional field types produce warnings |
+
+These are normative conformance levels. The reference runner currently reports SC-07 through SC-12 as errors in both CLI modes; `--strict` adds PEG syntax checks and is not the normative strict/permissive switch. See [the capability guide](COMPATIBILITY.md).
 
 The distinction serves tooling: editors operate in permissive mode during drafting, switching to strict for publishing.
 
@@ -623,11 +688,12 @@ The following normative decisions resolve ambiguities identified during grammar 
 | AR-11 | Continuation lines use 2+ spaces of indentation. |
 | AR-12 | Claim ID gaps are permitted. Uniqueness is the only constraint (SC-02). |
 | AR-13 | A claim uses EITHER dense OR verbose metadata. No mixing within a single claim. |
-| AR-14 | `signatures.yaml` schema defined in ARCHIVE.md. `composition.yaml` schema is published at `conformance/grammar/kp-composition.schema.json` (informative); the conformance runner detects composition packs by `composition.yaml` presence (per [SPEC.md §2](SPEC.md), [COMPOSITION.md](COMPOSITION.md)) and validates `composition.yaml` against the published schema when the file is present. |
+| AR-14 | `signatures.yaml` schema defined in ARCHIVE.md. `composition.yaml` schema is published at `conformance/grammar/kp-composition.schema.json` (normative for supported composition types); the conformance runner detects composition packs by `composition.yaml` presence (per [SPEC.md §2](SPEC.md), [COMPOSITION.md](COMPOSITION.md)) and validates `composition.yaml` against the published schema when the file is present. |
 | AR-15 | `tier` is optional. When `hub`, `sub_packs` is required. |
 | AR-16 | Cross-pack references: `pack_name#section_ref`. `#` is the separator. |
 | AR-17 | Blank lines are permitted between structural elements (frontmatter, headings, descriptions, sections, claims). A section MAY open with a blockquote description, mirroring the document heading. Whitespace-only lines are not blank lines. |
 | AR-18 | The bracket id is a claim's sole serialized identity; relations, history, and cross-pack references (AR-16) resolve to it. A claim's metadata block (dense §6.1 or verbose §6.2) carries exactly its defined fields — producers MUST NOT add fields beyond them, and readers MUST reject a non-empty undefined/trailing token rather than silently dropping it. Opaque or storage-layer identifiers are non-wire (storage is non-normative; see STORAGE.md). |
+| AR-19 | Evidence bodies that contain record-shaped Markdown use the exact `kp-content-encoding: markdown-backslash-v1` marker and reversible escape algorithm in §10. Record segmentation precedes decoding; an unescaped top-level H2 ends the current record; unknown encodings are preserved, never guessed. |
 
 ---
 

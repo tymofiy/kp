@@ -13,13 +13,13 @@
 
 ## What KP:1 is, in three sentences
 
-KP:1 (Knowledge Pack v1) is a plain-text format for representing **epistemic state** — claims with confidence, evidence, contradictions, and the trace of how beliefs evolved. It is designed to preserve the texture of knowledge (uncertainty, tension, supersession) that ordinary RAG pipelines and structured databases flatten away. The format is text-only, parser-deterministic, and AI-readable — but authoring a sound pack requires producer-side judgment that this repository documents in [`spec/AUTHORING.md`](spec/AUTHORING.md).
+KP:1 (Knowledge Pack v1) is a plain-text format for representing **epistemic state** — assertions and explanations with their context, confidence, evidence, relationships and history. It gives people and AI an explicit record they can inspect, challenge and continue using across tasks and tools; retrieval systems and databases can work with that record. The format is text-only, parser-deterministic, and AI-readable — but authoring a sound pack requires producer-side judgment that this repository documents in [`spec/AUTHORING.md`](spec/AUTHORING.md).
 
 ## The single example to read first
 
 [`conformance/fixtures/valid/maximal.kpack/`](conformance/fixtures/valid/maximal.kpack/) demonstrates **all the hard features**: the `⊗!` (error) and `⊗~` (productive tension) qualifiers, supersession (`⊘`) chains, cross-pack `↔` references, all six metadata positions in the dense form, and meta-claims. It passes conformance. Read this before reading prose about what those features mean.
 
-The five `examples/` packs are progressively more demanding: `hello-world.kpack` (copy-this starter; minimum idiomatic shape), `solar-energy-market.kpack` (first full example; dense + verbose syntax), `kp-external-assessment.kpack` (meta example), `art-acquisition-decision.kpack` (full feature surface; walks AUTHORING.md end-to-end), and `auction-house-consignment-review.kpack` (consigner-side counterpart; cross-pack `↔` references).
+The five `examples/` packs are progressively more demanding: `hello-world.kpack` (copy-this starter; minimum idiomatic shape), `solar-energy-market.kpack` (first full example; dense + verbose syntax), `kp-external-assessment.kpack` (meta example), `art-acquisition-decision.kpack` (worked acquisition scenario; source reports, adopted assessments, error and supersession), and `auction-house-consignment-review.kpack` (consigner-side counterpart; cross-pack `↔` references).
 
 ---
 
@@ -30,7 +30,7 @@ Pick your task. Read the **Required** column. The **Secondary** column is useful
 | Your task | Required reading | Secondary | Skip |
 |---|---|---|---|
 | **A. Parse / validate an existing pack** | [`spec/CORE.md`](spec/CORE.md), [`conformance/grammar/kp-pack.schema.json`](conformance/grammar/kp-pack.schema.json), [`conformance/grammar/kp-claims.peg`](conformance/grammar/kp-claims.peg) | `conformance/fixtures/` (worked examples); [`spec/ARCHIVE.md`](spec/ARCHIVE.md) **if your parser handles sealed `.kpack` archives**; [`spec/COMPOSITION.md`](spec/COMPOSITION.md) **if your parser handles composition packs** (which may omit `evidence.md` and have narrative `claims.md`) | `spec/SPEC.md`, `spec/RATIONALE.md`, other companions |
-| **B. Author a new pack** | [`spec/CORE.md`](spec/CORE.md), [`spec/AUTHORING.md`](spec/AUTHORING.md), [`conformance/fixtures/valid/maximal.kpack/`](conformance/fixtures/valid/maximal.kpack/), [`examples/art-acquisition-decision.kpack/`](examples/art-acquisition-decision.kpack/) (walks the rubrics end-to-end) | [`spec/EXTENSIONS.md`](spec/EXTENSIONS.md) for `extensions.*` payloads; [`spec/RATIONALE.md`](spec/RATIONALE.md) §3 specifically for the **Stranger Test** and the Why-it-exists rationale on `display.short_title` / `tagline` / `hook` / `hint` (the rest of RATIONALE.md is positioning and can be skipped for authoring) | `spec/SPEC.md` (full normative — useful only for hard cases CORE.md doesn't cover), `conformance/run.py` (validator internals) |
+| **B. Author a new pack** | [`spec/CORE.md`](spec/CORE.md), [`spec/AUTHORING.md`](spec/AUTHORING.md), [`conformance/fixtures/valid/maximal.kpack/`](conformance/fixtures/valid/maximal.kpack/), [`examples/art-acquisition-decision.kpack/`](examples/art-acquisition-decision.kpack/) (worked authoring decisions and audience views) | [`spec/EXTENSIONS.md`](spec/EXTENSIONS.md) for `extensions.*` payloads; [`spec/RATIONALE.md`](spec/RATIONALE.md) §3 specifically for the **Stranger Test** and the Why-it-exists rationale on `display.short_title` / `tagline` / `hook` / `hint` (the rest of RATIONALE.md is positioning and can be skipped for authoring) | `spec/SPEC.md` (full normative — useful only for hard cases CORE.md doesn't cover), `conformance/run.py` (validator internals) |
 | **C. Reconcile two packs with contradictory claims** | [`spec/RECONCILIATION.md`](spec/RECONCILIATION.md) (it is a stub by design — read it to understand the deferral), [`spec/CONSISTENCY.md`](spec/CONSISTENCY.md), [`spec/CORE.md`](spec/CORE.md) (relation symbols including cross-pack `↔`) | [`spec/AUTHORING.md`](spec/AUTHORING.md) §4 (contradiction qualifiers) — note: §4 covers single-pack contradictions; cross-pack composition syntax is not specified in v0.8.4-preview | **For v0.8.4-preview, do NOT produce a "reconciled" canonical pack.** Cross-pack reconciliation is deliberately deferred (see RECONCILIATION.md). Instead: produce an annotated comparison/consistency report that surfaces the disagreement to a human reviewer, using `↔packB#claim-id` cross-pack references and the single-pack `⊗!` / `⊗~` rubric where applicable. The canonical "compose two packs into one reconciled pack" protocol does not exist yet. |
 | **D. Translate a pack into a second locale** | [`spec/MULTILINGUAL.md`](spec/MULTILINGUAL.md), [`spec/CORE.md`](spec/CORE.md) §10 (Views) | [`spec/VOICE.md`](spec/VOICE.md) if voice views are involved | `spec/SPEC.md`, `conformance/`, all companions except MULTILINGUAL/VOICE |
 | **E. Compose a meeting / briefing pack from existing packs** | [`spec/COMPOSITION.md`](spec/COMPOSITION.md), [`spec/CORE.md`](spec/CORE.md) | [`conformance/fixtures/valid/composition.kpack/`](conformance/fixtures/valid/composition.kpack/); [`spec/LIFECYCLE.md`](spec/LIFECYCLE.md) §6 (supersession cascade — relevant when a composed standing pack supersedes a claim the meeting pack referenced) | `spec/SPEC.md`, the rest |
@@ -71,13 +71,13 @@ else:
     print("PASS")
 ```
 
-To run the full conformance suite (23 fixture + example tests):
+To run the full conformance suite (29 fixture-and-example tests):
 
 ```bash
 python3 conformance/run.py
 ```
 
-If validation fails, the runner names the **semantic constraint** (`SC-01` … `SC-12`) or **ambiguity resolution** (`AR-01` … `AR-17`) you violated. Look those up in [`spec/CORE.md`](spec/CORE.md) §12 and Appendix B.
+If validation fails, the runner names the **semantic constraint** (`SC-01` … `SC-13`) or **ambiguity resolution** (`AR-01` … `AR-19`) you violated. Look those up in [`spec/CORE.md`](spec/CORE.md) §12 and Appendix B.
 
 ---
 
@@ -85,7 +85,7 @@ If validation fails, the runner names the **semantic constraint** (`SC-01` … `
 
 These rules are absolute. They are the most common ways a fresh agent breaks the format.
 
-1. **MUST NOT translate `claims.md`.** Claims are always American English (per [`spec/MULTILINGUAL.md`](spec/MULTILINGUAL.md) §2 P1). Translations live in `views/{locale}/`. The single normative exception is `extensions.translations` for evidentiary multilingual domains (see MULTILINGUAL.md §12) — translations there are audit trail, not co-canonical claims.
+1. **MUST NOT translate `claims.md`.** Claims are always American English (per [`spec/MULTILINGUAL.md`](spec/MULTILINGUAL.md) §2 P1). Translations live in `views/{locale}/`. Original evidence/attachments may retain their language. Optional `extensions.translations` annotations provide audit context (see MULTILINGUAL.md §12), not co-canonical claims.
 
 2. **MUST NOT omit the Rosetta header** at the top of `claims.md`. Without it, conformance fails immediately. Copy from any fixture under `conformance/fixtures/valid/`.
 
@@ -120,7 +120,7 @@ These exist in the repository but are not load-bearing for any of Tasks A–F:
 
 ## Status as of v0.8.4-preview
 
-The KP:1 specification is an **editor's draft**. The substantive format (claim grammar, manifest schema, conformance suite) is stable. Some companion documents are explicit stubs:
+The KP:1 specification is an **editor's draft**. The grammar, schemas and reference checks remain preview work; the unreleased changes are not a stable V1 guarantee. See [capabilities and compatibility](spec/COMPATIBILITY.md). Some companion documents are explicit stubs:
 
 - [`spec/RECONCILIATION.md`](spec/RECONCILIATION.md) — concept-only stub. Full design deferred to v0.9 / v1.0 contingent on observing real cross-pack drift in ≥3 packs.
 - [`spec/PLAYBACK.md`](spec/PLAYBACK.md) — experimental. Schema may evolve before v0.9.
