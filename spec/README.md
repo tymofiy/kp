@@ -3,7 +3,7 @@
 
 # KP:1 Specification
 
-> **Status:** Editor's Draft
+> **Status:** Released Editor's Draft — `v0.8.5-preview` (2026-10-13)
 > **Editor:** Timothy Kompanchenko
 
 The normative contract for Knowledge Pack version 1.

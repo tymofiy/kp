@@ -3,8 +3,8 @@
 
 # Knowledge Pack Specification — Editor's Draft
 
-> **Status:** Editor's Draft — unreleased updates
-> **Latest citable release:** `KP:1 Public Draft — 2026-06` (`v0.8.4-preview`)
+> **Status:** Released Editor's Draft — v0.8.5-preview
+> **Latest citable release:** `KP:1 — Knowledge Pack Format Specification` (`v0.8.5-preview`, 2026-10-13)
 > **Editor:** Timothy Kompanchenko
 > **Draft updated:** 2026-10-12
 > **Version history:** See `CHANGELOG.md`
@@ -1321,7 +1321,7 @@ A conversation flow using navigation:
 
 ## 13. Tooling (planned reference CLI)
 
-> **Status of the `kpack` CLI (as of v0.8.4-preview):** two subcommands are
+> **Status of the `kpack` CLI (as of v0.8.5-preview):** two subcommands are
 > implemented in this repository — `kpack lint` (delegates to
 > `python3 conformance/run.py --pack`; supports `--strict`) and `kpack new`
 > (scaffolds a validated pack from the hello-world starter, the

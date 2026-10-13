@@ -17,7 +17,7 @@ When two or more Knowledge Packs make claims about the same entity or topic and 
 
 This document is an **explicit placeholder**. The full reconciliation design is deferred to KP:1 v0.9 or v1.0, contingent on observing measurable drift across at least three real packs. Premature design before observed drift would be wishful architecture; the spec records the intent while honestly admitting the design is not yet ready.
 
-The honest record of the deferred design discussion lives in workspace memory; it is not part of the public normative spec until at least three real-world drift instances have been observed and the design is informed by those instances rather than imagined ones.
+The full protocol will become part of the public normative specification after at least three real-world drift instances have been observed and the design is informed by those instances. Until then, the public contract is to annotate disagreements and surface them for review.
 
 ## Related, but distinct
 
@@ -26,7 +26,7 @@ The honest record of the deferred design discussion lives in workspace memory; i
 
 Reconciliation differs from both: it is the **cross-pack consolidation protocol** for genuine multi-source drift, applied after CONSISTENCY surfaces a sustained disagreement that LIFECYCLE-internal mechanisms cannot resolve.
 
-## What to do today (v0.8.4-preview)
+## What to do today (v0.8.5-preview)
 
 Until the full protocol is specified, agents encountering cross-pack contradictions SHOULD produce a *consistency report* rather than a *reconciled pack*. The output is an annotated comparison, surfaced to a human reviewer, that uses the existing primitives:
 
@@ -50,7 +50,7 @@ Pack B (`market-snapshot-v2.kpack`) asserts:
   {0.85|r|E007|2025-12-31|investigated}
 ```
 
-A v0.8.4-preview reconciliation report (a new pack `widget-market-reconciliation.kpack`) would look like:
+A v0.8.5-preview reconciliation report (a new pack `widget-market-reconciliation.kpack`) would look like:
 
 ```text
 - [C001] Pack A reports widget market at ~$2B (Q1 2025); Pack B reports ~$3B (Q4 2025).
@@ -65,6 +65,6 @@ A v0.8.4-preview reconciliation report (a new pack `widget-market-reconciliation
   A human reviewer must confirm source quality and methodology before adopting either figure.
 ```
 
-The bullets use CORE claim syntax (a full report pack also needs the manifest, header/frontmatter, section and local E001/E002 records), reference the source packs via `↔`, and explicitly defer the final canonical answer. This is the v0.8.4-preview answer for cross-pack disagreement: **annotate, surface, defer to human** — do not auto-flatten into consensus.
+The bullets use CORE claim syntax (a full report pack also needs the manifest, header/frontmatter, section and local E001/E002 records), reference the source packs via `↔`, and explicitly defer the final canonical answer. This is the v0.8.5-preview answer for cross-pack disagreement: **annotate, surface, defer to human** — do not auto-flatten into consensus.
 
 The full reconciliation protocol (when it ships in v0.9 / v1.0) will define how reports like this become canonical reconciliations and what semantic constraints govern the consolidated graph.

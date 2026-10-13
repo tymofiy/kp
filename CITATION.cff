@@ -2,20 +2,22 @@ cff-version: 1.2.0
 message: "If you reference KP:1 in academic or technical work, please cite as below."
 title: "KP:1 — Knowledge Pack Format Specification"
 abstract: >
-  KP:1 is a text-native specification for representing epistemic state —
-  claims with confidence, evidence, contradictions, and the trace of how
-  beliefs evolved — designed for AI inspectability and portability across
-  systems. The format defines a strict normative core (CORE.md, JSON
-  Schema, PEG grammar) plus a set of topic-authoritative companions for
-  voice surfaces, multilingual support, archival, composition, and
-  extension blocks. Distinguishing features include typed contradiction
-  qualifiers (⊗, ⊗!, ⊗~), a Voyager-Principle Rosetta header for
-  zero-dependency parsing, supersession semantics with append-only
-  history, and a three-surface architecture (claims for AI reasoning,
-  display views for visual reading, voice views for spoken delivery).
+  KP:1 is an open, text-native format for representing epistemic state:
+  assertions and explanations with their context, confidence, evidence,
+  relationships and history. It helps people and AI carry articulated
+  understanding between tasks and tools through an account that others can
+  inspect, challenge, correct and continue. The specification defines a
+  directory and claim contract, a JSON Schema and PEG grammar, and topic
+  companions for evidence, history, views, composition, multilingual sources
+  and archives. Source accounts remain distinct from adopted assessments;
+  uncertainty and contrary evidence remain explicit. This released editor's
+  draft includes reference validation and experimental graph compilation, with
+  their coverage and limits documented separately. It does not certify source
+  truth, calibrated confidence, recipient understanding or permanent custody,
+  and it does not promise stable V1 compatibility.
 type: software
-version: "0.8.4-preview"
-date-released: "2026-06-13"
+version: "0.8.5-preview"
+date-released: "2026-10-13"
 authors:
   - family-names: "Kompanchenko"
     given-names: "Timothy"
@@ -48,10 +50,15 @@ identifiers:
       Use this identifier when citing the format generically rather than a
       specific snapshot.
   - type: doi
+    value: "10.5281/zenodo.23329922"
+    description: >
+      Zenodo DOI for the v0.8.5-preview release (the current citable
+      snapshot; the concept DOI above resolves here).
+  - type: doi
     value: "10.5281/zenodo.20683340"
     description: >
-      Zenodo DOI for the v0.8.4-preview release (the current citable
-      snapshot; the concept DOI above resolves here).
+      Zenodo DOI for the v0.8.4-preview release (an earlier citable
+      snapshot).
   - type: doi
     value: "10.5281/zenodo.20100689"
     description: >

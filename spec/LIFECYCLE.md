@@ -359,7 +359,7 @@ kpack restore meetings/webb-advisory-2026-03-22.kpack/
 # Moves from _archive/ back to active directory
 ```
 
-> The `kpack` commands above describe planned reference tooling. As of v0.8.4-preview, the commands that ship in this repository are `python3 conformance/run.py`, `./reference/kpack lint` (which delegates to it), and `./reference/kpack new` (scaffolds a validated pack from the starter). See [SPEC.md §13 Tooling](SPEC.md) for status.
+> The `kpack` commands above describe planned reference tooling. As of v0.8.5-preview, the commands that ship in this repository are `python3 conformance/run.py`, `./reference/kpack lint` (which delegates to it), and `./reference/kpack new` (scaffolds a validated pack from the starter). See [SPEC.md §13 Tooling](SPEC.md) for status.
 
 ---
 
@@ -416,7 +416,7 @@ A source-content claim such as “the specialist's report dated the work 1957”
 
 Supersession is local to a pack. A claim in pack A superseded with `⊘` does not propagate to claims in pack B that referenced the original via `↔` (cross-pack see-also). Cross-pack effects are a [`RECONCILIATION.md`](RECONCILIATION.md) concern (currently a stub; full design deferred to v0.9 / v1.0).
 
-The conservative reading for v0.8.4-preview: a cross-pack `↔` reference is a navigational pointer, not a binding dependency. Pack B's claim with `↔packA#section` does not require pack A to be reconciled before pack B is published. A section reference (`packA#section`) remains navigation to that section, whose contents may change. A claim-identity reference (`packA#C001`) still names that original claim, including when it has moved to history; it MUST NOT be silently retargeted to a successor. Neither form automatically reconciles pack B's conclusions.
+The conservative reading for v0.8.5-preview: a cross-pack `↔` reference is a navigational pointer, not a binding dependency. Pack B's claim with `↔packA#section` does not require pack A to be reconciled before pack B is published. A section reference (`packA#section`) remains navigation to that section, whose contents may change. A claim-identity reference (`packA#C001`) still names that original claim, including when it has moved to history; it MUST NOT be silently retargeted to a successor. Neither form automatically reconciles pack B's conclusions.
 
 ---
 

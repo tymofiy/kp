@@ -10,9 +10,9 @@
 > they can reason with and continue using across tasks and tools.
 
 **Editor:** Timothy Kompanchenko
-**Status:** Editor's Draft — unreleased updates
+**Status:** Released Editor's Draft — v0.8.5-preview
 **Draft updated:** 2026-10-12
-**Latest citable release:** `KP:1 Public Draft — 2026-06` (`v0.8.4-preview`)
+**Latest citable release:** `KP:1 — Knowledge Pack Format Specification` (`v0.8.5-preview`, 2026-10-13)
 **Cite:** [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.19445262.svg)](https://doi.org/10.5281/zenodo.19445262) (concept DOI — always resolves to latest version)
 **See also:** [`spec/CORE.md`](spec/CORE.md), [`spec/SPEC.md`](spec/SPEC.md), [`spec/AUTHORING.md`](spec/AUTHORING.md), [`AGENTS.md`](AGENTS.md) (AI-first routing), [`GOVERNANCE.md`](GOVERNANCE.md), [`CONTRIBUTING.md`](CONTRIBUTING.md)
 
@@ -182,7 +182,7 @@ format's genuinely novel contributions.
 
 ## Status
 
-KP:1 is published as `KP:1 Public Draft — 2026-06` (current git tag `v0.8.4-preview`, with the v0.7.x preview series and the iterative v0.8.x preview line documented in [`spec/CHANGELOG.md`](spec/CHANGELOG.md)). The unreleased editor's draft adds the changes listed in [the changelog](spec/CHANGELOG.md). Its grammar, schemas and reference checks remain preview work; the released snapshot and the moving draft are distinct. See [compatibility](spec/COMPATIBILITY.md).
+KP:1 is published as a **released editor's draft**, `v0.8.5-preview` (2026-10-13), archived at [the version DOI](https://doi.org/10.5281/zenodo.23329922). The [changelog](spec/CHANGELOG.md) records this release and the earlier preview series. Its grammar, schemas and reference checks remain preview work. A release makes this snapshot public and citable; it does not make the specification final. See [compatibility](spec/COMPATIBILITY.md).
 
 This is an **editor's draft** maintained by a single editor in a public repository. The specification is **not final** and may change in any way at any time, including breaking changes. It is **not yet ratified** by any standards body. Compatibility commitments will arrive only with a non-draft version. See [`GOVERNANCE.md`](GOVERNANCE.md) for the full governance picture, including how decisions are made during the preview phase and what changes when the Knowledge Pack Foundation is incorporated.
 
@@ -201,9 +201,11 @@ See [`CONTRIBUTING.md`](CONTRIBUTING.md) for the contribution policy and [`GOVER
 
 If you reference KP:1 in academic, technical, or evaluative work, please use the metadata in [`CITATION.cff`](CITATION.cff). The Zenodo **concept DOI** [`10.5281/zenodo.19445262`](https://doi.org/10.5281/zenodo.19445262) always resolves to the most recently published version. The v0.8.0-preview snapshot remains available at DOI [`10.5281/zenodo.20100689`](https://doi.org/10.5281/zenodo.20100689), and the v0.7-preview predecessor release remains available at DOI [`10.5281/zenodo.19445263`](https://doi.org/10.5281/zenodo.19445263).
 
-The recommended short form (using the concept DOI for the current preview) is:
+For a reproducible citation, use the version DOI. A [publication abstract and searchable specification PDF](https://tymofiy.github.io/kp/kp-v0.8.5-preview.html) are also available. The recommended short form is:
 
-> Kompanchenko, T. (2026). *KP:1 — Knowledge Pack Format Specification* (Version 0.8.4-preview). Zenodo. <https://doi.org/10.5281/zenodo.19445262>
+> Kompanchenko, T. (2026). *KP:1 — Knowledge Pack Format Specification* (Version 0.8.5-preview). Zenodo. <https://doi.org/10.5281/zenodo.23329922>
+
+With the Python dependencies in `requirements.txt` installed, install Pandoc, Typst, qpdf, and the Inter / IBM Plex Mono fonts, then run `python3 scripts/build_pdf.py`. The adjacent `.sources.json` file records source hashes and tool versions; byte reproducibility is scoped to the same tool and font environment.
 
 The editor and an acknowledgment of AI drafting assistance are also recorded in [`ACKNOWLEDGMENTS.md`](ACKNOWLEDGMENTS.md).
 

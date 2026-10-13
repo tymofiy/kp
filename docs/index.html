@@ -24,18 +24,20 @@
 <!-- Highwire Press citation tags (Google Scholar / Crossref-style indexing) -->
 <meta name="citation_title" content="KP:1 — Knowledge Pack Format Specification">
 <meta name="citation_author" content="Kompanchenko, Timothy">
-<meta name="citation_publication_date" content="2026/06/13">
-<meta name="citation_online_date" content="2026/06/13">
-<meta name="citation_technical_report_number" content="v0.8.4-preview">
-<meta name="citation_doi" content="10.5281/zenodo.20683340">
+<meta name="citation_publication_date" content="2026/10/13">
+<meta name="citation_online_date" content="2026/10/13">
+<meta name="citation_technical_report_institution" content="Independent">
+<meta name="citation_technical_report_number" content="v0.8.5-preview">
+<meta name="citation_doi" content="10.5281/zenodo.23329922">
+<meta name="citation_pdf_url" content="https://tymofiy.github.io/kp/kp-v0.8.5-preview.pdf">
 <meta name="citation_public_url" content="https://tymofiy.github.io/kp/">
 <meta name="citation_keywords" content="knowledge representation; epistemic state; AI specification; confidence calibration; evidence reference; contradiction qualifiers; text-native format">
-<meta name="citation_abstract" content="KP:1 is a text-native specification for representing epistemic state — claims with confidence, evidence, contradictions, and the trace of how beliefs evolved — designed for AI inspectability and portability across systems.">
+<meta name="citation_abstract" content="KP:1 is an open, text-native format for representing epistemic state: assertions and explanations with their context, confidence, evidence, relationships and history. It helps people and AI carry articulated understanding between tasks and tools through an account that others can inspect, challenge, correct and continue. The specification defines a directory and claim contract, a JSON Schema and PEG grammar, and topic companions for evidence, history, views, composition, multilingual sources and archives. Source accounts remain distinct from adopted assessments; uncertainty and contrary evidence remain explicit. This released editor&#x27;s draft includes reference validation and experimental graph compilation, with their coverage and limits documented separately. It does not certify source truth, calibrated confidence, recipient understanding or permanent custody, and it does not promise stable V1 compatibility.">
 
 <!-- Dublin Core -->
 <meta name="DC.title" content="KP:1 — Knowledge Pack Format Specification">
 <meta name="DC.creator" content="Kompanchenko, Timothy">
-<meta name="DC.date" content="2026-06-13">
+<meta name="DC.date" content="2026-10-13">
 <meta name="DC.identifier" content="https://doi.org/10.5281/zenodo.19445262">
 <meta name="DC.rights" content="CC-BY-4.0">
 
@@ -272,17 +274,17 @@
   <!-- ============ HERO ============ -->
   <header class="hero">
     <div class="wrap">
-      <p class="status load-in"><span class="status-dot" aria-hidden="true"></span> Unreleased Editor's Draft · Latest Citable Public Draft <span data-kp="ym">2026-06</span></p>
+      <p class="status load-in"><span class="status-dot" aria-hidden="true"></span> Released Editor's Draft · Public Draft <span data-kp="ym">2026-10</span></p>
       <h1 class="mark load-in d1">KP:1</h1>
       <span class="hero-rule load-in d2" aria-hidden="true"></span>
       <p class="hero-lead load-in d2">An open, text-native format for packaging <strong>epistemic state</strong> — claims, confidence, evidence, contradictions, and the trace of how beliefs evolved, preserved as structure.</p>
       <div class="btn-row load-in d3">
-        <a class="btn btn--primary" href="https://github.com/tymofiy/kp/blob/main/spec/SPEC.md">Read the specification</a>
+        <a class="btn btn--primary" data-kp-link="pdf" href="https://tymofiy.github.io/kp/kp-v0.8.5-preview.pdf">Read the specification</a>
         <a class="btn btn--secondary" href="https://github.com/tymofiy/kp">GitHub repository</a>
       </div>
       <p class="meta-line mono load-in d4">
-        Latest citable release: <span data-kp="version">v0.8.4-preview</span><span aria-hidden="true">·</span>
-        <span data-kp="date">2026-06-13</span><span aria-hidden="true">·</span>
+        Latest citable release: <span data-kp="version">v0.8.5-preview</span><span aria-hidden="true">·</span>
+        <span data-kp="date">2026-10-13</span><span aria-hidden="true">·</span>
         <span data-kp="license">CC BY 4.0</span><span aria-hidden="true">·</span>
         <span>DOI <span data-kp="concept-doi">10.5281/zenodo.19445262</span></span>
       </p>
@@ -294,7 +296,7 @@
     <div class="wrap">
       <h2 class="sec-h" id="abstract-h">Abstract</h2>
       <div class="prose">
-        <p>KP:1 is a text-native specification for representing epistemic state — claims with confidence, evidence, contradictions, and the trace of how beliefs evolved — designed for AI inspectability and portability across systems. The format defines a strict normative core (<code>CORE.md</code>, JSON Schema, PEG grammar) plus topic-authoritative companions for voice surfaces, multilingual support, archival, composition, and extension blocks.</p>
+        <p data-kp="abstract">KP:1 is an open, text-native format for representing epistemic state: assertions and explanations with their context, confidence, evidence, relationships and history. It helps people and AI carry articulated understanding between tasks and tools through an account that others can inspect, challenge, correct and continue. The specification defines a directory and claim contract, a JSON Schema and PEG grammar, and topic companions for evidence, history, views, composition, multilingual sources and archives. Source accounts remain distinct from adopted assessments; uncertainty and contrary evidence remain explicit. This released editor's draft includes reference validation and experimental graph compilation, with their coverage and limits documented separately. It does not certify source truth, calibrated confidence, recipient understanding or permanent custody, and it does not promise stable V1 compatibility.</p>
       </div>
     </div>
   </section>
@@ -423,8 +425,9 @@
           <p class="cite mono">
             Kompanchenko, T. (<span data-kp="year">2026</span>). <span class="c-strong">KP:1 — Knowledge Pack Format Specification</span>. Zenodo.
             https://doi.org/<span data-kp="concept-doi">10.5281/zenodo.19445262</span>
-            <span class="cite-note">— concept DOI (resolves to the latest version). This version: <span data-kp="version">v0.8.4-preview</span>, https://doi.org/<span data-kp="version-doi">10.5281/zenodo.20683340</span></span>
+            <span class="cite-note">— concept DOI (resolves to the latest version). This version: <span data-kp="version">v0.8.5-preview</span>, https://doi.org/<span data-kp="version-doi">10.5281/zenodo.23329922</span></span>
           </p>
+          <p class="close-body"><a class="tlink" data-kp-link="edition" href="https://tymofiy.github.io/kp/kp-v0.8.5-preview.html">Publication abstract and PDF</a></p>
         </div>
       </div>
       <p class="legal">
