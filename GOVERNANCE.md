@@ -54,7 +54,7 @@ Conversations that legitimately stay private during the preview phase:
 - Donor and funder conversations
 - Trademark filings and clearance
 - Partner outreach where commercial confidentiality applies
-- Legal advice from counsel (Kiki and any other retained attorneys)
+- Legal advice from retained counsel
 
 These categories are private because they are inherently confidential, not because they are being kept out of public view to manage the technical narrative.
 

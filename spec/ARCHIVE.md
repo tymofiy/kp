@@ -7,7 +7,7 @@
 > **Status:** Draft
 > **Resolves:** AR-14 — `signatures.yaml` schema (formal artifact: [`conformance/grammar/kp-signatures.schema.json`](../conformance/grammar/kp-signatures.schema.json))
 
-> **`kpack` CLI invocations in this document describe planned reference tooling.** Only `python3 conformance/run.py` ships today. See [SPEC.md §13](SPEC.md) and the contract-pointer stub at [`reference/kpack`](../reference/kpack) for status.
+> **`kpack` CLI invocations in this document describe planned reference tooling.** `python3 conformance/run.py`, `./reference/kpack lint` and `./reference/kpack new` ship today. See [SPEC.md §13](SPEC.md) and the reference launcher at [`reference/kpack`](../reference/kpack) for status.
 
 ---
 
@@ -77,7 +77,7 @@ marquet-le-passeur.kpack (ZIP)
 
 1. The archive MUST be a valid ZIP file (PKZIP format, per APPNOTE.TXT).
 2. Entries MUST be rooted at the pack directory level — no extra wrapper subdirectory. (Nested paths like `views/overview.md` and `attachments/photo.jpg` are expected; the rule prohibits wrapping the entire pack in a subdirectory like `marquet-le-passeur/PACK.yaml`.)
-3. `PACK.yaml` and `claims.md` MUST be present (per SPEC.md §2).
+3. `PACK.yaml` and the files required for the declared kind MUST be present (per [CORE.md §2](CORE.md#2-pack-structure)). Claim-bearing and composition packs require `claims.md`; definition/policy packs use their companion documents.
 4. `signatures.yaml` MUST be present in any archive that participates in an integrity chain (§4). It MAY be absent in archives created for convenience (e.g., manual export). See "Conformance levels" below.
 5. Compression method SHOULD be DEFLATE. Store (no compression) is acceptable for small packs or when speed is preferred.
 6. ZIP64 extensions MUST be used for archives exceeding 4 GB (archives without ZIP64 at this size are invalid, not merely suboptimal).
@@ -91,7 +91,17 @@ Archives are ZIP files and carry the same security risks as any ZIP container. I
 9. **No symlinks.** ZIP entries marked as symbolic links MUST be rejected. Symlinks enable arbitrary file reads and are not portable across platforms.
 10. **No duplicate entries.** ZIP entries with identical paths MUST be rejected (some ZIP implementations silently overwrite; the behavior is undefined and exploitable).
 11. **No special files.** Device files, FIFOs, and other non-regular-file entries MUST be rejected.
-12. **OS metadata exclusion.** Entries matching `.DS_Store`, `Thumbs.db`, `__MACOSX/*`, and `desktop.ini` SHOULD be stripped on archive creation and MUST be ignored during hash computation.
+12. **OS metadata exclusion.** The excluded set is exactly:
+
+    ```text
+    .DS_Store     Thumbs.db     desktop.ini     __MACOSX     ._*
+    ```
+
+    These SHOULD be stripped on archive creation and MUST be ignored during hash computation. **This requirement is the single normative statement of the excluded set; other sections refer to it rather than restating it.**
+
+    **Matching is by path component, at any depth:** a path is excluded if any of its components matches an entry in the set — `.DS_Store`, `Thumbs.db`, `desktop.ini` and `__MACOSX` by equality, and `._*` by prefix, meaning a component beginning with `._` (AppleDouble sidecar files). A file at `views/.DS_Store` is excluded; so is one at `._resources/notes.md`.
+
+    **No open-ended prefix exclusions.** Named OS-metadata patterns are enumerable, and the set above is closed and complete. `._*` is a named pattern with a bounded meaning — AppleDouble sidecars — not an open class such as "every dotfile". A file named `.provenance`, `.gitattributes` or `.anything-else` **is part of the pack and is included in the hash.**
 
 ### Conformance levels
 
@@ -106,12 +116,12 @@ An export archive is a valid ZIP containing a valid pack. It is not sealed and d
 
 A receiver that encounters a `.kpack` archive cold — with no surrounding context, no documentation, no prior exposure to KP:1 — should be able to learn the format from the archive itself. Two pack-internal mechanisms support this, **in this order of priority**:
 
-1. **Rosetta header (load-bearing).** The first line of `claims.md` is a self-describing HTML comment naming the spec version and tokenization legend ([CORE.md §4](CORE.md#4-claimsmd--rosetta-header)). It is enough to recognize a pack and parse it. The Rosetta header is the offline, network-free parse signal — it does not depend on any external resource.
-2. **`spec_uri` / `spec_version` (informational onboarding pointer).** Sealed-archive producers SHOULD declare a discovery URL on PACK.yaml pointing to the full KP:1 specification ([CORE.md §3 "Spec Onboarding Pointer"](CORE.md#spec-onboarding-pointer)). When present, a previously-unfamiliar consumer can fetch the spec from the URL the pack itself names — useful for first-time onboarding of agents that have never encountered KP:1 before. **`spec_uri` is informational, not a runtime parse dependency.** Consumers MUST NOT treat unreachability of `spec_uri` as a parse failure; the Rosetta header alone is sufficient for parsing. Once a consumer has internalized the format, `spec_uri` carries no further operational weight.
+1. **Rosetta header (load-bearing).** For claim-bearing packs, the first line of `claims.md` is a self-describing HTML comment naming the format epoch and tokenization legend ([CORE.md §4](CORE.md#4-claimsmd--rosetta-header)). Definition/policy kinds instead use the manifest and their companion document rules; they need not invent a claims file or header. The Rosetta header is the offline, network-free parse signal — it does not depend on any external resource.
+2. **`spec_uri` / `spec_version` (informational onboarding pointer).** Sealed-archive producers SHOULD declare a discovery URL on PACK.yaml pointing to the full KP:1 specification ([CORE.md §3 "Spec Onboarding Pointer"](CORE.md#spec-onboarding-pointer)). When present, a previously-unfamiliar consumer can fetch the spec from the URL the pack itself names — useful for first-time onboarding of agents that have never encountered KP:1 before. **`spec_uri` is informational, not a runtime parse dependency.** Consumers MUST NOT treat unreachability of `spec_uri` as a parse failure; claim-bearing headers provide the inline parse hint; supported companion kinds use their local files and known companion rules. Once a consumer has internalized the format, `spec_uri` carries no further operational weight.
 
 Consumers SHOULD read PACK.yaml first and, on initial encounter, follow `spec_uri` (when declared) to onboard against the spec for the pack's declared `spec_version`. When `spec_uri` is absent, consumers MAY assume the published reference implementation at `https://github.com/tymofiy/kp` but MUST treat the assumption as informational, not a guarantee. Offline-first validators MUST NOT fail on absent or unreachable `spec_uri` — the field's purpose is onboarding ergonomics, not integrity.
 
-This makes a sealed `.kpack` archive **self-explaining**: the file extension identifies the format family, the Rosetta header identifies the version (offline, with no external dependency), and the optional manifest onboarding pointer helps an unfamiliar receiver learn the format on first encounter. The archive remains parseable without any network reach.
+The file extension identifies the format family; a claim-bearing pack's header supplies its inline parse hint, and the manifest declares its kind. The optional onboarding pointer helps an unfamiliar receiver learn the format. Readers that implement the relevant companion rules can parse the supported local files without network access.
 
 ---
 
@@ -155,7 +165,13 @@ SHA-256 of this concatenation → pack hash.
 ### Canonicalization notes
 
 - **Line endings.** Hashing operates on raw bytes, so `\r\n` and `\n` produce different hashes. Implementations that use git SHOULD set `* text=auto eol=lf` in `.gitattributes` within the pack directory to prevent `core.autocrlf` from altering line endings across platforms.
-- **OS metadata files.** Files such as `.DS_Store` (macOS), `Thumbs.db` (Windows), and `__MACOSX/` entries are not part of the Knowledge Pack. Implementations MUST exclude them from hash computation and SHOULD exclude them from archives. See §10 (Security Considerations).
+- **OS metadata files.** Operating-system metadata is not part of the Knowledge Pack. Implementations MUST exclude it from hash computation and SHOULD exclude it from archives. **The excluded set is defined once, in §2 requirement 12** — see §10 (Security Considerations) for why these files are excluded rather than which they are.
+
+### Draft policy compatibility
+
+The component matching and AppleDouble exclusions in this draft can produce a different content hash from earlier published rules. `seal_version` selects a signing payload, not an exclusion policy. Historical artifacts MUST NOT be silently reserialized or re-sealed to satisfy the new policy. A verification receipt must identify the exact spec revision/hash rules it applied. An explicitly selected historical compatibility mode may verify the historical rules; automatic fallback from a current-policy mismatch MUST NOT be presented as current-policy success. Keep historical bytes and receipts. See [COMPATIBILITY.md](COMPATIBILITY.md).
+
+Fixed expected hashes in [archive-hash-vectors.json](../conformance/fixtures/archive-hash-vectors.json) cover component exclusions, retained ordinary dotfiles, root-only receipt exclusion, NFC filenames and raw line endings. The [reference helper](../conformance/archive_hash.py) accepts an already enumerated regular-file map; it does not implement archive extraction or signature/chain verification.
 
 ### Properties
 
@@ -184,6 +200,9 @@ pack_id: "0b3c1f9a-4d7e-4a1c-9f2b-3e4a5b6c7d8e"
 # Self-describing receipts (OPTIONAL; mirrors PACK.yaml name/version)
 pack_name: "solar-energy-market"
 pack_version: "2026.03.18"
+
+# Signing-payload version (§4.2) — omit for v1
+seal_version: "2"
 
 # Pack hash — computed per §3
 pack_hash: "a1b2c3d4e5f6..."
@@ -219,6 +238,7 @@ signature:
 | `pack_id` | string | Stable identity of the pack across versions. A UUID is RECOMMENDED. Two sealed archives MUST share the same `pack_id` if and only if they represent versions of the same logical pack. |
 | `pack_name` | string | Self-describing copy of `PACK.yaml.name`. Enables receipts and indexing without loading the manifest. |
 | `pack_version` | string | Self-describing copy of `PACK.yaml.version`. Same rationale as `pack_name`. |
+| `seal_version` | string | OPTIONAL. Signing-payload version (§4.2). Absent means v1, whose payload does not cover `pack_id`. Present values: `"2"`. Itself a signed field, so it cannot be stripped to select a weaker payload. |
 | `pack_hash` | string | Lowercase hex-encoded SHA-256 digest (64 characters). |
 | `files` | map\<string, string\> | Keys: NFC-normalized relative paths with `/` separator. Values: lowercase hex SHA-256 digests. MUST NOT include `signatures.yaml`. |
 | `sealed_at` | string | ISO 8601 UTC timestamp (e.g., `2026-04-12T14:30:00Z`). |
@@ -274,15 +294,29 @@ Signing provides **tamper evidence** for the sealing metadata — proof that `pa
 
 **Signing payload.** The signature is computed over a canonical byte string that binds the metadata, not just the pack hash. This prevents an attacker from rewriting sealing metadata while preserving a valid signature.
 
-The signing payload is the UTF-8 encoding of the following concatenation:
+There are two payload versions. A seal declares which one it uses with the OPTIONAL top-level `seal_version` field in `signatures.yaml`; **its absence means v1.**
+
+**Payload v1** (`seal_version` absent) — the original form:
 
 ```text
 {algorithm}\n{pack_hash}\n{sealed_at}\n{sealed_by}\n{parent.version or empty}\n{parent.pack_hash or empty}\n
 ```
 
-Where `parent.version` and `parent.pack_hash` use their exact string values from `signatures.yaml` if present, or the empty string for a v1 pack (no parent). All fields use their literal `signatures.yaml` values — no normalization or transformation.
+**Payload v2** (`seal_version: "2"`) — adds `pack_id`, and adds the version declaration itself:
 
-> **Scope note.** The v1 signing payload binds the single primary parent only; `parent.merge_parents` entries (§4 field table) are covered by **neither** the signature **nor** the pack content hash (`signatures.yaml` is excluded from hashing, §3). Merge-parent entries are therefore **unauthenticated lineage hints**: an attacker can add, remove, or alter them in a signed archive without invalidating anything. Verifiers MUST NOT treat merge-parent assertions as tamper-evident; only the referenced archives' own contents can be verified, never the assertion that they are parents of this pack. A future payload revision may extend coverage.
+```text
+{seal_version}\n{algorithm}\n{pack_hash}\n{pack_id or empty}\n{sealed_at}\n{sealed_by}\n{parent.version or empty}\n{parent.pack_hash or empty}\n
+```
+
+In both, absent fields are the empty string, and all fields use their literal `signatures.yaml` values — no normalization or transformation.
+
+**The version declaration is itself a signed field, and MUST be.** A verifier selects the payload from `seal_version`, so a marker held outside the signature would be a downgrade rather than a protection: an attacker strips it from a v2 seal, the verifier falls back to v1, the v1 payload does not cover `pack_id`, and the seal verifies — while carrying a claim of being fixed. Because the declaration is signed, stripping it yields a v1 payload that cannot match a v2 signature, and adding it to a v1 seal yields a v2 payload that cannot match a v1 signature. Neither direction forges; both fail closed. Verifiers MUST refuse a seal declaring a `seal_version` they do not implement, and MUST NOT fall back to a payload version the seal did not declare.
+
+Producers SHOULD emit v2. Verifiers MUST accept both.
+
+> **Scope note — what a v1 seal does and does not attest.** `signatures.yaml` is excluded from the pack content hash (§3), so any field inside it that the payload does not name is covered by **neither** the signature **nor** the hash. Under v1 that includes **`pack_id`**: an attacker can add, change, or remove a pack's identity inside a signed archive without invalidating anything, undetectably. Since identity is what groups a pack's revisions into a family, a v1 pack can be made to claim another pack's identity and enter its lineage — so **verification of a v1 seal is not verification of the identity it carries**, and consumers MUST treat a v1 `pack_id` as transport metadata rather than as a signed assertion. v2 closes this for seals minted under it; **v1 seals remain identity-rewritable by construction, permanently**, because they were signed over a payload that never covered the field. Existing packs are repaired only by being re-sealed at v2.
+>
+> `parent.merge_parents` entries (§4 field table) are outside **both** payload versions for the same reason and remain **unauthenticated lineage hints** under v1 and v2 alike: an attacker can add, remove, or alter them in a signed archive without invalidating anything. Verifiers MUST NOT treat merge-parent assertions as tamper-evident; only the referenced archives' own contents can be verified, never the assertion that they are parents of this pack. A future payload revision may extend coverage.
 
 **Signing procedure:**
 
@@ -307,7 +341,7 @@ Implementations SHOULD support at minimum Ed25519. HMAC-SHA256 MAY be supported 
 
 ## 5. Version Chain
 
-Each sealed version of a pack references its parent, forming an integrity chain. The chain is the proof that a pack's history is unbroken.
+Each sealed version of a pack references its parent, forming an integrity chain. A verified chain establishes the exercised hash links among the available revisions; it does not prove that every historical revision or source artifact was retained.
 
 ### Chain structure
 
@@ -345,7 +379,7 @@ Input:  name.kpack/  (directory)
 Output: name.kpack   (ZIP file with signatures.yaml, written to -o path or cwd)
 
 Steps:
-1. Exclude OS metadata files (.DS_Store, Thumbs.db, desktop.ini, __MACOSX/) from the file set
+1. Exclude OS metadata files from the file set, per §2 requirement 12
 2. Compute file hashes for all remaining files in the directory
 3. Compute pack hash per §3 (NFC normalization, lowercase hex, sorted paths)
 4. Write signatures.yaml (with parent reference if this is not v1)
@@ -362,7 +396,7 @@ Output: { status: "sealed" | "export" | "invalid", errors: string[] }
 Steps:
 1. Validate all ZIP entries against §2 safety requirements (path traversal, symlinks, duplicates)
 2. Validate archive structure (§2 requirements):
-   - PACK.yaml and claims.md MUST be present at the pack root
+   - PACK.yaml and the files required by CORE §2 for the declared kind MUST be present
    - Entries MUST be pack-rooted (no wrapper subdirectory)
    - No two entry paths may collide after NFC normalization
    - If any structural check fails: return status "invalid"
@@ -391,7 +425,7 @@ Steps:
    - Reject entries with path traversal (../ segments)
    - Reject entries with absolute paths or backslash separators
    - Reject symlinks, device files, and duplicate entries
-   - Strip OS metadata entries (.DS_Store, Thumbs.db, __MACOSX/)
+   - Strip OS metadata entries, per §2 requirement 12
 2. Verify the archive (§6.2) — warn but do not block on failure
 3. Extract ZIP contents to directory
 4. signatures.yaml is preserved in the directory (it is part of the pack)
@@ -493,7 +527,7 @@ The integrity chain (hash verification) is valuable without signing. Signing add
 
 ### Why does the signature bind metadata, not just the pack hash?
 
-`signatures.yaml` is excluded from the content hash to avoid circular dependency. But without binding, the metadata fields (`sealed_at`, `sealed_by`, the primary `parent` fields) could be rewritten without breaking verification — defeating the purpose of the integrity chain. The signing payload (§4.2) binds these fields so that any modification invalidates the signature (`parent.merge_parents` excepted — see the §4.2 scope note).
+`signatures.yaml` is excluded from the content hash to avoid circular dependency. But without binding, the metadata fields (`sealed_at`, `sealed_by`, the primary `parent` fields) could be rewritten without breaking verification — defeating the purpose of the integrity chain. The signing payload (§4.2) binds these fields so that any modification invalidates the signature. Exactly which fields are bound depends on the payload version: v2 additionally binds `pack_id`, which v1 left rewritable; `parent.merge_parents` is bound by neither. See the §4.2 scope note for what a v1 seal does and does not attest.
 
 ---
 
@@ -514,13 +548,26 @@ Implementations MUST validate every ZIP entry path **before** extraction. Valida
 
 ### OS metadata contamination
 
-Operating systems create hidden metadata files (`.DS_Store` on macOS, `Thumbs.db` on Windows, `__MACOSX/` resource fork directories in macOS ZIP tools). These files:
+Operating systems create hidden metadata files — for example `.DS_Store` on macOS, `Thumbs.db` on Windows, and `__MACOSX/` resource-fork directories produced by macOS ZIP tools. **These examples are illustrative; the normative set is §2 requirement 12.** Such files:
 
 - Are not part of the Knowledge Pack.
 - Vary by platform — including them in the hash makes seals non-portable.
 - May leak filesystem metadata (directory structure, timestamps, thumbnail images).
 
-Implementations MUST exclude these files from hash computation and SHOULD strip them when creating archives.
+**AppleDouble sidecars (`._*`) are a special case worth stating plainly.** These files carry
+resource-fork and extended-attribute data, and appear both inside `__MACOSX/` directories in ZIP
+archives and as bare `._`-prefixed files on disk when an archive is extracted by a tool that
+flattens that directory. The two shapes are the same mechanism.
+
+They also present a portability problem the other entries do not: **on macOS, Foundation's
+directory-enumeration APIs do not report bare `._`-prefixed files to a caller.** An implementation
+built on those APIs therefore cannot observe such a file in order to hash it, while an
+implementation reading the directory by other means can. Requiring these files to be hashed would
+make the requirement unsatisfiable for one class of conformant implementation and produce seals that
+verify on one toolchain and fail on another, with the file present on disk in both cases. Excluding
+them by name removes the divergence rather than leaving it to be discovered.
+
+Implementations MUST exclude the files named in §2 requirement 12 from hash computation and SHOULD strip them when creating archives.
 
 ### Line ending normalization
 

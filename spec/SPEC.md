@@ -1,11 +1,12 @@
 <!-- SPDX-License-Identifier: CC-BY-4.0 -->
 <!-- SPDX-FileCopyrightText: 2026 Timothy Kompanchenko -->
 
-# Knowledge Pack Specification v0.8.4-preview
+# Knowledge Pack Specification — Editor's Draft
 
-> **Status:** Editor's Draft — `KP:1 Public Draft — 2026-06` (`v0.8.4-preview`)
+> **Status:** Editor's Draft — unreleased updates
+> **Latest citable release:** `KP:1 Public Draft — 2026-06` (`v0.8.4-preview`)
 > **Editor:** Timothy Kompanchenko
-> **Date:** 2026-05-10
+> **Draft updated:** 2026-10-12
 > **Version history:** See `CHANGELOG.md`
 > **Lane:** Full normative spec + rationale + ecosystem — see [README.md](README.md) for the three-lane structure (CORE = implementer surface, SPEC = comprehensive, companions = topic-authoritative for their domains).
 
@@ -19,17 +20,17 @@ The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT", "SHOULD", "S
 
 A **Knowledge Pack** is a portable representation of epistemic state — what someone believes, how strongly they believe it, based on what evidence, in tension with what other beliefs, as understood at a particular moment in time.
 
-This is not a database format. Databases store facts: certain, flat, internally consistent. Knowledge is none of those things. Knowledge is **inherently uncertain** — the uncertainty is the knowledge, not metadata about it. Knowledge **contains contradictions** — two sources disagree, and the disagreement itself is information, not a bug to be resolved. Knowledge **decays** — confidence should lower over time without new evidence, because the world changes. Knowledge is **perspectival** — the same beliefs serve fundamentally different purposes when reasoned over, read visually, or spoken aloud.
+KP:1 makes uncertainty, differing accounts, evidence and history explicit parts of the knowledge record. A disagreement can itself be useful knowledge; resolving it should preserve the original accounts and the reason for the change. Confidence may need reassessment when evidence or circumstances change. Different readers can use views of the same record for reasoning, visual reading or spoken delivery; the canonical files remain authoritative.
 
-No existing format represents these properties. Database schemas model facts. Semantic Web standards (RDF, JSON-LD, SKOS) model relationships between entities. Personal knowledge tools (Obsidian, Roam) model notes. RAG systems model documents. None of them model **what someone believes and why** — the epistemic state that sits underneath all of those representations.
+The format combines these concepts in an authored, portable text record. Other representations can carry parts of this state, but preserving KP:1’s meaning can require custom vocabulary and explicit mappings. [MAPPING.md](MAPPING.md) distinguishes shared representations from lossy mappings and concepts that need extensions.
 
-A Knowledge Pack does. It packages claims with confidence, evidence, relationships, and contradiction into a multi-file plain text format that any intelligence — human or AI — can read without special tooling.
+A Knowledge Pack packages claims with confidence, evidence, relationships, and contradiction into a multi-file plain text format that any intelligence — human or AI — can read without special tooling.
 
 ### Why This Matters
 
-When an AI reasons about a domain, it needs more than facts. It needs to know: *How sure are we? Who said this? Does it contradict something else we believe? When was this last confirmed? What evidence supports it?* Without these, the AI treats all information as equally true — which is how hallucinations become indistinguishable from knowledge.
+When an AI reasons about a domain, it needs more than facts. It needs to know: *How sure are we? Who said this? Does it contradict something else we believe? When was this last confirmed? What evidence supports it?* Making this context explicit gives applications material to inspect and reason from. Applications remain responsible for retrieval, reasoning and checking their conclusions; the format alone does not prevent unsupported output.
 
-When a human transfers knowledge to another human, they naturally include this context: "I think the market is about $2 billion, but that number is from last year's report and a colleague quoted a different figure." Every database, every spreadsheet, every structured format strips this away. Knowledge Packs preserve it.
+When a human transfers knowledge to another human, they naturally include this context: "I think the market is about $2 billion, but that number is from last year's report and a colleague quoted a different figure." Context can be lost when that account is reduced to isolated records. Knowledge Packs provide explicit places to retain it.
 
 ### Design Philosophy
 
@@ -286,7 +287,7 @@ vocabulary:                            # Predicate conventions
     - cost_trajectory
     - adoption_rate
 
-files:                                 # Non-standard file names (defaults assumed if omitted)
+files:                                 # Application mappings; canonical generic files remain required (CORE §2)
   claims: claims.md
   evidence: evidence.md
   entities: entities.md
@@ -850,6 +851,20 @@ by Fraunhofer ISE CalLab. Commercial module target: 2028.
 | `type` | Yes | Source type string | `document`, `web`, `expert`, `observed`, `research`, `multi_source_synthesis`, `interview`, `measurement`, etc. |
 | `captured` | Yes | ISO date | When the evidence was obtained |
 | `source` | Yes | Free text | URI, file path, or description of the source |
+| `kp-content-encoding` | No | `markdown-backslash-v1` | Reversible protection for record-shaped Markdown inside the evidence body (CORE §10 / AR-19) |
+
+### Record-Safe Evidence Bodies
+
+Source excerpts can contain their own `## E001` headings or `- [E001]` bullets. Producers MUST NOT
+emit those lines verbatim where a consumer could promote them into sibling KP evidence records.
+KP:1 registers the exact blockquote marker
+`> **kp-content-encoding:** markdown-backslash-v1` and the reversible line-escape algorithm in
+[CORE.md §10 “Record-Safe Encoded Bodies”](CORE.md#record-safe-encoded-bodies). That CORE section is
+the implementer contract: record segmentation happens before decoding, existing leading backslashes
+are escaped for reversibility, and unknown encoding values are preserved rather than guessed.
+
+Evidence IDs are unique serialized identities. A pack containing two unescaped top-level records
+with the same evidence ID is invalid (SC-13), even if the record bodies are identical.
 
 ### Design Principles
 
@@ -868,7 +883,8 @@ by Fraunhofer ISE CalLab. Commercial module target: 2028.
 > for typed edges. The successor surfaces carry stable canonical entity IDs, an external-ID
 > vocabulary suitable for cross-pack resolution, per-claim `entity_refs`, and
 > the `relation_types` schema from [DEFINITIONS.md §3](DEFINITIONS.md). A
-> one-shot migration script in kp-forge rewrites legacy packs into the new
+> one-shot migration script in the reference producer implementation rewrites
+> legacy packs into the new
 > shape. Legacy `entities.md` packs continue to validate; the change is
 > producer-side guidance, not a validation removal.
 
@@ -965,6 +981,8 @@ Custom scales can be declared in `PACK.yaml` via `confidence.scale: custom` with
 
 **claims.md contains active claims only.** It is the reasoning surface — what an agent needs to perceive the current epistemic state. Superseded and retracted claims move to `history.md`, which preserves the full audit trail.
 
+After the final active claim is retracted, `claims.md` retains its header, frontmatter, H1 and at least one empty H2 section, optionally explaining the empty state in a blockquote. Historical records and their evidence remain. No sentinel or replacement claim is required. See [CORE.md §5](CORE.md#5-claimsmd--frontmatter-and-heading).
+
 Claims are never edited in place — they are superseded by new claims.
 
 ### States
@@ -1003,7 +1021,7 @@ within a single claim is forbidden by AR-13.
 
 ### history.md — Audit Trail
 
-`history.md` preserves every superseded and retracted claim with its original metadata plus context about what happened.
+`history.md` preserves every superseded and retracted claim with its original metadata, prose and outgoing relations, plus editorial context about what happened. Active and historical records share the pack-local ID namespace and semantic checks specified in [CORE.md §12](CORE.md#12-validation-rules).
 
 ```markdown
 # History
@@ -1790,7 +1808,7 @@ The following topics are specified in companion documents within the `spec/` dir
 | `spec/RECONCILIATION.md` | Cross-pack reconciliation protocol (stub — design deferred to v0.9 / v1.0) | — |
 | `spec/MAPPING.md` | RDF / JSON-LD / PROV-O / Nanopublications field-by-field translation (informative) | — |
 
-These documents are normative — they carry the same authority as this core spec. The core spec defines the format; companion specs define the ecosystem.
+Topic companions carry authority for their declared surfaces. Informative, experimental and stub documents retain their stated limits; producer-profile catalog rules are conditional on profile support. See [COMPATIBILITY.md](COMPATIBILITY.md) for precedence and reference-tool coverage.
 
 ---
 

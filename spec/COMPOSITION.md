@@ -36,7 +36,7 @@ Knowledge lives once, in its canonical pack. A meeting about supply chain divers
 
 ## 2. composition.yaml
 
-An optional file in any `.kpack/` directory that declares the pack's composition structure. Its presence signals that this pack is a composite -- it references other packs rather than containing all knowledge directly.
+The canonical `composition.yaml` file in a `.kpack/` directory declares composition structure. Its presence signals a composite pack. PACK.yaml MAY declare `composition: composition.yaml`; when declared, the file MUST exist. Omitting that manifest field does not prevent detection of a present canonical file. Generic readers do not resolve alternate composition filenames.
 
 ### Meeting Prep Example (Full)
 
@@ -499,6 +499,44 @@ pre_load:
 - `slide_count` constrains scope
 - `style` reference for visual consistency
 - Typically references fewer packs (focused narrative)
+
+### selection
+
+A selection composition is a lens over items that already live in **exactly one** collection. An exhibition catalogue, a loan agreement, an insurance schedule and a valuation report share this shape: a subset of items chosen for a stated purpose, where the items do not move and nothing is duplicated.
+
+Unlike the other four types, a selection has no occasion. `meeting-prep` has a date and participants, `briefing` has a recipient, `presentation` has an audience; a selection has a purpose and a scope. Selections also overlap and persist -- the same item may sit in a loan, an insurance schedule and a catalogue at once, for different durations, without conflict.
+
+```yaml
+type: selection
+selection:
+  purpose: "Group exhibition at the fictional Example Gallery"
+  collection: "example-gallery"
+  scope: "Works displayed in the east room"
+  prepared_for: "Example Gallery exhibition team"
+  date: "2026-08-22"
+members:
+  - reference: "example-work-001"
+  - reference: "example-work-002"
+  - reference: "example-work-003"
+pre_load:
+  - "example-work-001"
+  - "example-work-002"
+  - "example-work-003"
+```
+
+`purpose`, `collection` and `scope` are REQUIRED nonempty strings. `purpose` remains free text, not a closed purpose enum. `members` is required but MAY be empty when the scoped selection has no matches; explain that result in the composition's narrative.
+
+**Resolution and time.** This core shape is a live lens: member references name packs, not sealed revisions. `pre_load` and `on_demand` control loading, not membership; `members` defines the selection. The `collection` string names a collection but does not authenticate ownership or prove that a member belongs to it. A supporting resolver must use its declared collection authority, report missing or ambiguous references and membership mismatches, and must not silently substitute another pack. The schema check alone establishes none of these facts.
+
+`selection.date` records preparation, not a snapshot of member contents. A historical insurance schedule, loan record or valuation needs an application profile that pins member revisions and retains the referenced artifacts. That profile must declare how references resolve, including unavailable revisions and concurrent branches. This core shape alone cannot reproduce what was known on the stated date. See [COMPATIBILITY.md](COMPATIBILITY.md).
+
+**Key differences from the other types:**
+- `members` instead of `agenda`/`sections`/`slides` -- each entry is an item, not a segment of a narrative
+- No occasion field. `purpose` and `scope` carry why the selection exists and what it covers
+- `scope` is load-bearing: it states what the selection *excludes*, which is what a third party reading an insurance schedule or a loan agreement needs
+- Members are drawn from one collection. A composition spanning several collections is not a selection
+
+**The No Duplication Rule is the type's definition, not a constraint on it.** For other composite types, referencing rather than restating is a discipline. For a selection it is the whole point: the works remain held by their collection, and the selection pack carries claims *about the selection* -- its scope, its date, what it leaves out and why -- while restating nothing from the works themselves.
 
 ---
 

@@ -7,7 +7,7 @@
 > **Status:** Draft
 > **Decisions:** D11 (sharing format), D19 (bundle marker)
 
-> **`kpack` CLI invocations in this document describe planned reference tooling.** Only `python3 conformance/run.py` ships today. See [SPEC.md §13](SPEC.md) and the contract-pointer stub at [`reference/kpack`](../reference/kpack) for status.
+> **`kpack` CLI invocations in this document describe planned reference tooling.** `python3 conformance/run.py`, `./reference/kpack lint` and `./reference/kpack new` ship today. See [SPEC.md §13](SPEC.md) and the reference launcher at [`reference/kpack`](../reference/kpack) for status.
 
 ---
 
@@ -27,13 +27,13 @@ All bundles begin with a KP:1 format marker in an HTML comment:
 <!-- KP:1 BUNDLE — {pack-name} v{version} -->
 ```
 
-This reuses the existing KP:1 format identifier from the Rosetta Header. Any system that understands KP:1 can parse the bundle. Any system that doesn't sees a markdown comment and ignores it. The Voyager Principle applies — the marker is self-describing.
+This reuses the existing KP:1 format identifier from the Rosetta Header. Bundle interpretation is a separate capability; a directory parser is not automatically a bundle parser. Any system that doesn't sees a markdown comment and ignores it. The Voyager Principle applies — the marker is self-describing.
 
 ---
 
-## 3. Full Bundle Format
+## 3. Reading Bundle Format
 
-For persistent sharing, complete pack transfer, or archival:
+For reading or context sharing, as a projection of selected pack files:
 
 ```markdown
 <!-- KP:1 BUNDLE — {pack-name} v{version} -->
@@ -147,13 +147,9 @@ kpack bundle personal-contacts --force
 
 ## 7. Round-Trip
 
-A bundle can be unpacked back into a directory:
+The proposed `kpack unbundle` command would reconstruct only explicitly represented sections. This marker format has no defined escape for a source line that itself matches a section marker, no general binary-attachment carrier, and no complete representation of every file or metadata profile. It does **not** guarantee a lossless directory round-trip, preserve an existing seal, or constitute an archive.
 
-```bash
-kpack unbundle bundle.md -o my-project.kpack/
-```
-
-The parser splits on section markers and writes each section to its canonical file. This enables the full round-trip: directory → bundle → transfer → unbundle → directory.
+Use the original directory or [ARCHIVE.md](ARCHIVE.md) ZIP representation for complete transfer and preservation. Clipboard bundles are intentionally lossy. A future lossless bundle needs a separately specified escaping and file-inventory contract; this draft does not define one.
 
 ---
 

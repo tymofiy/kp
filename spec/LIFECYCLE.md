@@ -37,25 +37,25 @@ Standing packs and ephemeral packs serve fundamentally different cognitive funct
 
 **Short-term memory (ephemeral packs)** is organized by proximity of operational need. A meeting prep pack clusters claims from multiple domains -- market forecasts, technology assessments, regulatory updates, competitive intelligence -- because they're all needed *together* in the next 30 minutes. The organizing principle is *when and where it's needed*. This is a legitimate cognitive architecture, but it is temporary.
 
-**Consolidation is the bridge.** Like memory consolidation in neuroscience, the episode dissolves but the knowledge persists. Novel knowledge created during meeting prep or research sprints migrates to its semantic home in a standing pack. What remains in the ephemeral pack after consolidation is:
+**Consolidation makes knowledge available to later work.** Useful findings from meeting prep or research can be added to a standing pack with their attribution, scope and references to the retained source record intact. The original event record remains available through archival. This organization is an analogy to memory, not a claim about biological or model memory. Material that remains in the event pack may include:
 
-- **Operational choreography** -- scripts, roles, timing, fallback plans, behavioral instructions. These are not epistemic state. They are procedures.
-- **Temporal context** -- impressions, atmosphere, process notes. These are genuinely event-specific and do not need a permanent home.
+- **Event procedures** -- scripts, assigned roles, timing and fallback plans. A task instruction for one event need not become standing knowledge; a reusable procedure may belong in a definition or policy pack.
+- **Event context** -- attributed experiences, impressions, process notes and decisions. These can remain useful after the event. Keep them in the retained event record, and reference or consolidate them when later work depends on them.
 
 ### Content Classification Test
 
-Every claim in an ephemeral pack falls into one of three categories:
+These categories guide placement and retention, not whether material has knowledge value. Preserve qualifications when consolidating an event-specific account:
 
 | Category | Test | Destination |
 |----------|------|-------------|
-| **Knowledge** | *Would this claim be valuable if the event never happened?* If yes -> knowledge. | Consolidate into standing pack |
-| **Operational** | *Is this a behavioral instruction, script, or procedure for the event?* If yes -> operational. | Stays in ephemeral pack (not knowledge) |
-| **Temporal** | *Is this an observation meaningful only in the moment?* If yes -> temporal. | Stays in ephemeral pack (event-specific) |
+| **Lasting subject knowledge** | Does it help explain a fact, decision, procedure, relationship or interpretation after the event? | Consolidate where useful, with attribution and a reference to the retained source record |
+| **Event instruction** | Is it a task, script or procedure specific to this event? | Retain in the event pack; a reusable procedure may have a standing home |
+| **Event account** | Does its meaning depend on who experienced or decided something, when and under which conditions? | Retain those conditions in the event record; reference or consolidate the account when useful |
 
 Examples:
-- "China produces 80% of global polysilicon and 95% of wafers" -> **Knowledge** (true regardless of meeting)
-- "Jane presents the cost thesis first; Webb responds" -> **Operational** (behavioral instruction for one meeting)
-- "Elena seemed skeptical about the perovskite timeline" -> **Temporal** (impression from the event)
+- A sourced production-share estimate -> **Lasting subject knowledge**, qualified by its source, scope and period.
+- "Jane presents the cost thesis first; Webb responds" -> **Event instruction**, retained with that meeting's plan.
+- "Elena seemed skeptical about the perovskite timeline" -> **Event account**, attributed as the observer's impression, not Elena's established belief. It may inform a later conversation without losing that distinction.
 
 ### When to Use Each Type
 
@@ -63,7 +63,7 @@ Examples:
 
 **Seasonal** packs represent time-bounded knowledge that is authoritative during its period and historical afterward. A quarterly market outlook is the definitive source during the quarter; afterward, its claims should be absorbed into permanent packs (market analysis, technology assessment, regulatory coverage) and the pack archived. Seasonal packs have a natural lifespan measured in weeks or months.
 
-**Ephemeral** packs are short-term memory containers. They exist to activate and generate knowledge for a specific event. Their primary lifecycle purpose is **consolidation**: novel knowledge created during prep or captured during the event migrates to standing packs. After consolidation, the ephemeral pack contains only operational choreography and temporal context -- content that is genuinely event-specific. The pack then archives cleanly because no knowledge is trapped in it. The ephemeral pack is the scaffold, not the building.
+**Ephemeral** packs bring knowledge together for a specific event. Their consolidation step makes useful findings available in standing packs without losing attribution, context or the route to the original account. The retained event pack may still hold valuable event-specific knowledge. Archiving changes its place in the active working set; it does not make that knowledge disposable. See §3 for retention and discoverability.
 
 ---
 
@@ -168,30 +168,32 @@ The lifecycle of an ephemeral pack has two distinct phases: **consolidation** (t
 
 ### 4.1 Consolidation -- The Primary Purpose
 
-Consolidation is the process of migrating novel knowledge from an ephemeral pack to its semantic home in standing packs. This is not a cleanup step -- it is the reason ephemeral packs exist. The ephemeral pack is a temporary workspace that generates knowledge; standing packs are where that knowledge lives permanently.
+Consolidation makes useful findings from an event pack available in standing packs organized by subject. Preserve their attribution, scope and route to the original record. Event accounts can remain in the retained event pack; a standing pack can reference them when later work needs them. Consolidation improves access without making the original account disposable.
 
 **When consolidation happens:** Ideally, knowledge should be created in standing packs *during prep* (before the event) and referenced by the ephemeral pack. For knowledge discovered during or after the event, consolidation runs as soon as practical -- not deferred until the archive trigger fires.
 
 **The consolidation process:**
 
-1. **Classify every claim** as knowledge, operational, or temporal (see Section 1.1 Content Classification Test)
-2. **For each knowledge claim**, identify the target standing pack by semantic domain
-3. **Create or update the claim** in the standing pack with proper evidence and relations
-4. **Mark the source claim** as consolidated (add `->consolidated:{target-pack}#{claim-id}` relation)
+1. **Review each claim's placement** using Section 1.1's lasting subject knowledge, event instruction and event account tests. Event-specific knowledge can still have lasting value.
+2. **For material useful in a standing pack**, identify the target by subject; retain event-specific accounts with their conditions intact.
+3. **Create or revise the standing record** with proper evidence and relations, following the ordinary claim revision rules. Preserve issued predecessors when their meaning or relations change.
+4. **Record the consolidation** using an ordinary `↔target-pack#claim-id` cross-reference plus prose describing where the knowledge was copied. `->consolidated` is not a registered KP:1 relation and MUST NOT be emitted as wire syntax
 5. **Update PACK.yaml** `consolidation.status` to reflect progress
 
-**What consolidates (knowledge):**
+**Material useful in standing packs:**
 - New facts learned during research or the event -> relevant standing pack
 - Intelligence about organizations, technologies, markets -> domain packs
 - Strategic assessments and analyses -> strategy packs
 - Commitments and decisions -> project packs
 - Changed assumptions -> updates to existing claims in standing packs
 
-**What stays (operational + temporal):**
+**Material that may remain in the retained event pack:**
 - Meeting-specific choreography ("Jane presents cost thesis first; Webb responds")
 - Temporal observations ("Elena seemed skeptical about the perovskite timeline")
 - Process notes ("We ran 10 minutes over; shorten the technology section next time")
 - Fallback plans and behavioral instructions
+
+These examples are placement choices, not a rule that event accounts have no knowledge value. Reference them from standing packs when later work depends on them.
 
 ### 4.2 Reconciliation -- The Safety Net
 
@@ -205,7 +207,7 @@ The standard advice -- "just delete what you don't need" -- fails because it req
 
 **Our solution draws from the PARA method insight:** reframe "keep vs delete" as "active vs archived." Both states preserve the information. The only question is whether it's in your working set. This eliminates the loss anxiety.
 
-When consolidation has been done well, reconciliation is a formality -- it confirms that all knowledge claims already have a permanent home. When consolidation was skipped or incomplete, reconciliation catches the orphans.
+Reconciliation checks that useful findings have been made available to later work and that event-specific accounts remain retained. A missing standing-pack match calls for a placement decision; it does not establish that the account is worthless. When consolidation was skipped or incomplete, reconciliation identifies material that still needs that decision.
 
 ### The Three-Step Process
 
@@ -367,7 +369,7 @@ When a claim is superseded with `⊘`, the original moves to `history.md` and a 
 
 The cascade rule:
 
-> **Rule (L1).** When a claim is superseded with `⊘`, every dependent claim that links to it via `→supports`, `←requires`, or `~refines` MUST be reviewed by the editor for whether it still stands under the new parent. Dependent claims are NOT automatically invalidated. The editor decides whether each dependent claim still holds, requires its own supersession, or requires only its relation to be re-pointed at the successor.
+> **Rule (L1).** When a claim is superseded with `⊘`, every dependent claim that links to it via `→supports`, `←requires`, or `~refines` MUST be reviewed by the editor for whether it still stands under the new parent. Dependent claims are NOT automatically invalidated. Review does not authorize removing or re-pointing relations in an issued record. Record a changed support judgment as a separately identified assessment, or issue a successor and retain the complete predecessor in history if its serialized context or relations must change. The original relation still names the original target, including after that target moves to history.
 
 This is the conservative default. It treats the parser as authoritative for syntax and the editor as authoritative for epistemic state.
 
@@ -375,7 +377,7 @@ This is the conservative default. It treats the parser as authoritative for synt
 
 A stricter rule — automatically marking every `←requires` dependent as invalid when its parent is superseded — was considered and rejected for the v0.8 preview line. The reasons:
 
-1. **Many supersessions narrow rather than negate.** A successor claim that refines the parent (e.g., from "the work is dated 1957" to "the work is dated 1962") may leave most dependent claims standing under the new parent's truth. Auto-invalidation would force unnecessary supersession of claims that remain accurate.
+1. **Many supersessions narrow rather than negate.** A successor claim that refines the parent (e.g., from "the work was made between 1955 and 1965" to "the work was made in 1962") may leave most dependent claims standing under the new parent's truth. Auto-invalidation would force unnecessary supersession of claims that remain accurate.
 
 2. **The graph topology is the editor's responsibility.** Whether a dependent's relation is still meaningful under the new parent is an epistemic call, not a structural one. The format gives the editor the primitives (`⊘`, `~`, supersession in `history.md`); the editor composes them.
 
@@ -383,38 +385,38 @@ A stricter rule — automatically marking every `←requires` dependent as inval
 
 ### Worked example
 
-Suppose `claims.md` contains:
+Suppose the editor has adopted a dating assessment and used it to choose technical and market comparisons:
 
 ```text
-- [C001] The work is dated 1957 in the auction-house specialist's report.
-  {0.83|r|E001|2025-11-15|investigated}
+- [C001] The work was made in 1957.
+  {0.83|i|E001|2025-11-15|investigated|judgment}
 
-- [C002] X-ray fluorescence is consistent with the artist's documented palette for the 1955-1959 period.
+- [C002] The recorded X-ray fluorescence result is consistent with the artist's documented palette for 1955-1959.
   {0.87|o|E002|2025-12-04|investigated} →C001
 
-- [C003] Comparable lots dated 1955-1959 sold in 2024-2025 at €820,000-€1,180,000.
-  {0.99|c|E003|2026-05-09} ←C001
+- [C003] Recorded lots dated 1955-1959 sold in 2024-2025 at €820,000-€1,180,000.
+  {0.99|r|E003|2026-05-09} ↔C001
 ```
 
-Now C001 is superseded by C001-v2 (dated 1962, after a catalog raisonné review):
+After a catalog raisonné review, the editor adopts C001-v2 and moves the original C001, unchanged, to `history.md`:
 
 ```text
-- [C001-v2] The work is dated 1962 in the catalog raisonné.
-  {0.91|r|E004|2020-04-30|exhaustive|judgment} ⊘C001
+- [C001-v2] The work was made in 1962.
+  {0.91|i|E004|2026-05-10|investigated|judgment} ⊘C001, ⊗!C001
 ```
 
-Per Rule L1, the editor reviews C002 and C003:
+Per Rule L1, the editor reviews C002's support relation and the use of C003 as a comparison:
 
-- **C002** said XRF was consistent with the 1955-1959 palette. Under C001-v2 (dating 1962), this claim is no longer supportive of the parent — it asserts the wrong period. The editor supersedes C002 with C002-v2 reflecting the 1960-1965 palette consistency, OR re-points the relation if XRF is consistent with both periods.
-- **C003** cited 1955-1959 comparables. Under C001-v2, the comparable set is wrong; C003's predicate ("comparables sold in 2024-2025 at...") becomes a non-sequitur unless the comparable set is updated. The editor either supersedes C003 with a 1960-1965 comparable set or re-points to a different supporting frame.
+- **C002** remains an accurate statement of the recorded examination. Retain its issued bullet, including the original `→C001` relation; that target remains the historical C001. Record the changed relevance in a new, separately identified assessment citing C002 and the adopted dating. Do not infer support for C001-v2 from the old edge. If C002's serialized context or relation must change, issue a successor and retain the complete predecessor in history. Explain that the support assessment changed, rather than treating the recorded examination as false. A new examination finding needs its own claim and evidence.
+- **C003** remains an accurate report of those lots and their prices. Whether they are suitable comparisons for a work made in 1962 is a separate judgment. Retain the report and record a new comparison assessment or a new dataset if needed. Do not supersede an accurate historical sale report merely because its relevance changed.
 
-The cascade decisions are recorded in `history.md` alongside the supersession entry for C001.
+A source-content claim such as “the specialist's report dated the work 1957” also remains true after the adopted dating changes. Keep it separate from the adopted world assessment. Record the cascade decisions and their reasons in `history.md` alongside the transition for C001.
 
 ### Cross-pack supersession
 
 Supersession is local to a pack. A claim in pack A superseded with `⊘` does not propagate to claims in pack B that referenced the original via `↔` (cross-pack see-also). Cross-pack effects are a [`RECONCILIATION.md`](RECONCILIATION.md) concern (currently a stub; full design deferred to v0.9 / v1.0).
 
-The conservative reading for v0.8.4-preview: a cross-pack `↔` reference is a navigational pointer, not a binding dependency. Pack B's claim with `↔packA#section` does not require pack A to be reconciled before pack B is published. If pack A's referenced claim is superseded, pack B's `↔` continues to point at the same heading; the heading typically contains the successor claim by then.
+The conservative reading for v0.8.4-preview: a cross-pack `↔` reference is a navigational pointer, not a binding dependency. Pack B's claim with `↔packA#section` does not require pack A to be reconciled before pack B is published. A section reference (`packA#section`) remains navigation to that section, whose contents may change. A claim-identity reference (`packA#C001`) still names that original claim, including when it has moved to history; it MUST NOT be silently retargeted to a successor. Neither form automatically reconciles pack B's conclusions.
 
 ---
 
@@ -525,10 +527,10 @@ A permanent pack may be manually archived if the domain itself becomes irrelevan
 
 1. **Activation** -- Pack is created for a specific event. Research generates knowledge claims. Ideally, novel knowledge is created in standing packs first and referenced by the ephemeral pack.
 2. **Event** -- The event occurs. New claims are captured.
-3. **Consolidation** -- Knowledge claims migrate to standing packs (Section 4.1). This should happen soon after the event, while context is fresh. `consolidation.status` tracks progress.
-4. **Retention** -- Period elapses (default: 14 days). Only operational and temporal content remains.
-5. **Reconciliation** -- Safety net confirms no knowledge claims were missed (Section 4.2).
-6. **Archive** -- Pack moves to `_archive/` with receipt. Clean -- no knowledge trapped.
+3. **Consolidation** -- Make useful findings available in standing packs with their source context and references to original event accounts intact (Section 4.1). Do this while context is fresh. `consolidation.status` tracks progress.
+4. **Retention** -- The active retention period elapses (default: 14 days). The event pack still retains its original accounts, instructions and context.
+5. **Reconciliation** -- Review placement of findings and retained event accounts, resolving any outstanding decisions before archival (Section 4.2).
+6. **Archive** -- Pack moves to `_archive/` with receipt. Useful findings remain accessible through standing packs and the retained original event record.
 
 ---
 

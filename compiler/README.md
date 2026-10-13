@@ -39,8 +39,8 @@ KP:1 records disagreement without resolving it (RATIONALE.md P4) and the
 compiler already separates `active` from `superseded` claims. Neither defines
 a single deterministic answer to "what replaced this claim?" when supersession
 fans in (two active claims superseding one predecessor), or "which arm
-currently leads?" on a live `⊗~` tension. Agents that must act need one
-answer; the current-belief view derives it — a profile extension contributed
+is displayed first?" on a live `⊗~` tension. The current-belief view derives
+a stable presentation preference — a compiler profile extension contributed
 by Bernard, the first commercial implementer (GOVERNANCE.md). The pack record
 stays authoritative and untouched: the view is derived output, rebuildable at
 any time, and no previously shipped surface (statuses, relations, hashes,
@@ -55,11 +55,14 @@ rather than ranking below a present one). Fan-in picks are flagged `fan_in`;
 heads annotated with pairwise-distinct `belief.scope` values are a refinement
 `split` (pointer stays null — "refined into", never "changed to"); a
 tier-filtered bundle whose superseder was withheld yields
-`unresolved_in_bundle`. Live `⊗~` tensions get a lean in
+`unresolved_in_bundle`. Live `⊗~` tensions get a presentation lean in
 `belief-contentions.jsonl`; `⊗`/`⊗!` contradictions surface with no lean
 (an error demands an author's resolution, not a deterministic pick), and
 cross-pack edges never affect currency (one pack never rewrites another's
-belief). The normative semantics, in full, live in
+belief). Neither the pointer nor the lean records an adopted assessment,
+resolves a tension, or authorizes action. Consumers retain the alternatives
+and apply an explicit application policy when a task requires a decision.
+The compiler-local semantics, in full, live in
 [`current_belief.py`](current_belief.py)'s module docstring; the behavioral
 test pins are `CurrentBeliefTests` in
 [`tests/test_graph_compiler.py`](tests/test_graph_compiler.py).
@@ -130,7 +133,11 @@ the row level or inherit from a pack whose `extensions.kp_compiler.boundary`
 marks manifest defaults as explicit; otherwise compilation fails before
 projection.
 
-It is not yet a stable public API. Current limits:
+It is not yet a stable public API. It accepts claim-bearing packs using the canonical root filenames. It is not a generic definition/policy/composition reader or a conformance validator. Evidence segmentation/decoding is shared with the reference validator; searchable summaries collapse whitespace and do not preserve original bytes. Retain the pack files for export or seal preservation.
+
+History support is an experimental subset: dense historical metadata and the compiler's prose transition annotation are supported; arbitrary verbose history, editorial transition headings and historical outgoing relation reconstruction are not yet supported. The conformance lifecycle fixture validates the directory contract, not compiler support for that workflow. The compiler's `stable_pack_hash` is a derived-source fingerprint, not an ARCHIVE content-hash verification receipt.
+
+Current limits:
 
 - exact claim-ID retrieval;
 - vector import rather than provider-native embedding generation;

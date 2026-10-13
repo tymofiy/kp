@@ -115,8 +115,10 @@ BlockquoteLine  <- '>' SP? (!NL .)+ NL
 // Claims are grouped under ## headings. Heading text is freeform.
 // A section MAY open with a blockquote description before its claims,
 // mirroring the document-level Description (AR-17).
+// A section MAY contain zero claims: a pack can retain history after its
+// final current claim is retracted, without manufacturing an assertion.
 
-Section         <- SectionHeading (BlankLine* Description)? (BlankLine* Claim)+
+Section         <- SectionHeading (BlankLine* Description)? (BlankLine* Claim)*
 SectionHeading  <- '##' SP (!NL .)+ NL
 
 
@@ -233,6 +235,8 @@ ContinuationLines_Verbose
 
 VerboseMetadata <- '`' VerboseFieldList '`'
 
+// Fields may occur in any order. CORE §6.2 requires each required field
+// exactly once and each optional field at most once; checked after parsing.
 VerboseFieldList <- VerboseField (SP? '|' SP? VerboseField)*
 
 VerboseField    <- VF_Confidence / VF_Type / VF_Evidence / VF_Since
@@ -292,6 +296,7 @@ EvidenceFieldName  <- 'type' / 'Type' / 'source' / 'Source'
                     / 'SHA-256' / 'sha-256' / 'Notes' / 'notes'
                     / 'reliability' / 'Reliability'
                     / 'credibility' / 'Credibility'
+                    / 'kp-content-encoding' / 'KP-Content-Encoding'
 
 EvidenceFieldValue <- (!('|' / NL) .)+
 
@@ -321,8 +326,8 @@ IDENT_CHAR      <- [a-z0-9-]
 // These constraints MUST be validated after parsing succeeds:
 //
 // SC-01: Confidence MUST be in range [0.0, 1.0]
-// SC-02: All ClaimIDInner values MUST be unique within the document
-// SC-03: All EvidenceRef values in claims MUST have corresponding entries
+// SC-02: All ClaimIDInner values MUST be unique across active and historical records within the pack
+// SC-03: All EvidenceRef values in active and historical claims MUST have corresponding entries
 //        in evidence.md
 // SC-04: Supersession chains (⊘) MUST be acyclic
 // SC-05: All ClaimIDRef targets in relations MUST exist (within pack or
@@ -336,3 +341,4 @@ IDENT_CHAR      <- [a-z0-9-]
 //        observed=o, reported=r, computed=c, inferred=i
 // SC-12: When Nature is 'prediction', Confidence MUST be ≤ 0.95
 //        (predictions have irreducible uncertainty; see CORE §12)
+// SC-13: All evidence IDs MUST be unique within evidence.md

@@ -5,6 +5,12 @@
 
 ## Intent
 
+KP:1 is intended as an AI-first, lasting knowledge system. It can carry an articulated understanding of a subject: explanations and connections, perspectives, reasoning and grounds, including disagreement, uncertainty and changes. Evidence and validation support that purpose; they are not its whole scope. People and AI should be able to examine, challenge and continue work from the record across tasks and tools.
+
+The common format provides a record. Applications provide retrieval, reasoning, execution and review. Rich retained context and task-specific views serve different needs: a view selects what is useful now, while the original record remains available for later understanding and correction.
+
+The specification should remain useful beyond its initial author and applications. Its public contract, examples and evidence must be open to other people's purposes, implementations and criticism. Continuing the inquiry can mean disagreeing with an assessment or choosing a different action.
+
 The goal of publishing KP:1 is not status signaling or claiming authority.  
 The goal is to improve the work by exposing it to rigorous, constructive critique.
 

@@ -85,6 +85,8 @@ jobs:
         run: python3 conformance/run.py
       - name: Run conformance suite (strict PEG)
         run: python3 conformance/run.py --strict
+      - name: Run reference contract tests
+        run: python3 -m unittest discover -s conformance/tests
       - name: Run graph compiler tests
         run: python3 -m unittest compiler.tests.test_graph_compiler
     timeout-minutes: 5
@@ -111,6 +113,8 @@ jobs:
         run: python3 conformance/run.py
       - name: Run conformance suite (strict PEG)
         run: python3 conformance/run.py --strict
+      - name: Run reference contract tests
+        run: python3 -m unittest discover -s conformance/tests
       - name: Run graph compiler tests
         run: python3 -m unittest compiler.tests.test_graph_compiler
     timeout-minutes: 5

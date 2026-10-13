@@ -23,7 +23,7 @@ active use across the reference implementation. It is informative — KP:1 does
 not require any extension to exist, and consumers MUST ignore extension
 content they do not understand. New extensions are listed here so producers and
 consumers can converge on shared shapes without forcing schema breaks or
-prematurely promoting a payload into the core standard.
+prematurely promoting a payload into the core standard. Requirements below are conditional profile contracts, not requirements for every KP:1 pack. Generic readers preserve source files and ignore unknown profile semantics; producers must name/version a profile when they rely on its additional capabilities. A catalog entry does not establish that all reference tooling implements it.
 
 ### Reading Guide
 
@@ -41,7 +41,7 @@ Each extension below specifies:
 
 ### 2.1 `extensions.ai_brief` — analyst-facing verdict line
 
-**Owner:** kp-forge enrichment pipeline.
+**Owner:** reference producer-side enrichment implementation.
 **Status:** active.
 
 The illustrative extension shipped with v0.7.4 ([SPEC.md §3.2](SPEC.md)). A
@@ -51,12 +51,12 @@ canonical example.
 
 ### 2.2 `extensions.entities` — typed entity graph
 
-**Owner:** kp-forge entity-extraction pipeline.
+**Owner:** reference entity-extraction implementation.
 **Status:** experimental (introduced 2026-04-28).
 
 Promotes the in-memory entity graph to first-class manifest metadata.
 Consumed by Decision Workspace materialization and the cross-pack
-`entity_index` in the kp-packs relay.
+`entity_index` in the reference relay.
 
 ```yaml
 extensions:
@@ -95,7 +95,7 @@ to the H1 entity annotation in `claims.md`
 
 ### 2.3 `extensions.relations` — typed edges
 
-**Owner:** kp-forge entity-extraction pipeline.
+**Owner:** reference entity-extraction implementation.
 **Status:** experimental (introduced 2026-04-28).
 
 Typed edges between entities declared in `extensions.entities`. Vocabulary
@@ -124,7 +124,7 @@ defined elsewhere.
 
 ### 2.4 `extensions.intent` — decision frame
 
-**Owner:** kp-forge intent inference module.
+**Owner:** reference producer-side intent inference implementation.
 **Status:** experimental (introduced 2026-04-28).
 
 The decision-frame tag selected for the pack. Used by the reference
@@ -152,8 +152,8 @@ both; defaults derive `intent` from `case_type` when absent.
 
 ### 2.5 `extensions.playbook` — runtime trace
 
-**Owner:** kp-forge enrichment loop, in concert with the reference
-intelligence pipeline.
+**Owner:** reference producer-side enrichment loop, in concert with the
+reference intelligence pipeline.
 **Status:** experimental (introduced 2026-04-28).
 
 The structured trace of a playbook execution. Written incrementally as
@@ -191,7 +191,7 @@ in-flight rather than malformed.
 
 ### 2.6 `extensions.workspace` — Decision Workspace metadata
 
-**Owner:** kp-forge workspace materialization module.
+**Owner:** reference workspace materialization implementation.
 **Status:** experimental (introduced 2026-04-28).
 
 Per-pack workspace bookkeeping. The wedge ships with single-pack
@@ -213,7 +213,7 @@ through the existing pipeline.
 
 ### 2.7 `extensions.research` — research metadata
 
-**Owner:** kp-forge research-metadata module.
+**Owner:** reference research-metadata implementation.
 **Status:** active (precedent for the producer-defined pattern; emitted by
 ~16 packs in the reference implementation as of v0.7.7).
 
@@ -225,8 +225,8 @@ valid for legacy and lightweight cases.
 ### 2.8 `extensions.translations` — evidentiary multilingual transcripts
 
 **Owner:** the reference handwritten-inventory intake pipeline + the
-kp-packs relay's intake module. Consumed by kp-viewer and downstream
-relays.
+reference relay's intake module. Consumed by the reference macOS viewer and
+downstream relays.
 **Status:** active (introduced 2026-05-09 with the inaugural
 field-collected corpus).
 
@@ -260,6 +260,8 @@ transcript_format?: "verbatim" | "summary" | "excerpt", source_evidence_id?:
 string, transcribed_by?: string, transcribed_at?: string } }`. Locale keys
 are BCP-47 strings (per [MULTILINGUAL.md](MULTILINGUAL.md)).
 
+**Cardinality.** This legacy shape has one transcript object per locale. It cannot hold multiple independent transcripts in the same language. Preserve all original source artifacts in evidence/attachments, with distinct evidence IDs and source associations; do not concatenate them silently or overwrite an earlier transcript. A profile needing structured multi-transcript storage must define a versioned carrier. This catalog does not invent that carrier.
+
 **Producer expectations.** Producers SHOULD include `source_evidence_id`
 whenever the transcript is excerpted from a larger evidence record, so
 audit-trail reconstruction can map transcript → evidence → claim. When
@@ -278,7 +280,8 @@ surface.
 
 ### 2.9 `extensions.collection` — pack-bundle membership
 
-**Owner:** kp-forge intake pipeline + kp-viewer library organization.
+**Owner:** reference intake implementation + reference macOS viewer library
+organization.
 **Status:** active (introduced 2026-05-24).
 
 Declares that a pack belongs to a user-facing **collection** — a bundle of
@@ -368,7 +371,7 @@ override or canonicalize category derivation.
 **Compatibility.** Consumers that do not understand the block MUST ignore
 it. Producers MAY omit the block entirely; packs without it appear in the
 viewer's "Uncollected" section (or the category section, depending on
-grouping mode). The kp-viewer reference consumer treats `name` as
+grouping mode). The reference macOS viewer treats `name` as
 authoritative for grouping today; if/when `collection:` is promoted to a
 top-level spec field with `id` semantics, this catalogue entry will be
 updated and an alias-and-migrate path documented.
@@ -382,8 +385,8 @@ member` (or `role: hub` for the spine pack if one exists).
 
 ### 2.10 `extensions.audience` — producer-side named recipients
 
-**Owner:** authored manifests + the kp-viewer library (`PackManifest.audience`,
-`PackLibrary` audience badges and the surprise-pack gate's audience check).
+**Owner:** authored manifests + the reference macOS viewer's audience badges
+and recipient gates.
 **Status:** active (canonical location as of 2026-06-14; migrated from the legacy
 top-level `audience:` key).
 
@@ -421,8 +424,8 @@ New packs SHOULD write `extensions.audience`; the top-level `audience:` key is
 
 ### 2.11 `extensions.sharing` — gift-gating / do-not-share metadata
 
-**Owner:** kp-viewer `SurprisePackGate` + library filtering
-(`PackManifest.lifecycle.surprise`, `.doNotShare`).
+**Owner:** the reference macOS viewer's surprise-pack gate and library
+filtering.
 **Status:** active, gate-dormant (canonical location as of 2026-06-14; migrated from
 the legacy `lifecycle.surprise` / `lifecycle.do_not_share` keys).
 
@@ -453,6 +456,159 @@ reference loader accepts these fields in either location — `extensions.sharing
 (canonical) or the legacy `lifecycle.surprise` / `lifecycle.do_not_share` keys — so
 packs may be migrated one at a time. New packs SHOULD write `extensions.sharing`; the
 `lifecycle.*` gift-gate keys are **deprecated**.
+
+### 2.12 `extensions.case` — situation-anchored case composition
+
+**Owner:** producer-side case materialization implementation (writer) + consuming library
+(case cards, roster surfaces); member resolution by the consuming library or
+relay at serve time.
+**Status:** experimental (introduced 2026-07-19).
+
+A **case pack** is an ordinary pack whose single subject is a *situation* —
+a deal under review, a client-development campaign, a matter to be decided —
+rather than a person, company, or asset. The `case` block declares the
+situation's flavor (`kind`) and the case's **member references**: pinned
+pointers to the standalone packs the case draws on.
+
+A case is not a new artifact class. It is a pack, and it inherits sealing,
+provenance, views, sharing, and supersession unchanged. The one-subject rule
+is also unchanged ([CORE.md AR-09](CORE.md#appendix-b-ambiguity-resolutions)):
+a case pack has exactly one foreground entity — the situation itself,
+conventionally an event entity (`ent_v_`, §3.1; usage conventions in §3.5).
+People, companies, and assets involved in the situation are *participants*,
+declared under `extensions.entities` (§2.2) with roles and per-claim
+`entity_refs` (§3.3); they are never additional anchors. If a design appears
+to need a second anchor, model the situation that is actually the subject
+and anchor there.
+
+```yaml
+extensions:
+  case:
+    kind: deal                          # deal | campaign — reference vocabulary v1
+    members:
+      - pack_id: "0b3c1f9a-4d7e-4a1c-9f2b-3e4a5b6c7d8e"
+        revision: "2026.07.02"          # the member's PACK.yaml `version`, pinned
+        role: subject                   # subject | evidence | inventory | prospect
+        entity: ent_p_8a3f2c            # optional — participant this member documents
+      - pack_id: "3f9e2d61-8c4b-4f2e-b1a7-5d6e7f8a9b0c"
+        revision: "2026.06.28"
+        role: subject
+        entity: ent_a_7e2f01
+      - pack_id: "9d8c7b6a-5e4f-4d3c-a2b1-0f9e8d7c6b5a"
+        revision: "2026.05.30"
+        role: evidence
+```
+
+**Case kinds (reference vocabulary v1).**
+
+- `deal` — a small-cast situation: two or three central participants plus a
+  bridge of relationship questions between them. The canonical shape is a
+  consignment review — consignor, work, and the institution's decision.
+  `examples/auction-house-consignment-review.kpack` models the scenario
+  (the example predates this block and does not carry it).
+- `campaign` — a cohort situation: many prospective participants, an
+  inventory of assets, and a purpose (an outreach program around an
+  exhibition, fair, or season). Most of a campaign's cohort enters as
+  in-pack **stubs**, not members — see "Members vs stubs" below.
+
+The kind vocabulary is closed in the same spirit as the relation vocabulary
+(§3.4): new kinds are deliberate registrations in this catalogue, not ad hoc
+values. Consumers encountering an unknown `kind` SHOULD degrade to generic
+case handling (render members; skip kind-specific surfaces).
+
+**Member fields.**
+
+- `pack_id` — required. The member's stable identity across versions — the
+  `pack_id` documented in [ARCHIVE.md](ARCHIVE.md) §4. This is reference
+  *identity*, deliberately not content.
+- `revision` — required. The member's `PACK.yaml` `version` string as
+  sealed (the `pack_version` receipt in the member's `signatures.yaml`).
+  References are **pinned, always**: when its supporting profile provides unambiguous resolution and retains the referenced artifacts, a case can record what was known when the
+  decision was made — the audit question is "what did you know when you
+  advised this?", and a floating reference cannot answer it. Producers MUST
+  NOT emit revision-less members. Freshness is a serving/UI concern — see
+  the staleness signal below.
+- `role` — required. One of the closed v1 vocabulary below. Consumers that
+  do not recognize a role MUST still treat the entry as a well-formed
+  member (resolvable, renderable) without role-specific behavior.
+- `entity` — optional. The `ent_*` ID (§3.1) of the participant in this
+  case's `extensions.entities` that the member pack documents. This is what
+  ties a roster row to its dossier after promotion.
+
+| Role | Meaning | Typical kind |
+|---|---|---|
+| `subject` | Dossier for a central participant of the situation | deal |
+| `evidence` | Supporting material the case's findings draw on | any |
+| `inventory` | Member of the asset set the situation offers or matches against | campaign |
+| `prospect` | Dossier for a cohort member under consideration | campaign |
+
+**Reference pinning and verification (no member hashes — by design).** A
+member reference pins *identity* (`pack_id` + `revision`) and deliberately
+does **not** carry the member's `pack_hash` or any content digest. This
+dissolves the composite signing-chain problem instead of solving it:
+
+- *No hash cycles.* The case's seal ([ARCHIVE.md](ARCHIVE.md) §3–§4) is
+  computed over the case's own files only. Since member entries embed no
+  member digests, sealing order between packs never matters, and packs that
+  reference each other cannot deadlock each other's seals.
+- *No parent-deed / child-deed entanglement.* Re-sealing a member (a new
+  dossier revision) never invalidates the case's seal, and a case's seal
+  asserts nothing about member content. No custody chain flows through a
+  case into its members.
+- *A case verifies standalone.* "Verified" for a case archive means: its own
+  seal is valid and its member references are well-formed. Verifiers MUST
+  NOT require member archives to be present or resolvable to verify a case.
+- *Member presence is a serving question, never a validity question.*
+  Whether a pinned member is **present**, **absent**, or **superseded** (a
+  verified descendant revision of the pinned member is known — [ARCHIVE.md](ARCHIVE.md)
+  §5, [LIFECYCLE.md](LIFECYCLE.md) §6) is answered by the consuming library
+  or relay at serve time, and MUST be reported *alongside* verification
+  results, never conflated with them.
+- *Member authenticity is the member's own.* Because the reference is a name
+  and version, not a checksum, content authenticity of a resolved member is
+  established by the member's own seal at resolve time — never by the case.
+
+**Pinned resolution and staleness.** `pack_id` plus `revision` is a logical reference, not a unique content digest. A supporting profile must make resolution unambiguous within its library, retain pinned artifacts, and report absent or ambiguous pairs without selecting an arbitrary candidate. Concurrent branches may carry the same version string; CalVer alone does not establish ancestry. A newer known revision may be a sibling, not a superseder. Report “newer revision available” separately from supersession established by verified lineage. Surfaces SHOULD offer re-pinning as a deliberate act producing a new case revision; they MUST NOT silently resolve a pin to another revision. The case's own seal proves none of these resolver facts.
+
+**Members vs stubs; promotion.** Members are references to *real packs*. A
+campaign's cohort largely is not that: bulk intake produces **stubs** —
+participant entities and their claims *inside* the case pack (roster rows),
+with honest resolution-fidelity downgrades, not dozens of thin packs.
+Promotion is the deliberate act that turns a stub into a dossier: a precise
+identity resolution, a standalone pack created through the normal research
+flow (seeded from the stub's external IDs and the case's evidence), and a
+**new case revision** whose member list gains a pinned reference (`role:
+prospect` or `subject`, with `entity` pointing at the participant). Claims
+never migrate between packs: the stub's claims are superseded in the case
+revision per the ordinary supersession rules, and the new dossier's claims
+carry their own provenance from birth. Fidelity metadata (stub vs promoted)
+SHOULD travel with any retrieval or roster surface, so bulk-resolved and
+precise-resolved knowledge are never presented as equivalent.
+
+**Distinct from the neighboring mechanisms.** Four existing features solve
+adjacent problems; `case` replaces none of them:
+
+- [COMPOSITION.md](COMPOSITION.md) `composition.yaml` — a *loading lens*:
+  agenda-shaped references **by pack name**, un-pinned, chosen for a session
+  (`pre_load` / `on_demand`). A case pins identity + revision for the
+  decision record. A case pack MAY additionally carry `composition.yaml`
+  (e.g., to brief a meeting about the case).
+- `extensions.collection` (§2.9) — organizational bundling by shared
+  `name`; no pinning, no per-member roles, no decision semantics.
+- `tier: hub` + `sub_packs` — small claim-clustering hubs with pre-declared
+  children.
+- `extensions.workspace` `role: foreground | evidence` (§2.6) — per-pack
+  workspace bookkeeping recorded *on the member side*. Case membership is
+  recorded *on the case side*; only the case's own list is authoritative
+  for the case.
+
+**Compatibility.** Consumers that do not understand the block MUST ignore
+it; the pack remains an ordinary pack whose claims and views stand alone.
+Consumers that understand `case` but cannot resolve members (offline, a
+single shared archive, a partial library) MUST NOT report the pack as
+invalid or incomplete — member resolution is a serving feature layered on
+top of an already-complete pack. Producers MAY emit `members: []` (a case
+that so far contains only stubs and in-case findings).
 
 ---
 
@@ -506,7 +662,7 @@ playbook trace.
 
 ### 3.3 Per-claim entity references
 
-Claims MAY annotate which entities they describe via the `extensions`
+An implementation MAY annotate which entities a structured operational claim describes via the `extensions`
 lane on the structured claim record (`KPClaim`,
 [STORAGE.md §3.2](STORAGE.md#32-json-serialization-operational)):
 
@@ -522,10 +678,91 @@ lane on the structured claim record (`KPClaim`,
     relation_refs: [rel_001]              # relations established by this claim
 ```
 
+**Portability limit.** This structured-record example is implementation-local. KP:1 currently defines no file carrier that serializes these per-claim associations into `claims.md`; they cannot be reconstructed from a generic directory merely because the manifest has `extensions.entities`. A supporting profile must define a versioned file mapping before claiming portable reconstruction. Do not add an undocumented claim metadata field.
+
 This complements the H1 entity annotation in claims.md
 ([CORE.md AR-09](CORE.md)). The annotation declares the pack's *one*
 foreground entity for legacy compatibility; per-claim `entity_refs[]` link
 specific claims to the typed entities under `extensions.entities`.
+
+### 3.4 Relation vocabulary conventions (closed sets, extended per playbook)
+
+`extensions.relations[].type` (§2.3) draws from the relation-type vocabulary
+defined in [DEFINITIONS.md](DEFINITIONS.md) §3. The growth convention: the
+vocabulary is a **closed set, extended per playbook** — each playbook family
+declares the relation types its steps may emit, and additions are deliberate
+registrations (a definition-pack change plus a row here), never ad hoc
+strings invented at emission time. Consumers MUST ignore relation instances
+whose type they do not recognize (§2.3 compatibility), so registration cost
+stays low while the graph stays queryable.
+
+The case playbooks (§2.12) introduce the initial case vocabulary:
+
+| id | From → to | Semantics |
+|---|---|---|
+| `consigns` | person → asset | The person offers the asset for consignment (the deal bridge). Temporal (`since`/`until`); inverse `consigned_by`. |
+| `fits_budget` | person → asset | The participant's documented budget range accommodates the asset's expected price. A matching *finding* — verdict-less, evidence-cited. |
+| `interested_in` | person → asset \| person | Documented interest in a work, a maker, or a category. A matching *finding* — verdict-less, evidence-cited. |
+| `possibly_same` | entity ↔ entity (same type) | Uncertain identity between two entities. A *question*, never an assertion. Symmetric; self-inverse. |
+
+**Findings-shaped relations.** `fits_budget` and `interested_in` are written
+by the matching steps of a campaign playbook (§2.5 `findings_by_entity` is
+the per-step trace shape; the durable edges land here). They MUST carry
+`attributes.evidence_ids`, and SHOULD cite both endpoints' evidence — the
+participant-side evidence (budget, stated interest) and the asset-side
+evidence (estimate, attribution). They are findings, not verdicts: the edge
+encodes no recommendation, and numeric confidence stays machine-internal
+per §2.3.
+
+**`possibly_same` discipline.** Cross-pack identity merges happen only on
+*established* identity — matching `external_ids` (§3.2) or a resolved
+canonical (§3.1). When identity is merely suspected, producers MUST keep
+the entities separate and connect them with `possibly_same`. Consumers MUST
+NOT treat `possibly_same` as established identity (no index merging, no
+claim pooling across the edge); surfaces SHOULD present it as an open
+question. A silent merge is the graph-level wrong-subject dossier — the
+error class this discipline exists to prevent.
+
+### 3.5 Event entities (`ent_v_`) — usage conventions
+
+The `v` prefix has been reserved since this catalogue was introduced
+(§3.1); these conventions make event entities operational. An **event** is
+an occurrence that relates persons, companies, and assets over time: an
+exhibition, an auction, a sale, an acquisition, an appraisal, a loan, a
+restitution — or a client-development campaign anchored on one (§2.12).
+
+**Projection fields.** Consumers that compute typed per-entity projections
+SHOULD project three well-known fields for events:
+
+| Field | Shape | Projected from |
+|---|---|---|
+| `date` | ISO-8601 date or `{start, end}` range | Claims about when the event occurs, via `entity_refs` (§3.3) |
+| `location` | string (venue / city) | Claims about where, via `entity_refs` |
+| `participants` | list of `ent_*` refs with roles | Union of (a) entities co-referenced with the event on a claim (§3.3) and (b) entities linked to the event by a relation edge (§2.3) |
+
+Projections are **computed from claims, never authored**: each projected
+field carries the provenance of the claims it was computed from, disagreeing
+claims surface as disputes rather than silent overwrites, and a projection
+can be rebuilt only when its profile supplies a serialized association carrier and interpretation rules. The operational-only associations in §3.3 do not yet provide that portability. Projections are derived indexes; claims preserve assertions, including uncertainty and dispute, rather than certifying source truth.
+
+**Events as case anchors.** A campaign case pack (§2.12) conventionally
+anchors on an event entity: the foreground entity (`role_in_pack: subject`)
+is the `ent_v_` for the campaign or the occasion it targets, and cohort
+participants relate to it.
+
+**Why events matter to provenance.** A provenance history is a chain of
+events — sale, exhibition, transfer, restitution — each relating persons to
+a work over time. Modeling those occurrences as first-class `ent_v_`
+entities with `date` projections makes provenance graph-traversable
+(artwork → events → persons, with dates) instead of prose-bound; questions
+like "is there a gap in this ownership window?" become traversals over
+event sequences.
+
+**Distinct from `item_kind: event`.** The collection taxonomy's `event`
+(§2.9) is a *display axis* — which dashboard section a pack renders in. An
+`ent_v_` entity is *graph identity* — a node that claims and relations
+attach to. A pack about an exhibition may well carry both; they answer
+different questions.
 
 ---
 

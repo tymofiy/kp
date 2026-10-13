@@ -1,0 +1,12 @@
+type: selection
+selection:
+  purpose: exhibition
+  collection: example-collection
+  scope: Two selected works for the spring exhibition; other holdings excluded.
+  date: 2026-04-04
+members:
+  - reference: example-work-a
+  - reference: example-work-b
+pre_load:
+  - example-work-a
+  - example-work-b

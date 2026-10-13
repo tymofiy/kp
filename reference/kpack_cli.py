@@ -41,7 +41,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-VERSION = "v0.8.4-preview"
+VERSION = "v0.8.4-preview+unreleased"
 
 # The conformance runner lives in the repository tree, not in an installed
 # wheel — resolve it relative to this file (reference/ -> repo root). For a
@@ -151,8 +151,8 @@ COMMAND_REGISTRY = {
     ),
     "unbundle": (
         "spec/BUNDLE.md",
-        "Reconstruct a pack directory from a markdown bundle (the inverse "
-        "of `bundle` / `export`). Defined in BUNDLE.md.",
+        "Reconstruct only explicitly represented bundle sections; complete "
+        "directory or seal round-trip is not guaranteed. Defined in BUNDLE.md.",
     ),
 }
 
@@ -356,7 +356,7 @@ def run_lint(args: argparse.Namespace) -> int:
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="kpack",
-        description="KP:1 reference CLI — `lint` is implemented; every other "
+        description="KP:1 reference CLI — `lint` and `new` are implemented; every other "
         "subcommand prints the spec section that defines its contract.",
     )
     parser.add_argument("-v", "--version", action="version", version=VERSION)

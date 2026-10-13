@@ -18,10 +18,15 @@ import math
 import re
 import shutil
 import sqlite3
+import sys
 from pathlib import Path
 from typing import Any
 
 import yaml
+
+if not __package__:  # direct script invocation from a checkout
+    sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+from conformance.evidence import parse_evidence as parse_evidence_records
 
 try:
     from .current_belief import current_belief_rows
@@ -30,10 +35,10 @@ except ImportError:  # direct script invocation (python compiler/graph_compiler.
 
 
 SCHEMA_VERSION = 6
-# Mirrors the kp repo release version (the spec tag) — the compiler ships with
-# the repo, not on an independent axis. Bump together on release. (SCHEMA_VERSION
+# Tracks the last release plus an explicit unreleased marker for draft changes.
+# Pin the source revision in verification receipts; remove the marker on release. (SCHEMA_VERSION
 # above is the separate output-format revision counter.)
-COMPILER_VERSION = "0.8.4-preview"
+COMPILER_VERSION = "0.8.4-preview+unreleased"
 RELATION_PROFILE_SCHEMA_VERSION = "kp-relation-profile-v0"
 DEFAULT_QUERY_LIMIT = 3
 SEARCH_MODES = ("fts5", "vector", "hybrid", "lexical")
@@ -531,7 +536,7 @@ def parse_claims(
 
         meta_line_number, meta_line = continuations[0]
         dense = re.match(r"\{([^}]+)\}", meta_line)
-        verbose = re.match(r"`(confidence:\s*[^`]*)`", meta_line)
+        verbose = re.match(r"`([^`]+)`", meta_line)
 
         if dense:
             parts = [part.strip() for part in dense.group(1).split("|")]
@@ -692,46 +697,13 @@ def parse_evidence(
     default_visibility: str,
     default_boundary_explicit: bool,
 ) -> list[Evidence]:
-    sections: list[dict[str, Any]] = []
-    current: dict[str, Any] | None = None
-
-    for line_number, line in enumerate(evidence_text.splitlines(), start=1):
-        heading = EVIDENCE_HEADING_RE.match(line)
-        if heading:
-            if current is not None:
-                sections.append(current)
-            current = {
-                "id": heading.group(1),
-                "title": heading.group(2).strip() if heading.group(2) else heading.group(1),
-                "line": line_number,
-                "metadata": {},
-                "body": [],
-            }
-            continue
-
-        if current is None:
-            continue
-
-        if line.startswith("> "):
-            metadata_line = line[2:].strip()
-            for segment in metadata_line.split("|"):
-                field = FIELD_RE.search(segment.strip())
-                if field:
-                    current["metadata"][field.group(1).strip().lower()] = field.group(2).strip()
-            continue
-
-        if line.strip():
-            current["body"].append(line.strip())
-
-    if current is not None:
-        sections.append(current)
-
     evidence = []
-    for section in sections:
-        metadata = section["metadata"]
+    for section in parse_evidence_records(evidence_text):
+        metadata = section.fields
         credibility = metadata.get("credibility")
+        # A searchable summary is derived text, not a lossless file carrier.
         body, body_annotations = remove_compiler_annotations(
-            " ".join(section["body"]).strip()
+            " ".join(section.logical_body.split())
         )
         boundary_fields = {**metadata, **body_annotations}
         tier, sensitivity, visibility = normalized_boundary_metadata(
@@ -740,7 +712,7 @@ def parse_evidence(
             default_sensitivity=default_sensitivity,
             default_visibility=default_visibility,
         )
-        source_locator = f"evidence.md:{section['line']}"
+        source_locator = f"evidence.md:{section.line}"
         boundary_source = boundary_metadata_source(
             boundary_fields,
             default_boundary_explicit=default_boundary_explicit,
@@ -748,10 +720,10 @@ def parse_evidence(
         )
         evidence.append(
             Evidence(
-                evidence_uid=evidence_uid(pack_id, section["id"]),
+                evidence_uid=evidence_uid(pack_id, section.id),
                 pack_id=pack_id,
-                local_evidence_id=section["id"],
-                title=section["title"],
+                local_evidence_id=section.id,
+                title=section.title,
                 source_type=metadata.get("type"),
                 source_uri=metadata.get("source"),
                 captured_at=metadata.get("captured"),

@@ -12,6 +12,11 @@
       "enum": ["SHA-256"],
       "description": "Hash algorithm. Currently only SHA-256 (future-proofed for upgrades)."
     },
+    "seal_version": {
+      "type": "string",
+      "enum": ["2"],
+      "description": "ARCHIVE.md \u00a74.2 signing-payload version. ABSENT means v1, whose payload does not cover pack_id. Itself a signed field, so it cannot be stripped to select a weaker payload."
+    },
     "pack_id": {
       "type": "string",
       "description": "Stable pack identity across versions. OPTIONAL in the schema for backward compatibility with pre-documentation archives; new archives SHOULD include it."

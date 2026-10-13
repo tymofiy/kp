@@ -1,0 +1,93 @@
+{
+  "rules": "ARCHIVE editor draft: NFC paths, component OS exclusions, raw bytes",
+  "vectors": [
+    {
+      "name": "plain",
+      "files_hex": {
+        "PACK.yaml": "6e616d653a206578616d706c650a",
+        "claims.md": "4578616d706c6520636c61696d732e0a"
+      },
+      "expected_files": {
+        "PACK.yaml": "15fcc3870625980bf58f15ba904736b4ffa1a84495a8f4f51d781e211016e743",
+        "claims.md": "9572de4c0a2d909e471818cb35ad62c9f589e07f045a4668e8bac445e0142b61"
+      },
+      "expected_pack_hash": "9b137394ae3cecf95ab79d67fd68013f16ef2be1288005327f85750c2d5f81cb"
+    },
+    {
+      "name": "metadata",
+      "files_hex": {
+        "PACK.yaml": "6e616d653a206578616d706c650a",
+        "claims.md": "4578616d706c6520636c61696d732e0a",
+        ".DS_Store": "726f6f74206d65746164617461",
+        "views/.DS_Store": "6e6573746564206d65746164617461",
+        "attachments/._photo": "4170706c65446f75626c65",
+        "views/._resources/note": "736964656361722074726565",
+        "attachments/__MACOSX/entry": "7a6970206d65746164617461",
+        "signatures.yaml": "72656365697074",
+        "views/Thumbs.db": "57696e646f7773206d65746164617461",
+        "attachments/desktop.ini": "57696e646f777320666f6c646572206d65746164617461"
+      },
+      "expected_files": {
+        "PACK.yaml": "15fcc3870625980bf58f15ba904736b4ffa1a84495a8f4f51d781e211016e743",
+        "claims.md": "9572de4c0a2d909e471818cb35ad62c9f589e07f045a4668e8bac445e0142b61"
+      },
+      "expected_pack_hash": "9b137394ae3cecf95ab79d67fd68013f16ef2be1288005327f85750c2d5f81cb"
+    },
+    {
+      "name": "ordinary-dotfiles",
+      "files_hex": {
+        "PACK.yaml": "6e616d653a206578616d706c650a",
+        "claims.md": "4578616d706c6520636c61696d732e0a",
+        ".provenance": "6f726967696e616c",
+        "attachments/signatures.yaml": "696e636c756465642072656365697074"
+      },
+      "expected_files": {
+        ".provenance": "0682c5f2076f099c34cfdd15a9e063849ed437a49677e6fcc5b4198c76575be5",
+        "PACK.yaml": "15fcc3870625980bf58f15ba904736b4ffa1a84495a8f4f51d781e211016e743",
+        "attachments/signatures.yaml": "b781dde5babf96d4e9363333a8407e0a328224dbfdb425bd7b2842185b5995c6",
+        "claims.md": "9572de4c0a2d909e471818cb35ad62c9f589e07f045a4668e8bac445e0142b61"
+      },
+      "expected_pack_hash": "26560f47c726ebafa60df7306b94f020991ccf8a13fe12978930387ce620df94"
+    },
+    {
+      "name": "unicode-nfd",
+      "files_hex": {
+        "PACK.yaml": "6e616d653a206578616d706c650a",
+        "claims.md": "4578616d706c6520636c61696d732e0a",
+        "attachments/café.txt": "556e69636f64652066696c656e616d650d0a"
+      },
+      "expected_files": {
+        "PACK.yaml": "15fcc3870625980bf58f15ba904736b4ffa1a84495a8f4f51d781e211016e743",
+        "attachments/café.txt": "919539a41ebded08efd94948115be61f10c00f671d821ae66172921430107294",
+        "claims.md": "9572de4c0a2d909e471818cb35ad62c9f589e07f045a4668e8bac445e0142b61"
+      },
+      "expected_pack_hash": "1e265b99248f6b0c5430168097c373013f87488b6d4fa6ff5accd0eaaefc1d22"
+    },
+    {
+      "name": "unicode-nfc",
+      "files_hex": {
+        "PACK.yaml": "6e616d653a206578616d706c650a",
+        "claims.md": "4578616d706c6520636c61696d732e0a",
+        "attachments/café.txt": "556e69636f64652066696c656e616d650d0a"
+      },
+      "expected_files": {
+        "PACK.yaml": "15fcc3870625980bf58f15ba904736b4ffa1a84495a8f4f51d781e211016e743",
+        "attachments/café.txt": "919539a41ebded08efd94948115be61f10c00f671d821ae66172921430107294",
+        "claims.md": "9572de4c0a2d909e471818cb35ad62c9f589e07f045a4668e8bac445e0142b61"
+      },
+      "expected_pack_hash": "1e265b99248f6b0c5430168097c373013f87488b6d4fa6ff5accd0eaaefc1d22"
+    },
+    {
+      "name": "line-endings",
+      "files_hex": {
+        "PACK.yaml": "6e616d653a206578616d706c650a",
+        "claims.md": "4578616d706c6520636c61696d732e0d0a"
+      },
+      "expected_files": {
+        "PACK.yaml": "15fcc3870625980bf58f15ba904736b4ffa1a84495a8f4f51d781e211016e743",
+        "claims.md": "3044897e061acd017c664fb602f41f92ede8f652416b4453ac513ffb370c06cb"
+      },
+      "expected_pack_hash": "0e7b8161b363ca7910005d3b1f8be3dc666a86600bf98d9bd77a2f552d2fd5ca"
+    }
+  ]
+}

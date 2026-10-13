@@ -2,40 +2,32 @@
 
 # Specialist's Working Notes
 
-> Internal-facing notes from the nineteenth-century European sculpture
-> specialist. Used by the committee for the decision summary in
-> [`decision.md`](decision.md).
+> Committee-facing account of the house specialist's examination and adopted assessment. The [decision summary](decision.md) retains its qualifications.
 
 ## Examination summary
 
-Examined 2026-05-02 (object) and 2026-05-03 (foundry mark, follow-up).
+The object was examined on 2026-05-02, with foundry-mark follow-up on 2026-05-03. It is a 38-cm bronze figure signed "Y." on the base.
 
-The work is a 38-cm bronze figure, signed "Y." in lower right of the base. Surface patina is consistent with a casting executed in the 1880–1900 period; bronze alloy and casting weight are likewise consistent with that period to the extent visual and tactile observation supports such a conclusion. The signature is clean and well-defined.
+The specialist judged the surface patina, casting weight and bronze alloy characteristics consistent with an 1880–1900 casting. That assessment came from visual and tactile examination; it was not confirmed by laboratory analysis. It does not settle the cast period against the foundry-mark evidence.
 
-The patina-and-period reading is, in isolation, supportive of a lifetime cast. It is not dispositive: posthumous casts produced from authorized models in the early twentieth century could share these characteristics, especially in the 1925–1940 period when foundries continued to produce work using the original artist's models and aged bronze alloys deliberately.
+## The foundry-mark assessment
 
-## The foundry-mark finding
+The underside mark was identified as Foundry F, Paris, against the published reference. Foundry F began operating in 1925; Sculptor Y died in 1913. From that evidence, the house adopts a posthumous-cast assessment. The narrower dating to 1925–approximately 1940 is the specialist's judgment from the reference's mark-variant catalog.
 
-The underside carries the mark of Foundry F, Paris. This was confirmed against the published reference of Parisian art-foundry marks. The mark variant matches Foundry F's documented usage from 1925 to approximately 1940.
+Vendor V's lifetime-cast attribution remains a reported source account. The house disagrees with that underlying attribution; this does not make the record of Vendor V's position false. The genuine 1971 catalog says "by Sculptor Y" without specifying the cast period, so its wording does not establish a lifetime cast.
 
-Foundry F's operating dates are 1925–1976. Sculptor Y died in 1913. The foundry did not exist during the sculptor's lifetime.
+## Market and proposed terms
 
-This is dispositive of the cast period: the work is a posthumous cast.
-
-## What this is and is not
-
-A posthumous cast after Sculptor Y is a saleable category. Foundry F was a well-regarded foundry; their casts after major nineteenth-century sculptors are a legitimate market segment. The current public auction record shows three Foundry F casts after Sculptor Y in the 38-cm size range, with hammer prices in the €80,000–€140,000 range during 2024–2025.
-
-A posthumous cast is not a lifetime cast. The market price differential between the two categories — roughly four-to-one — reflects this distinction. The 1971 estate-sale catalog cited by the consignor predates the conventions that make this distinction explicit; calling the work "by Sculptor Y" in 1971 was not wrong then and is not evidence of lifetime authorship now.
+The recorded 2024–2025 comparable hammer-price ranges are €320,000–€540,000 for lifetime casts and €80,000–€140,000 for Foundry F posthumous casts. The €180,000 reserve lies between them. The house interprets the reserve as reflecting Vendor V's attribution; that reading of intent is a judgment, not a measurement.
 
 ## Risk assessment
 
-If the work were catalogued and sold as a lifetime cast, a buyer's subsequent examination of the foundry mark would be sufficient to support a rescission claim. This has happened to comparable works at peer houses; the legal posture is well-established.
+The house assesses reputational and potential legal risk if the work is listed without distinguishing the cast period. The nature and extent of legal exposure depend on jurisdiction and contract terms not fully analyzed here. The pack does not establish entitlement to rescission or other remedies.
 
-The reputational risk falls on the house, not on the consignor. The consignment agreement does not absolve the house of attribution responsibility once the work is in the sale.
+The recorded agreement requires consignor sign-off on attribution-language changes. Obtaining that agreement is part of the committee's recommended path; the account of the clause is distinct from an independent legal determination.
 
 ## Recommendation
 
-The consignment should be declined as submitted. If the consignor revises the attribution to "after Sculptor Y, posthumous cast, Foundry F, c. 1925–1940" and the reserve to align with the posthumous-cast market range, the consignment can be reconsidered.
+Decline the consignment as submitted. Reconsideration is recommended if the consignor agrees to a posthumous-cast attribution and a reserve aligned with the corresponding market range. This addresses the attribution discrepancy without claiming that every risk has been resolved.
 
-<!-- source: C003, C004, C005, C007, C009, C010, C013, C016, C017 -->
+<!-- source: C001, C003, C004, C005, C006, C007, C008, C009, C010, C011, C012, C013, C014, C015, C016, C017 -->

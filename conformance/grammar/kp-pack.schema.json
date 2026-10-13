@@ -287,15 +287,16 @@
     },
     "composition": {
       "type": "string",
+      "const": "composition.yaml",
       "default": "composition.yaml",
-      "description": "Path to the composition file. Defaults to composition.yaml."
+      "description": "Optional declaration of the canonical composition.yaml file, which must exist when declared. Generic readers do not resolve alternate composition paths."
     },
     "files": {
       "type": "object",
       "additionalProperties": {
         "type": "string"
       },
-      "description": "Non-standard file name overrides."
+      "description": "Application filename mappings. Canonical generic files remain required; alternate carriers need a declared profile (CORE section 2)."
     },
     "views": {
       "type": "array",
