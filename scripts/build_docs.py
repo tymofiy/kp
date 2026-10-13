@@ -15,6 +15,7 @@ Usage:
     make docs / make docs-check              # the same, via the Makefile
 
 It also creates the current version’s abstract page alongside its PDF.
+Check mode verifies the PDF, source manifest and current publication inputs.
 It modifies nothing else in the main page. The fields it owns:
   * <meta name="..."> — citation_publication_date, citation_online_date,
     citation_technical_report_number, citation_doi, DC.date, DC.identifier,
@@ -27,6 +28,8 @@ from __future__ import annotations
 
 import argparse
 from html import escape
+import hashlib
+import json
 import re
 import sys
 from pathlib import Path
@@ -79,6 +82,7 @@ def load_fields() -> dict:
     return {
         # body data-kp anchors
         "version": f"v{version}",
+        "_citation_version": version,
         "date": released,
         "license": license_id.replace("-", " "),  # display form: CC-BY-4.0 -> CC BY 4.0
         "_license_spdx": license_id,               # SPDX form for machine metadata (DC.rights)
@@ -192,7 +196,7 @@ h2{{font-size:1rem;margin-top:2rem}}a{{color:#35677d}}.edition{{color:#617184;fo
 <p>{abstract}</p>
 <p><a href="{f['_pdf_url']}">Read or download the full specification PDF</a></p>
 <h2>Citation</h2>
-<p>Kompanchenko, T. ({f['year']}). <i>{title}</i> (Version {version}). Zenodo.
+<p>Kompanchenko, T. ({f['year']}). <i>{title}</i> (Version {escape(f["_citation_version"])}). Zenodo.
 <a href="https://doi.org/{doi}">https://doi.org/{doi}</a>.</p>
 <p class="edition">A released editor's draft is public and citable. The specification remains a preview;
 publication does not establish stable V1 compatibility or standards-body ratification.</p>
@@ -203,6 +207,50 @@ publication does not establish stable V1 compatibility or standards-body ratific
 </body>
 </html>
 '''
+
+
+def publication_errors(f: dict) -> list[str]:
+    """Reject missing or stale published PDF artifacts without rebuilding them."""
+    pdf = PAGE.parent / f"kp-{f['version']}.pdf"
+    manifest = pdf.with_suffix('.sources.json')
+    errors = []
+    if not pdf.is_file():
+        errors.append(f"missing specification PDF: {pdf.name}")
+    if not manifest.is_file():
+        errors.append(f"missing PDF source manifest: {manifest.name}")
+    if errors:
+        return errors
+    try:
+        record = json.loads(manifest.read_text(encoding="utf-8"))
+        if not isinstance(record, dict):
+            raise ValueError("expected a JSON mapping")
+    except (ValueError, OSError) as error:
+        return [f"invalid PDF source manifest: {error}"]
+    expected = {"version": f["version"], "release_date": f["date"],
+                "version_doi": f["version-doi"], "pdf": pdf.name}
+    for key, value in expected.items():
+        if record.get(key) != value:
+            errors.append(f"PDF manifest {key} disagrees with the current release")
+    pdf_bytes = pdf.read_bytes()
+    if not pdf_bytes.startswith(b"%PDF-"):
+        errors.append("specification PDF has an invalid header")
+    if record.get("pdf_sha256") != hashlib.sha256(pdf_bytes).hexdigest():
+        errors.append("specification PDF hash disagrees with its source manifest")
+    sources = record.get("sources")
+    expected_sources = {str(p.relative_to(ROOT)) for p in (ROOT / "spec").glob("*.md")}
+    expected_sources.update({"conformance/grammar/kp-claims.peg",
+                             "conformance/grammar/kp-pack.schema.json",
+                             "conformance/grammar/kp-composition.schema.json",
+                             "conformance/grammar/kp-signatures.schema.json",
+                             "CITATION.cff", "scripts/build_pdf.py", "scripts/pdf/layout.typ"})
+    if not isinstance(sources, dict) or set(sources) != expected_sources:
+        errors.append("PDF manifest source inventory disagrees with the publication inputs")
+    else:
+        for name, digest in sources.items():
+            source = ROOT / name
+            if not source.is_file() or hashlib.sha256(source.read_bytes()).hexdigest() != digest:
+                errors.append(f"PDF source changed since build: {name}")
+    return errors
 
 
 def main() -> int:
@@ -221,11 +269,12 @@ def main() -> int:
         changes.append(f"version-specific abstract page: {edition.name}")
 
     if args.check:
+        changes.extend(publication_errors(f))
         if changes:
-            sys.stderr.write("docs/index.html is OUT OF SYNC with CITATION.cff:\n")
+            sys.stderr.write("Publication artifacts are OUT OF SYNC with CITATION.cff:\n")
             for c in changes:
                 sys.stderr.write(f"  - {c}\n")
-            sys.stderr.write("Run `make docs` and commit the result.\n")
+            sys.stderr.write("Rebuild stale PDF artifacts with `python3 scripts/build_pdf.py`, then run `make docs` and commit the result.\n")
             return 1
         print(f"In sync: version {f['version']}, released {f['date']}.")
         return 0
