@@ -5,7 +5,7 @@
 
 ---
 
-## Unreleased — Editor's Draft
+## v0.8.5-preview — 2026-10-13
 
 **Coherent directory contract, preservation boundaries and reference coverage.**
 
@@ -18,10 +18,10 @@
 - **Profiles:** the entity/case/event catalog expands; operational per-claim associations have no generic file carrier. Case pins require unambiguous profile resolution; a newer sibling is not proven supersession. Original multilingual sources must survive the legacy transcript cardinality limit; locale paths must resolve unambiguously.
 - **Purpose:** README and positioning explain the AI-first, lasting knowledge-system intention in plain language: retain context, relationships, uncertainty and changes for reasoning and continuation. Application operations remain distinct from the file format.
 - **Context and change:** authoring/consistency/lifecycle guidance preserves material attribution, roles, dates, methods and decision context. Event placement is not a judgment that knowledge has no lasting value. Support revisions preserve complete issued records. The acquisition example distinguishes a bounded no-match search from unknown coverage; compiler pointers and leans are presentation preferences, not adopted assessments or permission to act.
-- **Examples and maturity:** authoring/examples distinguish source reports, dated facts and adopted assessments; preserve attribution; use valid split IDs and registered relations. [COMPATIBILITY.md](COMPATIBILITY.md) records authority, capabilities and support boundaries. The current-belief compiler's deterministic preference is not truth or evidence independence. Public citable metadata stays at the actual last release.
-- **Verification:** the fixture/example suite grows from the released 23 cases to 29 (10 valid, 14 invalid, 5 examples). Separate contract tests exercise the changes above; a suite pass is not whole-format or application certification.
+- **Examples and maturity:** authoring/examples distinguish source reports, dated facts and adopted assessments; preserve attribution; use valid split IDs and registered relations. [COMPATIBILITY.md](COMPATIBILITY.md) records authority, capabilities and support boundaries. The current-belief compiler's deterministic preference is not truth or evidence independence. Public citable metadata, reference version strings and the searchable specification PDF identify this released preview.
+- **Verification:** the fixture/example suite grows from the released 23 cases to 29 (10 valid, 14 invalid, 5 examples). Twenty-two reference contract tests exercise the changes above, and 50 graph compiler tests exercise its bounded projection. Registered evidence fields are closed, selection member references are nonempty, optional space after the evidence blockquote marker is accepted and structured composition claims pass strict PEG parsing. A suite pass is not whole-format or application certification.
 
-Compatibility is not claimed monotonic: selection scope, history uniqueness, evidence fields and archive hash rules can change validation or verification results. Preserve accepted historical bytes and receipts; target a pinned spec revision and declared profiles. This is an **unreleased editor's draft**, not stable V1 or a new release/DOI. The [proposed decision record](../decisions/2026-10-11-draft-coherence.md) remains subject to public discussion and editor acceptance.
+Compatibility is not claimed monotonic: selection scope, history uniqueness, evidence fields and archive hash rules can change validation or verification results. Preserve accepted historical bytes and receipts; target a pinned spec revision and declared profiles. This is a **released editor's draft**, archived under a version DOI, with preview compatibility and implementation limits. The [decision record](../decisions/2026-10-11-draft-coherence.md) records editor acceptance through [issue #52](https://github.com/tymofiy/kp/issues/52) and [PR #53](https://github.com/tymofiy/kp/pull/53).
 
 ---
 

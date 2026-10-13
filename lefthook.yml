@@ -34,8 +34,21 @@ pre-commit:
         for file in {staged_files}; do
           if [ -f "$file" ]; then
             size=$(wc -c < "$file" 2>/dev/null || echo 0)
-            if [ "$size" -gt 1048576 ]; then
-              echo "Large file (>1MB): $file ($(( size / 1048576 ))MB)"
+            # Searchable specification editions are publication artifacts.
+            # Keep their ceiling below scholarly crawler limits; other files
+            # retain the 1 MiB limit.
+            limit=1048576
+            case "$file" in
+              docs/kp-v*-preview.pdf)
+                if [ "$(head -c 5 "$file")" != "%PDF-" ]; then
+                  echo "Invalid specification PDF: $file"
+                  exit 1
+                fi
+                limit=5000000
+                ;;
+            esac
+            if [ "$size" -gt "$limit" ]; then
+              echo "Large file: $file ($size bytes; limit $limit)"
               exit 1
             fi
           fi

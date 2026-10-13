@@ -3,7 +3,7 @@
 
 # Authority, Capabilities and Compatibility
 
-> **Status:** Informative implementation guide for the unreleased editor's draft
+> **Status:** Informative implementation guide for the released v0.8.5-preview editor's draft
 
 ## Authority and versions
 
@@ -11,9 +11,9 @@
 
 `KP:1` in the Rosetta header identifies the format epoch. A manifest `spec_version` identifies a specification revision or release tag; it is not the pack's CalVer `version`, the archive's `seal_version`, or an application profile version. Pin a tag or commit when reporting validation. `spec_uri` remains an offline-safe informational pointer, never a required network dependency.
 
-Reference tooling identifies this changed draft with a `+unreleased` version suffix; this is not a release tag. Verification still needs the source commit.
+Reference tooling identifies this release as `v0.8.5-preview` (the Python package uses `0.8.5a0`). Verification should record the release tag and source commit.
 
-The latest citable release remains `v0.8.4-preview` (2026-06-13). The changes under [CHANGELOG.md — Unreleased](CHANGELOG.md#unreleased--editors-draft) have no new release tag or DOI. Preview/editor's-draft status does not promise stable V1 compatibility. Cite the released snapshot for that snapshot's requirements and a commit for newer requirements.
+The latest citable release is `v0.8.5-preview` (2026-10-13), DOI [10.5281/zenodo.23329922](https://doi.org/10.5281/zenodo.23329922). The [changelog](CHANGELOG.md) records its changes from `v0.8.4-preview`. A released editor's draft is public and citable; preview status does not promise stable V1 compatibility. Cite a released snapshot for that snapshot's requirements and a commit for any newer requirements.
 
 ## Capability boundaries
 

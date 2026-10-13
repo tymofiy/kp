@@ -3,8 +3,8 @@
 
 # KP:1 Core Specification
 
-> **Status:** Editor's Draft — unreleased updates
-> **Latest citable release:** `KP:1 Public Draft — 2026-06` (`v0.8.4-preview`)
+> **Status:** Released Editor's Draft — v0.8.5-preview
+> **Latest citable release:** `KP:1 — Knowledge Pack Format Specification` (`v0.8.5-preview`, 2026-10-13)
 > **Editor:** Timothy Kompanchenko
 > **Draft updated:** 2026-10-12
 > **Derived from:** SPEC.md, `conformance/grammar/kp-claims.peg`, `conformance/grammar/kp-pack.schema.json`
@@ -100,7 +100,7 @@ PACK.yaml is a YAML file declaring pack identity and configuration. The normativ
 | `kind` | enum | `claim` (default), `definition`, `policy`, `mixed` |
 | `description` | string | Human-readable summary |
 | `spec_uri` | URL | Onboarding pointer to the KP:1 specification this pack conforms to. Informational, not a runtime parse dependency. Default published location: `https://github.com/tymofiy/kp`. See "Spec Onboarding Pointer" below. |
-| `spec_version` | string | Version label of the KP:1 spec this pack conforms to (typically a tag, e.g., `v0.8.4-preview`). Pairs with `spec_uri` to pin against a specific revision. |
+| `spec_version` | string | Version label of the KP:1 spec this pack conforms to (typically a tag, e.g., `v0.8.5-preview`). Pairs with `spec_uri` to pin against a specific revision. |
 | `confidence` | object | `scale` (string, required within object), `normalize` (boolean), `labels` (object, for custom scales) |
 | `freshness` | date | Last substantive review date |
 | `license` | string | Reuse terms (e.g., `CC-BY-4.0`) |
@@ -119,7 +119,7 @@ PACK.yaml is a YAML file declaring pack identity and configuration. The normativ
 
 The full set of optional fields and conditional constraints is defined in the JSON Schema. Key conditionals: when `tier` is `hub`, `sub_packs` is REQUIRED; when `sensitivity` is `confidential` or `restricted`, `channels` MUST NOT contain `public` or `org`; when `sensitivity` is `internal`, `channels` MUST NOT contain `public`; when a view declares `voice: true`, `duration` and `pace` are REQUIRED on that view entry.
 
-**Decoration fields** (`linguistic_epoch`, `ontology`) are accepted by the schema but carry no consumer behavior in v0.8.4-preview. They are retained for backward compatibility with v0.7-era packs; new producers SHOULD place equivalent metadata under `extensions.*` until consumer semantics are defined in a future revision.
+**Decoration fields** (`linguistic_epoch`, `ontology`) are accepted by the schema but carry no consumer behavior in v0.8.5-preview. They are retained for backward compatibility with v0.7-era packs; new producers SHOULD place equivalent metadata under `extensions.*` until consumer semantics are defined in a future revision.
 
 ### Spec Onboarding Pointer
 
@@ -139,7 +139,7 @@ version: 2026.05.09
 domain: art/canonical
 author: Tim Kompanchenko
 spec_uri: https://github.com/tymofiy/kp
-spec_version: v0.8.4-preview
+spec_version: v0.8.5-preview
 ```
 
 Sealed-archive producers SHOULD include both fields when packs are intended for ecosystem-wide distribution (especially `.kpack` archives that may be received cold). Internal-only packs MAY omit them. When omitted, consumers MAY assume the published reference implementation at `https://github.com/tymofiy/kp` but MUST treat the assumption as informational, not a guarantee — and MUST NOT fail because the assumption resolves to an unreachable endpoint.

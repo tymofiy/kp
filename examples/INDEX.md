@@ -127,4 +127,4 @@ The first full example. Demonstrates dense + verbose claim metadata, a represent
 
 ---
 
-*Reviewed for the unreleased editor's draft. Validate the examples with `python3 conformance/run.py --strict` (29/29 expected for the complete fixture/example suite). These examples illustrate selected features; conformance fixtures supply additional positive and negative cases.*
+*Reviewed for the released v0.8.5-preview editor's draft. Validate the examples with `python3 conformance/run.py --strict` (29/29 expected for the complete fixture/example suite). These examples illustrate selected features; conformance fixtures supply additional positive and negative cases.*

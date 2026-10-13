@@ -1,0 +1,52 @@
+{
+  "version": "v0.8.5-preview",
+  "release_date": "2026-10-13",
+  "version_doi": "10.5281/zenodo.23329922",
+  "projection": "All spec/*.md files, normative grammar and published JSON Schemas; source files remain authoritative.",
+  "sources": {
+    "spec/CORE.md": "8de2ddeb2a718df625d38a946a1a6ba45c673d1dd0e507216cfcf290967591f9",
+    "spec/SPEC.md": "ce61da1d9fe0591269a83c0d97f31bc608f1532294930f0e72c7ffe3f1195098",
+    "spec/COMPATIBILITY.md": "4e0e158e3ad37c7860306e1ba9f413e72ee8aa9b939da462fae62888e073baf3",
+    "spec/AUTHORING.md": "078bec4ffb6ad89cc9deb15a6689d19f47c9430ab77f041d900ee0ed154e41c0",
+    "spec/VOICE.md": "bc275b955e3c5852f5f313af9bee86f6b88371451e5137b65bf3b9404ba92801",
+    "spec/COMPOSITION.md": "061956dc5d4b3a4476cd0b12331b7996d339c2ac7d2000106c33c29e31ac04f5",
+    "spec/LIFECYCLE.md": "4ac76e8d87bd938bb773648330b9d0234387acf3caecd52f0ee81a287ebce072",
+    "spec/MULTILINGUAL.md": "b89305e1dfe529836aba05f336611cf88bb0b1f005e8ba9a70ca5a903365df09",
+    "spec/ORGANIZATION.md": "dcca0d9eaacb76eac2f087875e6170dc0c6f52dbbf5156586948500b1b067f12",
+    "spec/CONSISTENCY.md": "0fcf245b32abdf5f928cd61a9ee34ce155caed9444ee145d7d083fa2c77aebdb",
+    "spec/CONVENTIONS.md": "05234f39b96aa928b61feca52fdb44c3a2dcb605228e9ae2f4b1bfbdd3d6f2db",
+    "spec/STORAGE.md": "880974fb7276b59a9a4e4154b96b8d0d241663d5fe54108fd62daa433d5888f3",
+    "spec/BUNDLE.md": "2bed1b6bb4154d968947e234a4a38245a697f62e8711bdcdc59c62040dd693c5",
+    "spec/ARCHIVE.md": "8f37c4355b6f02e9ece9e6260f48c8929ba53cac6ebb68a7bf5a1571015d52b1",
+    "spec/DEFINITIONS.md": "1f97190e8d1f4414ddd9cfd323816d0fbcb7c20107ad816d836125d33b650fff",
+    "spec/EXTENSIONS.md": "bda1a5b8bf0093afb533ff9fcb0ca51e37ac48dfb65ced322ad54ec4c88859c3",
+    "spec/NOTES.md": "cfd3a0459334217deebef9754219af224b04586b7392a978b94da819394f0ac5",
+    "spec/PLAYBACK.md": "bf66e2d97afc4d31566715b0455da03a2648207674687822fe528dc8eda8aa8c",
+    "spec/RECONCILIATION.md": "f79cfd3d9b94ad2c73350d337a10052429d74639b4dc4e886ea737bc907bf129",
+    "spec/RATIONALE.md": "2f2796b7aeff25c4ce8807dd5f8838d8087b8118869df21f1e095272f6d7e0b8",
+    "spec/MAPPING.md": "af786e15673d5ab8370996b63a8c744644c865c90a3ca44e12a1b84a7d105045",
+    "spec/INDEPENDENCE.md": "aecb7550eeed8cc88a0244591c846a6a52edc689f7c379e73d7dcbe50e3bef61",
+    "spec/README.md": "d0c58398c5507613cfc2266eebdfce1e71f76c45342741ec50d7aba898766d94",
+    "spec/CHANGELOG.md": "31803b8ef49293474a07771a51c005aa61388fba845b6e29db663add9acedb2d",
+    "conformance/grammar/kp-claims.peg": "65307155ab5d2f39dcb2e4a7cd8a2315d5958fca52b2a7ef013429e1308849ed",
+    "conformance/grammar/kp-pack.schema.json": "cf2e2ab2f64cc961538d019e1082a83e4941ac6b0dc74e0af6004305b803b093",
+    "conformance/grammar/kp-composition.schema.json": "51a1273a2023f914f188b599f4130005d0ee9143cb2c307a2f409b9a8da55e1f",
+    "conformance/grammar/kp-signatures.schema.json": "c28048033a84ce6ae91a63c65ed33bc76c0ded478f2db7dbf5651e81dc5433c6",
+    "CITATION.cff": "97c746c9e8c0610e3c8c31da60780d48053ff1936c4059dbcab21f4956cec602",
+    "scripts/build_pdf.py": "2e4f1e6b23d93b6c4259ba11823ea576ea05908412b41dd60b00abc6f4157d12",
+    "scripts/pdf/layout.typ": "5d082e66b8eafbfa3ec0c7ef1c7e759fd207a9160539561b584af7b171103f2f"
+  },
+  "tools": {
+    "pandoc": "pandoc 3.12.1",
+    "typst": "typst 0.15.1 (unknown commit)",
+    "qpdf": "qpdf version 12.4.2"
+  },
+  "requested_font_families": [
+    "Inter",
+    "IBM Plex Mono",
+    "DejaVu Sans Mono",
+    "Arial Unicode MS"
+  ],
+  "pdf": "kp-v0.8.5-preview.pdf",
+  "pdf_sha256": "e9d647f263b49d8bef6880ad9514580be117681e659bf63440eb16d3aa9c6378"
+}

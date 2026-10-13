@@ -35,10 +35,10 @@ except ImportError:  # direct script invocation (python compiler/graph_compiler.
 
 
 SCHEMA_VERSION = 6
-# Tracks the last release plus an explicit unreleased marker for draft changes.
+# Tracks the released specification preview; compiler support remains experimental.
 # Pin the source revision in verification receipts; remove the marker on release. (SCHEMA_VERSION
 # above is the separate output-format revision counter.)
-COMPILER_VERSION = "0.8.4-preview+unreleased"
+COMPILER_VERSION = "0.8.5-preview"
 RELATION_PROFILE_SCHEMA_VERSION = "kp-relation-profile-v0"
 DEFAULT_QUERY_LIMIT = 3
 SEARCH_MODES = ("fts5", "vector", "hybrid", "lexical")

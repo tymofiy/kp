@@ -41,7 +41,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-VERSION = "v0.8.4-preview+unreleased"
+VERSION = "v0.8.5-preview"
 
 # The conformance runner lives in the repository tree, not in an installed
 # wheel — resolve it relative to this file (reference/ -> repo root). For a
