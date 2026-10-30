@@ -8,6 +8,8 @@
 > **Purpose:** route you to the minimum required reading for your specific task, so you don't have to load all ~9,800 lines of spec prose across the 22 spec/*.md files into your context window before doing useful work.
 >
 > If you are a human, [`README.md`](README.md) is the better entry point.
+>
+> **A person gave you information and asked for a Knowledge Pack?** Follow [`agent/CREATE-A-PACK.md`](agent/CREATE-A-PACK.md). Every step is on that one page, and you can skip the rest of this file.
 
 ---
 

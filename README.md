@@ -9,6 +9,11 @@
 > relationships, uncertainty and history. It gives people and AI a lasting record
 > they can reason with and continue using across tasks and tools.
 
+> **AI assistant, asked to make a Knowledge Pack?** Follow
+> [`agent/CREATE-A-PACK.md`](agent/CREATE-A-PACK.md)
+> ([plain text](https://raw.githubusercontent.com/tymofiy/kp/main/agent/CREATE-A-PACK.md)).
+> Every step is on that one page.
+
 **Editor:** Timothy Kompanchenko
 **Status:** Released Editor's Draft — v0.8.5-preview
 **Draft updated:** 2026-10-12
