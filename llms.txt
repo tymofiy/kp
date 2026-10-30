@@ -5,6 +5,8 @@
 ## Make a Knowledge Pack
 
 - [Create a Knowledge Pack](https://raw.githubusercontent.com/tymofiy/kp/main/agent/CREATE-A-PACK.md): every step, the honesty rules, file templates and a complete example. Start here if a person asked you to make a pack.
+- [Same page on the project site](https://tymofiy.github.io/kp/create-a-pack.txt): use this if GitHub is blocked.
+- [Save a pack as a file](https://tymofiy.github.io/kp/save.html): for a person whose assistant can only give text. Nothing is uploaded.
 - [Quick checker](https://raw.githubusercontent.com/tymofiy/kp/main/agent/kp_quick_check.py): a single Python file with no dependencies. It reports and never refuses.
 
 ## Read further

@@ -1,0 +1,16 @@
+# KP:1 Knowledge Pack Format
+
+> A plain-text format for keeping knowledge with its context, evidence, uncertainty and history. A person keeps a pack as an ordinary file, and any AI assistant can write one.
+
+## Make a Knowledge Pack
+
+- [Create a Knowledge Pack](https://raw.githubusercontent.com/tymofiy/kp/main/agent/CREATE-A-PACK.md): every step, the honesty rules, file templates and a complete example. Start here if a person asked you to make a pack.
+- [Same page on the project site](https://tymofiy.github.io/kp/create-a-pack.txt): use this if GitHub is blocked.
+- [Save a pack as a file](https://tymofiy.github.io/kp/save.html): for a person whose assistant can only give text. Nothing is uploaded.
+- [Quick checker](https://raw.githubusercontent.com/tymofiy/kp/main/agent/kp_quick_check.py): a single Python file with no dependencies. It reports and never refuses.
+
+## Read further
+
+- [Guide for AI agents](https://raw.githubusercontent.com/tymofiy/kp/main/AGENTS.md): which parts of the repository to read for each task.
+- [Core format](https://raw.githubusercontent.com/tymofiy/kp/main/spec/CORE.md): the normative format.
+- [Authoring guide](https://raw.githubusercontent.com/tymofiy/kp/main/spec/AUTHORING.md): how to choose claim types, nature and confidence.

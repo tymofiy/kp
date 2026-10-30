@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- SPDX-FileCopyrightText: 2026 Timothy Kompanchenko -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Save a Knowledge Pack</title>
+<meta name="description" content="Paste the text an AI assistant gave you and save it as a .kpack file. It runs in your browser, and nothing is uploaded.">
+<style>
+  :root { --navy:#142a40; --ivory:#f8f5ef; --saffron-ink:#b44800; --rule:rgba(20,42,64,.24); --ink-3:#55606d; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--ivory); color:var(--navy); font:1rem/1.55 system-ui,-apple-system,"Segoe UI",sans-serif; }
+  main { max-width:46rem; margin:0 auto; padding:clamp(1.5rem,5vw,3.5rem) clamp(1.25rem,5vw,3rem); }
+  h1 { font:600 clamp(2rem,6vw,2.75rem)/1.15 "Iowan Old Style",Palatino,Georgia,serif; margin:0 0 .75rem; }
+  label { display:block; font-weight:600; margin:1.5rem 0 .35rem; }
+  label span { color:var(--ink-3); font-weight:400; }
+  textarea { display:block; width:100%; min-height:9rem; padding:.7rem; resize:vertical; background:#fff; color:inherit;
+             border:1px solid var(--rule); border-radius:4px; font:.9rem/1.45 "SFMono-Regular",Menlo,Consolas,monospace; }
+  textarea:focus-visible, button:focus-visible { outline:2px solid var(--saffron-ink); outline-offset:2px; }
+  button { margin-top:1.75rem; padding:.7rem 1.4rem; border:0; border-radius:4px; background:var(--navy); color:var(--ivory); font:600 1rem system-ui,sans-serif; cursor:pointer; }
+  #report { margin-top:1.25rem; }
+  #report:empty { display:none; }
+  a { color:var(--saffron-ink); }
+</style>
+</head>
+<body>
+<main>
+  <h1>Save a Knowledge Pack</h1>
+  <p>Did an assistant give you a pack as text instead of a file? Paste its parts here to get a <code>.kpack</code> file.</p>
+  <p>This page runs in your browser. Nothing you paste is uploaded.</p>
+
+  <form id="pack">
+    <label for="f-pack">PACK.yaml</label>
+    <textarea id="f-pack" data-file="PACK.yaml" spellcheck="false"></textarea>
+    <label for="f-claims">claims.md</label>
+    <textarea id="f-claims" data-file="claims.md" spellcheck="false"></textarea>
+    <label for="f-evidence">evidence.md</label>
+    <textarea id="f-evidence" data-file="evidence.md" spellcheck="false"></textarea>
+    <label for="f-history">history.md <span>(if there is one)</span></label>
+    <textarea id="f-history" data-file="history.md" spellcheck="false"></textarea>
+    <button type="submit">Save as .kpack</button>
+  </form>
+  <p id="report" role="status"></p>
+
+  <p>Making a pack with an assistant? <a href="create-a-pack.txt">Give it these instructions</a>.</p>
+</main>
+<script>
+const encoder = new TextEncoder();
+const crcTable = Array.from({ length: 256 }, (_, n) => {
+  let c = n;
+  for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1;
+  return c >>> 0;
+});
+
+function crc32(bytes) {
+  let c = 0xffffffff;
+  for (const byte of bytes) c = crcTable[(c ^ byte) & 255] ^ (c >>> 8);
+  return (c ^ 0xffffffff) >>> 0;
+}
+
+function record(fields) {
+  const size = fields.reduce((total, [width]) => total + width, 0);
+  const view = new DataView(new ArrayBuffer(size));
+  let at = 0;
+  for (const [width, value] of fields) {
+    if (width === 2) view.setUint16(at, value, true);
+    else view.setUint32(at, value, true);
+    at += width;
+  }
+  return new Uint8Array(view.buffer);
+}
+
+function buildZip(files, now) {
+  const time = (now.getHours() << 11) | (now.getMinutes() << 5) | (now.getSeconds() >> 1);
+  const date = ((now.getFullYear() - 1980) << 9) | ((now.getMonth() + 1) << 5) | now.getDate();
+  const parts = [];
+  const central = [];
+  let offset = 0;
+  for (const file of files) {
+    const name = encoder.encode(file.name);
+    const data = encoder.encode(file.text);
+    const crc = crc32(data);
+    const shared = [[2, 20], [2, 0x0800], [2, 0], [2, time], [2, date], [4, crc], [4, data.length], [4, data.length],
+                    [2, name.length], [2, 0]];
+    const local = record([[4, 0x04034b50], ...shared]);
+    parts.push(local, name, data);
+    central.push(record([[4, 0x02014b50], [2, 20], ...shared, [2, 0], [2, 0], [2, 0], [4, 0], [4, offset]]), name);
+    offset += local.length + name.length + data.length;
+  }
+  const size = central.reduce((total, part) => total + part.length, 0);
+  const end = record([[4, 0x06054b50], [2, 0], [2, 0], [2, files.length], [2, files.length], [4, size], [4, offset], [2, 0]]);
+  return new Blob([...parts, ...central, end], { type: "application/zip" });
+}
+
+// Assistants often wrap each file in a code fence. Only that wrapper is removed.
+function cleanText(text) {
+  const lines = text.replace(/\r\n/g, "\n").trim().split("\n");
+  if (lines.length > 1 && /^```/.test(lines[0]) && /^```\s*$/.test(lines[lines.length - 1])) {
+    return lines.slice(1, -1).join("\n") + "\n";
+  }
+  return lines.join("\n") + "\n";
+}
+
+function packName(manifest) {
+  const match = manifest.match(/^name:[ \t]*["']?([A-Za-z0-9_-]+)/m);
+  return match ? match[1] : "knowledge-pack";
+}
+
+document.getElementById("pack").addEventListener("submit", (event) => {
+  event.preventDefault();
+  const files = [];
+  const empty = [];
+  for (const box of document.querySelectorAll("textarea")) {
+    if (box.value.trim()) files.push({ name: box.dataset.file, text: cleanText(box.value) });
+    else if (box.dataset.file !== "history.md") empty.push(box.dataset.file);
+  }
+  const report = document.getElementById("report");
+  if (!files.length) {
+    report.textContent = "Paste at least one part first.";
+    return;
+  }
+  const name = packName((files.find((file) => file.name === "PACK.yaml") || { text: "" }).text);
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(buildZip(files, new Date()));
+  link.download = name + ".kpack";
+  link.click();
+  URL.revokeObjectURL(link.href);
+  report.textContent = "Saved " + link.download + "." + (empty.length ? " It has no " + empty.join(" or ") + " yet." : "");
+});
+</script>
+</body>
+</html>

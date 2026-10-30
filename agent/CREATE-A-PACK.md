@@ -10,7 +10,8 @@ of the repository, install anything, or ask for a key.
 A Knowledge Pack keeps what ordinary notes lose: who said what, on what evidence, with what certainty, what is disputed, and
 what is still unknown. Your work is to preserve those things, not to smooth them away.
 
-This page follows the published edition, `v0.8.5-preview`.
+This page follows the published edition, `v0.8.5-preview`. Use the exact field names and layout shown here, even if you remember
+KP:1 differently. Do not write a pack from another page or from memory.
 
 ## Do these seven steps
 
@@ -273,7 +274,7 @@ python3 kp_quick_check.py harbor-at-dusk.kpack
 ```
 
 The checker needs nothing installed. Get it from
-<https://raw.githubusercontent.com/tymofiy/kp/main/agent/kp_quick_check.py>.
+<https://raw.githubusercontent.com/tymofiy/kp/main/agent/kp_quick_check.py>. If you cannot reach it, use the checklist.
 
 Checklist:
 
@@ -297,8 +298,9 @@ Give the person a file if you can make one, in this order:
 1. **A `.kpack` file.** Zip the three files with no containing folder, so `PACK.yaml` is at the top of the zip, and name it
    `<name>.kpack`. Offer it as a download.
 2. **A zip of the folder,** if you can make a zip but cannot name it `.kpack`.
-3. **Three code blocks,** one per file, each labeled with its file name, if you cannot make files. Tell the person to save them in a
-   folder named `<name>.kpack`.
+3. **Three code blocks,** one per file, each labeled with its file name, if you cannot make files. Say plainly that you cannot make
+   a file, and tell the person to paste the blocks into <https://tymofiy.github.io/kp/save.html>. That page makes the `.kpack` file
+   in their browser, and nothing is uploaded.
 
 Then say, in plain words:
 
