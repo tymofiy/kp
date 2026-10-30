@@ -87,7 +87,7 @@ Do not use `0.99` or above unless the claim could be checked in seconds. A predi
 | `⊘C002` | replaces C002 |
 | `↔C002` | see also C002 |
 
-A claim ID in a relation must exist in the pack.
+A claim ID in a relation must exist in the pack. Separate several relations with a comma and a space: `←C003, →C004`.
 
 ## The three files
 
@@ -282,7 +282,7 @@ Checklist:
 - [ ] `claims.md` starts with the comment from the template, unchanged.
 - [ ] Every claim has a `{...}` line with confidence, type, evidence and date.
 - [ ] Every `E` number cited has an entry in `evidence.md`, and every entry has `type`, `captured` and `source`.
-- [ ] Every `C` number in a relation exists in the pack.
+- [ ] Every `C` number in a relation exists in the pack, and several relations are separated by commas.
 - [ ] No claim or evidence number is used twice.
 - [ ] Every source, date and quotation came from the material.
 - [ ] Each disagreement in the material appears as linked claims, and each gap has a claim.

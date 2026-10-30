@@ -36,6 +36,7 @@ PATTERNS = {
 CLAIM_ID = re.compile(r"^- (?:\*\*)?\[(C\d+(?:-v\d+)?)\](?:\*\*)?(?: |$)", re.M)
 DENSE = re.compile(r"\{([^{}|]*)\|([^{}|]*)\|([^{}|]*)\|([^{}|]*)(?:\|([^{}|]*))?(?:\|([^{}|]*))?\}")
 RELATION = re.compile(r"(?:→|⊗!|⊗~|⊗|←|~|⊘|↔)(C\d+(?:-v\d+)?)(?![\w#-])")
+UNSEPARATED = re.compile(r"(?:→|⊗!|⊗~|⊗|←|~|⊘|↔)C\d+(?:-v\d+)? +(?:→|⊗!|⊗~|⊗|←|~|⊘|↔)C\d+")
 EVIDENCE_HEADING = re.compile(r"^## (E\d+)(?:\s|$)", re.M)
 
 
@@ -185,6 +186,8 @@ def check_pack(files):
 
     all_claims = set(seen) | known
     for claim, line, block in claim_blocks(claims):
+        if UNSEPARATED.search(block):
+            problems.append(f"claims.md line {line}, {claim}: separate relations with a comma")
         for target in RELATION.findall(block):
             if target not in all_claims:
                 problems.append(f"claims.md line {line}, {claim}: relation points to {target}, which is not in the pack")
