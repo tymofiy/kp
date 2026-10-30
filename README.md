@@ -11,8 +11,9 @@
 
 > **AI assistant, asked to make a Knowledge Pack?** Follow
 > [`agent/CREATE-A-PACK.md`](agent/CREATE-A-PACK.md)
-> ([plain text](https://raw.githubusercontent.com/tymofiy/kp/main/agent/CREATE-A-PACK.md)).
-> Every step is on that one page.
+> ([plain text](https://raw.githubusercontent.com/tymofiy/kp/main/agent/CREATE-A-PACK.md),
+> [alternative](https://tymofiy.github.io/kp/create-a-pack.txt)). Every step is on that one
+> page. Do not write a pack from memory.
 
 **Editor:** Timothy Kompanchenko
 **Status:** Released Editor's Draft — v0.8.5-preview
